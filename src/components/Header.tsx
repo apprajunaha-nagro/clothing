@@ -90,7 +90,17 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl object-contain border border-stone-200/80 shadow-xs group-hover:scale-105 transition-all bg-white p-0.5"
             />
             <div>
-              <h1 className="font-sans text-xl sm:text-2xl font-extrabold tracking-tight text-[#2B2620] leading-tight group-hover:text-[#C0654B] transition-colors flex items-center gap-1.5">
+              <h1
+                className="text-xl sm:text-2xl font-black tracking-tight leading-tight flex items-center gap-1.5"
+                style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontStyle: 'italic',
+                  background: 'linear-gradient(135deg, #C0654B 0%, #D4884A 45%, #2B2620 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
                 <span>{settings.storeName}</span>
               </h1>
               <p className="text-[9px] sm:text-[10px] tracking-wide text-[#6B6259] font-medium flex items-center gap-1">
