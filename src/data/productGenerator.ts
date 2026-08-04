@@ -1975,6 +1975,54 @@ export const menBriefsCustomProducts = [
   }
 ];
 
+export const boysTShirtCustomProducts = [
+  {
+    title: 'Bio-Wash Organic Cotton Printed Boys T-Shirt',
+    image: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80',
+    secondaryImage: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80',
+    fabric: '100% Bio-Wash Organic Cotton',
+    colorName: 'Royal Cobalt Blue',
+    colorHex: '#1E40AF',
+    description: 'An ultra-soft 100% bio-wash organic cotton printed t-shirt for boys, designed with hypoallergenic breathable fibers, vibrant non-toxic prints, and double-stitched durability for everyday play.'
+  },
+  {
+    title: 'Colorblock Cotton Pique Boys Polo Shirt',
+    image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80',
+    secondaryImage: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80',
+    fabric: 'Cotton Pique',
+    colorName: 'Navy / Mustard',
+    colorHex: '#1E293B',
+    description: 'A smart colorblock cotton pique polo shirt for boys featuring a ribbed collar, two-button placket, and comfortable regular fit.'
+  },
+  {
+    title: 'Superhero Graphic Printed Cotton Boys Tee',
+    image: 'https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?auto=format&fit=crop&w=800&q=80',
+    secondaryImage: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80',
+    fabric: 'Combed Cotton',
+    colorName: 'Crimson Red',
+    colorHex: '#DC2626',
+    description: 'Fun and vibrant graphic printed cotton crewneck tee for boys. Made from breathable combed cotton for all-day comfort.'
+  },
+  {
+    title: 'Striped Cotton Full Sleeve Boys T-Shirt',
+    image: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80',
+    secondaryImage: 'https://images.unsplash.com/photo-1519689680058-324335c77ebe?auto=format&fit=crop&w=800&q=80',
+    fabric: '100% Cotton',
+    colorName: 'Olive / White',
+    colorHex: '#475569',
+    description: 'Classic nautical striped full-sleeve t-shirt crafted in pure cotton knit, providing warmth and effortless everyday style.'
+  },
+  {
+    title: 'Pack of 3 Bio-Wash Cotton Crewneck Boys Tees',
+    image: 'https://images.unsplash.com/photo-1471286174240-e6458fe7d4a4?auto=format&fit=crop&w=800&q=80',
+    secondaryImage: 'https://images.unsplash.com/photo-1505371796105-89db7880b749?auto=format&fit=crop&w=800&q=80',
+    fabric: '100% Bio-Wash Cotton',
+    colorName: 'Multicolor Pack',
+    colorHex: '#0284C7',
+    description: 'Value pack of 3 super soft bio-washed cotton crewneck tees in versatile solid colors, designed for durability and easy washing.'
+  }
+];
+
 // --- DYNAMIC CATALOG IMAGE & DESCRIPTION GENERATORS ---
 const ethnicImageIds = [
   'photo-1610030469983-98e550d6193c',
@@ -2166,7 +2214,8 @@ export function generateFullCatalogProducts(categories: Category[]): Product[] {
         else if (cat.id === 'undergarments') brandId = 'b3';
         else if (sub.id.includes('western')) brandId = 'b2';
 
-        const itemCount = (isAnarkali || isKurti || isPalazzo || isWesternType || isMenKurta || isMenTShirt || isMenFormalShirt || isMenBriefs) ? 5 : 10;
+        const isBoysTShirt = typeItem.id === 'kt-b-tshirts';
+        const itemCount = (isAnarkali || isKurti || isPalazzo || isWesternType || isMenKurta || isMenTShirt || isMenFormalShirt || isMenBriefs || isBoysTShirt) ? 5 : 10;
         for (let i = 0; i < itemCount; i++) {
           count++;
           const prodId = `prod_${typeItem.id}_${i + 1}`;
@@ -2215,7 +2264,10 @@ export function generateFullCatalogProducts(categories: Category[]): Product[] {
 
           const menBriefsOverride = isMenBriefs ? menBriefsCustomProducts[i % menBriefsCustomProducts.length] : null;
 
-          const activeOverride = sareeOverride || salwarOverride || lehengaOverride || anarkaliOverride || kurtiOverride || palazzoOverride || dressesOverride || topsOverride || jeansOverride || trousersOverride || coordOverride || skirtsOverride || menKurtaOverride || menTShirtOverride || menFormalShirtOverride || menBriefsOverride;
+          const isBoysTShirt = typeItem.id === 'kt-b-tshirts';
+          const boysTShirtOverride = isBoysTShirt ? boysTShirtCustomProducts[i % boysTShirtCustomProducts.length] : null;
+
+          const activeOverride = sareeOverride || salwarOverride || lehengaOverride || anarkaliOverride || kurtiOverride || palazzoOverride || dressesOverride || topsOverride || jeansOverride || trousersOverride || coordOverride || skirtsOverride || menKurtaOverride || menTShirtOverride || menFormalShirtOverride || menBriefsOverride || boysTShirtOverride;
 
           const title = activeOverride ? activeOverride.title : (meta.titles[i % meta.titles.length] || `${typeItem.name} Edition ${i + 1}`);
           const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
