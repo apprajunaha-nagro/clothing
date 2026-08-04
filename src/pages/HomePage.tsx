@@ -716,18 +716,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
         {/* 360° Infinite Continuous Motion Carousel (Right-to-Left) */}
         <div className="relative w-full overflow-hidden py-2 group/marquee select-none">
-          <motion.div
-            className="flex gap-6 w-max"
-            animate={{ x: ['0%', '-50%'] }}
-            transition={{
-              x: {
-                repeat: Infinity,
-                repeatType: 'loop',
-                duration: 35,
-                ease: 'linear',
-              },
-            }}
-          >
+          <div className="flex gap-6 w-max animate-marquee">
             {/* Duplicated array to create a seamless infinite 360° loop */}
             {[...lookbookItems, ...lookbookItems].map((item, idx) => (
               <div
@@ -806,7 +795,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 </div>
               </div>
             ))}
-          </motion.div>
+          </div>
         </div>
 
       </section>
