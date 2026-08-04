@@ -2023,6 +2023,54 @@ export const boysTShirtCustomProducts = [
   }
 ];
 
+export const womenBrasCustomProducts = [
+  {
+    title: 'Micro-Modal Ultra-Soft Everyday T-Shirt Bra',
+    image: '/src/assets/images/tshirt_bra_micromodal.png',
+    secondaryImage: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+    fabric: 'Ultra-Soft Micro-Modal & Elastane',
+    colorName: 'Nude / Rose Beige',
+    colorHex: '#E2BCAD',
+    description: 'An ultra-soft micro-modal seamless T-shirt bra featuring smooth 3D memory foam contour cups, wirefree all-day comfort, non-slip adjustable straps, and invisible laser-cut side wings.'
+  },
+  {
+    title: 'Seamless Contour Wirefree Memory Foam Bra',
+    image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+    secondaryImage: '/src/assets/images/tshirt_bra_micromodal.png',
+    fabric: 'Seamless Stretch Nylon Blend',
+    colorName: 'Soft Blush Pink',
+    colorHex: '#FFB6C1',
+    description: 'Lightweight wirefree contour bra with molded memory foam cups providing natural lift and zero irritation.'
+  },
+  {
+    title: 'High Impact Breathable Fitness Sports Bra',
+    image: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
+    secondaryImage: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80',
+    fabric: 'Moisture-Wicking Power Stretch',
+    colorName: 'Charcoal / Coral',
+    colorHex: '#36454F',
+    description: 'High-impact racerback sports bra engineered with breathable mesh inserts, wide supportive elastic underband, and removable padding.'
+  },
+  {
+    title: 'Invisible Laser-Cut Strapless Multiway Bra',
+    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80',
+    secondaryImage: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80',
+    fabric: 'Laser-Cut Microfiber',
+    colorName: 'Classic Onyx Black',
+    colorHex: '#1C1C1C',
+    description: 'Versatile strapless multiway contour bra featuring anti-slip silicone lining, detachable convertible straps, and seamless invisible edges.'
+  },
+  {
+    title: 'Lace Bralette with Soft Removable Cups',
+    image: 'https://images.unsplash.com/photo-1506152983158-b4a74a01c721?auto=format&fit=crop&w=800&q=80',
+    secondaryImage: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
+    fabric: 'Scalloped Floral Lace',
+    colorName: 'Elegance Ivory',
+    colorHex: '#FFFFF0',
+    description: 'Romantic scalloped floral lace bralette designed with deep plunge V-neckline, soft stretch elastic underband, and removable contour cups.'
+  }
+];
+
 // --- DYNAMIC CATALOG IMAGE & DESCRIPTION GENERATORS ---
 const ethnicImageIds = [
   'photo-1610030469983-98e550d6193c',
@@ -2215,7 +2263,8 @@ export function generateFullCatalogProducts(categories: Category[]): Product[] {
         else if (sub.id.includes('western')) brandId = 'b2';
 
         const isBoysTShirt = typeItem.id === 'kt-b-tshirts';
-        const itemCount = (isAnarkali || isKurti || isPalazzo || isWesternType || isMenKurta || isMenTShirt || isMenFormalShirt || isMenBriefs || isBoysTShirt) ? 5 : 10;
+        const isBras = typeItem.id === 'ut-bras' || typeItem.id === 'wt-bras';
+        const itemCount = (isAnarkali || isKurti || isPalazzo || isWesternType || isMenKurta || isMenTShirt || isMenFormalShirt || isMenBriefs || isBoysTShirt || isBras) ? 5 : 10;
         for (let i = 0; i < itemCount; i++) {
           count++;
           const prodId = `prod_${typeItem.id}_${i + 1}`;
@@ -2267,7 +2316,10 @@ export function generateFullCatalogProducts(categories: Category[]): Product[] {
           const isBoysTShirt = typeItem.id === 'kt-b-tshirts';
           const boysTShirtOverride = isBoysTShirt ? boysTShirtCustomProducts[i % boysTShirtCustomProducts.length] : null;
 
-          const activeOverride = sareeOverride || salwarOverride || lehengaOverride || anarkaliOverride || kurtiOverride || palazzoOverride || dressesOverride || topsOverride || jeansOverride || trousersOverride || coordOverride || skirtsOverride || menKurtaOverride || menTShirtOverride || menFormalShirtOverride || menBriefsOverride || boysTShirtOverride;
+          const isBras = typeItem.id === 'ut-bras' || typeItem.id === 'wt-bras';
+          const brasOverride = isBras ? womenBrasCustomProducts[i % womenBrasCustomProducts.length] : null;
+
+          const activeOverride = sareeOverride || salwarOverride || lehengaOverride || anarkaliOverride || kurtiOverride || palazzoOverride || dressesOverride || topsOverride || jeansOverride || trousersOverride || coordOverride || skirtsOverride || menKurtaOverride || menTShirtOverride || menFormalShirtOverride || menBriefsOverride || boysTShirtOverride || brasOverride;
 
           const title = activeOverride ? activeOverride.title : (meta.titles[i % meta.titles.length] || `${typeItem.name} Edition ${i + 1}`);
           const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
