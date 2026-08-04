@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Studio Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF7F5" />
+      <stop offset="50%" stop-color="#F3E9E4" />
+      <stop offset="100%" stop-color="#EADCD5" />
+    </linearGradient>
+
+    <!-- Metallic Gold/Accent Shimmer -->
+    <linearGradient id="goldShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D4AF37" />
+      <stop offset="50%" stop-color="#FFF2A1" />
+      <stop offset="100%" stop-color="#C59B27" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadow Filter -->
+    <filter id="studioShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#2B2620" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <!-- Clean Studio Background -->
+  <rect width="800" height="800" fill="url(#bgGrad)" />
+  <circle cx="400" cy="400" r="340" fill="#FFFFFF" opacity="0.4" />
+
+  <!-- Studio Floor Soft Shadow -->
+  <ellipse cx="400" cy="735" rx="260" ry="24" fill="#2B2620" opacity="0.12" />
+
+  <!-- MAIN GARMENT SHAPE (Ghost Mannequin / Invisible Model) -->
+  <g filter="url(#studioShadow)">
+    <!-- Shoulders & Hanger Form -->
+    <path d="M330 145 C360 135 440 135 470 145 C495 155 530 190 540 210 L260 210 C270 190 305 155 330 145 Z" fill="#B57EDC" />
+    <!-- Neckline -->
+    <path d="M360 145 C380 180 420 180 440 145 Z" fill="#FAF7F5" stroke="#FFD700" stroke-width="4" />
+
+    <!-- Sleeves -->
+    <path d="M260 210 L200 370 L250 380 L290 230 Z" fill="#B57EDC" />
+    <path d="M540 210 L600 370 L550 380 L510 230 Z" fill="#B57EDC" />
+    <!-- Sleeve Cuff Borders -->
+    <path d="M200 370 L250 380 L245 392 L195 382 Z" fill="#FFD700" />
+    <path d="M600 370 L550 380 L555 392 L605 382 Z" fill="#FFD700" />
+
+    
+    
+      <!-- Straight Fitted Pants -->
+      <path d="M330 555 L345 710 L390 710 L380 560 Z" fill="#FFD700" opacity="0.9" />
+      <path d="M470 555 L455 710 L410 710 L420 560 Z" fill="#FFD700" opacity="0.9" />
+    
+    
+      <!-- Kurti Bodice & Tunic -->
+      <path d="M290 210 Q400 230 510 210 L525 540 Q400 555 275 540 Z" fill="#B57EDC" opacity="0.95" />
+      <!-- Hem Border -->
+      <path d="M275 540 Q400 555 525 540 L525 558 Q400 573 275 558 Z" fill="#FFD700" />
+      <!-- Placket Embroidery -->
+      <rect x="382" y="220" width="36" height="170" rx="4" fill="#FFD700" opacity="0.9" />
+      <circle cx="400" cy="250" r="4" fill="#FFF" />
+      <circle cx="400" cy="285" r="4" fill="#FFF" />
+      <circle cx="400" cy="320" r="4" fill="#FFF" />
+      <circle cx="400" cy="355" r="4" fill="#FFF" />
+    
+  </g>
+
+  <!-- PGMART BRAND WATERMARK BADGE -->
+  <rect x="40" y="40" width="170" height="34" rx="17" fill="#C0654B" opacity="0.9" />
+  <text x="125" y="62" font-family="'Poppins', sans-serif" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="1.5">PGMART STUDIO</text>
+
+  <!-- GARMENT FABRIC BADGE -->
+  <rect x="580" y="40" width="180" height="34" rx="8" fill="#FFFFFF" stroke="#C0654B" stroke-width="1.5" />
+  <text x="670" y="62" font-family="'Poppins', sans-serif" font-size="11" font-weight="700" fill="#2B2620" text-anchor="middle">RAYON SLUB</text>
+
+  <!-- PRODUCT TITLE OVERLAY CARD AT BOTTOM -->
+  <rect x="50" y="720" width="700" height="50" rx="12" fill="#FFFFFF" opacity="0.95" />
+  <text x="70" y="750" font-family="'Playfair Display', serif" font-size="15" font-weight="700" fill="#2B2620">Lavender Lilac Gotapatti Work Kurti</text>
+  <rect x="610" y="732" width="125" height="26" rx="6" fill="#B57EDC" />
+  <text x="672" y="749" font-family="'Poppins', sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">GOTA PATTI PIPING</text>
+</svg>

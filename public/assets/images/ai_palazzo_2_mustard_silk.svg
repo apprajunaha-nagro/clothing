@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="800" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Studio Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FAF7F5" />
+      <stop offset="50%" stop-color="#F3E9E4" />
+      <stop offset="100%" stop-color="#EADCD5" />
+    </linearGradient>
+
+    <!-- Metallic Gold/Accent Shimmer -->
+    <linearGradient id="goldShimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D4AF37" />
+      <stop offset="50%" stop-color="#FFF2A1" />
+      <stop offset="100%" stop-color="#C59B27" />
+    </linearGradient>
+
+    <!-- Soft Drop Shadow Filter -->
+    <filter id="studioShadow" x="-10%" y="-10%" width="125%" height="125%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#2B2620" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <!-- Clean Studio Background -->
+  <rect width="800" height="800" fill="url(#bgGrad)" />
+  <circle cx="400" cy="400" r="340" fill="#FFFFFF" opacity="0.4" />
+
+  <!-- Studio Floor Soft Shadow -->
+  <ellipse cx="400" cy="735" rx="260" ry="24" fill="#2B2620" opacity="0.12" />
+
+  <!-- MAIN GARMENT SHAPE (Ghost Mannequin / Invisible Model) -->
+  <g filter="url(#studioShadow)">
+    <!-- Shoulders & Hanger Form -->
+    <path d="M330 145 C360 135 440 135 470 145 C495 155 530 190 540 210 L260 210 C270 190 305 155 330 145 Z" fill="#E6A11E" />
+    <!-- Neckline -->
+    <path d="M360 145 C380 180 420 180 440 145 Z" fill="#FAF7F5" stroke="#D4AF37" stroke-width="4" />
+
+    <!-- Sleeves -->
+    <path d="M260 210 L200 370 L250 380 L290 230 Z" fill="#E6A11E" />
+    <path d="M540 210 L600 370 L550 380 L510 230 Z" fill="#E6A11E" />
+    <!-- Sleeve Cuff Borders -->
+    <path d="M200 370 L250 380 L245 392 L195 382 Z" fill="#D4AF37" />
+    <path d="M600 370 L550 380 L555 392 L605 382 Z" fill="#D4AF37" />
+
+    
+      <!-- Draped Sheer Dupatta -->
+      <path d="M190 220 Q400 340 610 220 Q560 380 400 420 Q240 380 190 220 Z" fill="#D4AF37" opacity="0.35" />
+    
+    
+      <!-- Wide-Leg Flared Sharara Pants -->
+      <path d="M310 496 Q240 620 180 715 L365 715 Q360 620 375 500 Z" fill="#E6A11E" />
+      <path d="M490 496 Q560 620 620 715 L435 715 Q440 620 425 500 Z" fill="#E6A11E" />
+      <!-- Sharara Tier Lace -->
+      <path d="M180 700 Q270 710 365 700 L365 715 Q270 725 180 715 Z" fill="#D4AF37" />
+      <path d="M435 700 Q530 710 620 700 L620 715 Q530 725 435 715 Z" fill="#D4AF37" />
+    
+    
+      <!-- Short Festive Kurta -->
+      <path d="M295 210 Q400 230 505 210 L520 480 Q400 495 280 480 Z" fill="#E6A11E" opacity="0.95" />
+      <path d="M280 480 Q400 495 520 480 L520 496 Q400 511 280 496 Z" fill="#D4AF37" />
+    
+  </g>
+
+  <!-- PGMART BRAND WATERMARK BADGE -->
+  <rect x="40" y="40" width="170" height="34" rx="17" fill="#C0654B" opacity="0.9" />
+  <text x="125" y="62" font-family="'Poppins', sans-serif" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="1.5">PGMART STUDIO</text>
+
+  <!-- GARMENT FABRIC BADGE -->
+  <rect x="580" y="40" width="180" height="34" rx="8" fill="#FFFFFF" stroke="#C0654B" stroke-width="1.5" />
+  <text x="670" y="62" font-family="'Poppins', sans-serif" font-size="11" font-weight="700" fill="#2B2620" text-anchor="middle">SILK BLEND</text>
+
+  <!-- PRODUCT TITLE OVERLAY CARD AT BOTTOM -->
+  <rect x="50" y="720" width="700" height="50" rx="12" fill="#FFFFFF" opacity="0.95" />
+  <text x="70" y="750" font-family="'Playfair Display', serif" font-size="15" font-weight="700" fill="#2B2620">Mustard Yellow Silk Blend Gotta Pat...</text>
+  <rect x="610" y="732" width="125" height="26" rx="6" fill="#E6A11E" />
+  <text x="672" y="749" font-family="'Poppins', sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" text-anchor="middle">GOTTA PATTI BORDER</text>
+</svg>
