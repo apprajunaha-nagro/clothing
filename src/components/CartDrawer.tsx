@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, ShieldCheck, Truck } from 'lucide-react';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
+import { AnimatePresence, motion } from 'motion/react';
 
 interface CartDrawerProps {
   onNavigate: (path: string) => void;
@@ -25,7 +26,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
   const [couponError, setCouponError] = useState<string | null>(null);
   const [loadingCoupon, setLoadingCoupon] = useState(false);
 
-  if (!cartDrawerOpen) return null;
+  // Note: AnimatePresence handles conditional rendering — do NOT early return null here.
 
   const subtotal = cart.reduce((acc, item) => {
     const price = item.variant.discountPrice || item.variant.price || item.product.discountPrice || item.product.basePrice;
@@ -53,15 +54,26 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
   };
 
   return (
+    <AnimatePresence>
+      {cartDrawerOpen && (
     <div className="fixed inset-0 z-50 overflow-hidden text-left">
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-fade-in"
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs"
         onClick={() => setCartDrawerOpen(false)}
       />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col">
+        <motion.div
+          initial={{ x: '100%' }}
+          animate={{ x: 0 }}
+          exit={{ x: '100%' }}
+          transition={{ type: 'tween', duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          className="w-screen max-w-md bg-white shadow-2xl flex flex-col">
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-stone-200 flex items-center justify-between bg-stone-50">
             <div className="flex items-center gap-2">
@@ -262,8 +274,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
     </div>
+      )}
+    </AnimatePresence>
   );
 };

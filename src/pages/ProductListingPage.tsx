@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from '../components/ProductCard';
 import { Filter, SlidersHorizontal, X, ChevronRight, Check, Grid, List, Sparkles, ArrowLeftRight, Scale, ShoppingBag, Star } from 'lucide-react';
 import { Product } from '../types';
+import { AnimatePresence, motion } from 'motion/react';
+import { useDebounce } from '../utils/useDebounce';
 
 interface ProductListingPageProps {
   onNavigate: (path: string) => void;
@@ -16,6 +18,20 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [comparedProductIds, setComparedProductIds] = useState<string[]>([]);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  // Local price state — debounced before applying to context so the grid
+  // doesn't re-render on every pixel of slider movement.
+  const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice);
+  const debouncedMaxPrice = useDebounce(localMaxPrice, 300);
+
+  // Sync debounced value to global filter state
+  useEffect(() => {
+    setFilters(prev => ({ ...prev, maxPrice: debouncedMaxPrice }));
+  }, [debouncedMaxPrice, setFilters]);
+
+  // Keep local slider in sync if filters are reset externally
+  useEffect(() => {
+    setLocalMaxPrice(filters.maxPrice);
+  }, [filters.maxPrice]);
 
   const handleToggleCompare = (product: Product) => {
     setComparedProductIds(prev => {
@@ -580,19 +596,19 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             </div>
           </div>
 
-          {/* Price Filter */}
+          {/* Price Filter — debounced so grid only re-renders after slider rests */}
           <div className="space-y-2">
             <div className="flex justify-between items-center font-bold text-stone-900 text-xs">
               <span>Max Price</span>
-              <span className="text-[#C0654B]">₹{filters.maxPrice}</span>
+              <span className="text-[#C0654B]">₹{localMaxPrice}</span>
             </div>
             <input
               type="range"
               min="500"
               max="10000"
               step="500"
-              value={filters.maxPrice}
-              onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: Number(e.target.value) }))}
+              value={localMaxPrice}
+              onChange={(e) => setLocalMaxPrice(Number(e.target.value))}
               className="w-full accent-[#C0654B] cursor-pointer"
             />
           </div>
@@ -636,11 +652,24 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
         </main>
       </div>
 
-      {/* MOBILE FILTER OVERLAY */}
-      {mobileFilterOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden text-left">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setMobileFilterOpen(false)} />
-          <div className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-white p-5 overflow-y-auto space-y-6 z-10 shadow-2xl pb-safe flex flex-col justify-between">
+      {/* MOBILE FILTER OVERLAY — slide-in from left */}
+      <AnimatePresence>
+        {mobileFilterOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden text-left">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            onClick={() => setMobileFilterOpen(false)}
+          />
+          <motion.div
+            initial={{ x: '-100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '-100%' }}
+            transition={{ type: 'tween', duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-white p-5 overflow-y-auto space-y-6 z-10 shadow-2xl pb-safe flex flex-col justify-between">
             <div className="space-y-6">
               <div className="flex items-center justify-between border-b border-stone-200 pb-3">
                 <span className="font-bold text-stone-900 text-base font-serif">Filter Catalog</span>
@@ -788,19 +817,19 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
               </div>
             </div>
 
-            {/* Mobile Price */}
+            {/* Mobile Price — debounced */}
             <div className="space-y-2 pb-2">
               <div className="flex justify-between items-center font-bold text-xs">
                 <span>Max Price</span>
-                <span className="text-[#C0654B]">₹{filters.maxPrice}</span>
+                <span className="text-[#C0654B]">₹{localMaxPrice}</span>
               </div>
               <input
                 type="range"
                 min="500"
                 max="10000"
                 step="500"
-                value={filters.maxPrice}
-                onChange={(e) => setFilters(prev => ({ ...prev, maxPrice: Number(e.target.value) }))}
+                value={localMaxPrice}
+                onChange={(e) => setLocalMaxPrice(Number(e.target.value))}
                 className="w-full accent-[#C0654B]"
               />
             </div>
@@ -813,9 +842,10 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             >
               Apply Filters ({sortedProducts.length} Items)
             </button>
+          </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* FLOATING COMPARE BAR */}
       {comparedProductIds.length > 0 && (

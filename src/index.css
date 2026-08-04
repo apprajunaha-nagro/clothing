@@ -1,34 +1,50 @@
 @import "tailwindcss";
 
+/* ============================================================
+   SKELETON SHIMMER ANIMATION
+   ============================================================ */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
 @layer utilities {
-  /* Safe Area Inset Helpers for iOS Notch & Gesture Indicator */
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom, 1rem);
-  }
-  .pt-safe {
-    padding-top: env(safe-area-inset-top, 1rem);
-  }
-  .mb-safe {
-    margin-bottom: env(safe-area-inset-bottom, 1rem);
-  }
-  .bottom-safe {
-    bottom: env(safe-area-inset-bottom, 0px);
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      #e7e5e4 25%,
+      #f5f5f4 50%,
+      #e7e5e4 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
   }
 
-  /* Touch scrolling for tables & horizontal cards */
+  /* Respects prefers-reduced-motion — freezes shimmer */
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer {
+      animation: none;
+      background: #e7e5e4;
+    }
+  }
+
+  /* ============================================================
+     SAFE AREA INSETS (iOS notch / gesture bar)
+     ============================================================ */
+  .pb-safe   { padding-bottom: env(safe-area-inset-bottom, 1rem); }
+  .pt-safe   { padding-top:    env(safe-area-inset-top,    1rem); }
+  .mb-safe   { margin-bottom:  env(safe-area-inset-bottom, 1rem); }
+  .bottom-safe { bottom:       env(safe-area-inset-bottom, 0px);  }
+
+  /* ============================================================
+     TOUCH & SCROLL UTILITIES
+     ============================================================ */
   .touch-scroll {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
   }
 
-  /* Prevent text zoom on iOS form focus */
-  @media screen and (max-width: 767px) {
-    input, select, textarea {
-      font-size: 16px !important;
-    }
-  }
-
-  /* Minimum touch target utility */
+  /* Minimum touch target */
   .touch-target {
     min-width: 44px;
     min-height: 44px;
@@ -38,25 +54,47 @@
   }
 }
 
-/* Base resets & overflow safety */
+/* ============================================================
+   BASE RESETS
+   ============================================================ */
 html, body {
   overflow-x: hidden;
   max-width: 100vw;
+  /* Smooth momentum scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Custom scrollbar for horizontal touch lists */
-::-webkit-scrollbar {
-  height: 6px;
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #f5f5f4;
-}
-::-webkit-scrollbar-thumb {
-  background: #d6d3d1;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #C0654B;
+/* Prevent iOS double-tap zoom & 300ms tap delay on all interactive elements */
+a, button, [role="button"], input[type="button"], input[type="submit"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
+/* Prevent text zoom on iOS when form inputs are focused */
+@media screen and (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ============================================================
+   NO-SCROLLBAR UTILITY (horizontal carousels / filter chips)
+   ============================================================ */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ============================================================
+   CUSTOM SCROLLBAR (vertical / themed)
+   ============================================================ */
+::-webkit-scrollbar        { height: 6px; width: 6px; }
+::-webkit-scrollbar-track  { background: #f5f5f4; }
+::-webkit-scrollbar-thumb  { background: #d6d3d1; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #C0654B; }
+
+/* ============================================================
+   PAGE TRANSITION WRAPPER
+   Keeps layout stable during route-change fade animations.
+   ============================================================ */
+.page-transition-wrapper {
+  will-change: opacity, transform;
+}
