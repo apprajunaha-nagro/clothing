@@ -1,0 +1,845 @@
+import React, { useState } from 'react';
+import { useStore } from '../../context/StoreContext';
+import { Search, ChevronRight, ChevronDown, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, ArrowRight, HelpCircle } from 'lucide-react';
+import { Category, Subcategory, CategoryType, Product } from '../../types';
+
+export const AdminCatalogView: React.FC = () => {
+  const { categories, setCategories, products, setProducts, showToast } = useStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Tree expanded states
+  const [expandedCats, setExpandedCats] = useState<{ [id: string]: boolean }>({
+    women: true, men: true // initially expand some for good visuals
+  });
+  const [expandedSubs, setExpandedSubs] = useState<{ [id: string]: boolean }>({});
+
+  // Modal forms
+  const [activeModal, setActiveModal] = useState<'subcategory' | 'type' | null>(null);
+  const [editTarget, setEditTarget] = useState<{ type: 'category' | 'subcategory' | 'type'; item: any } | null>(null);
+  
+  // Form fields
+  const [parentCatId, setParentCatId] = useState('');
+  const [parentSubId, setParentSubId] = useState('');
+  const [name, setName] = useState('');
+  const [slug, setSlug] = useState('');
+  const [description, setDescription] = useState('');
+  const [image, setImage] = useState('');
+  const [banner, setBanner] = useState('');
+  const [metaTitle, setMetaTitle] = useState('');
+  const [metaDesc, setMetaDesc] = useState('');
+  const [status, setStatus] = useState<'active' | 'inactive'>('active');
+
+  // Deletion guard warning modal state
+  const [deleteWarning, setDeleteWarning] = useState<{
+    type: 'subcategory' | 'type';
+    itemId: string;
+    parentIds: { catId?: string; subId?: string };
+    productCount: number;
+    linkedProducts: Product[];
+  } | null>(null);
+
+  const [reassignTargetId, setReassignTargetId] = useState('');
+
+  const toggleCategory = (id: string) => {
+    setExpandedCats(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleSubcategory = (id: string) => {
+    setExpandedSubs(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Helper: Live count of products
+  const getProductCountForType = (typeId: string) => {
+    return products.filter(p => p.typeId === typeId).length;
+  };
+
+  const getProductCountForSub = (subId: string) => {
+    return products.filter(p => p.subcategoryId === subId).length;
+  };
+
+  const getProductCountForCat = (catId: string) => {
+    return products.filter(p => p.categoryId === catId).length;
+  };
+
+  // Auto slug generation helper
+  const handleNameChange = (val: string) => {
+    setName(val);
+    setSlug(val.toLowerCase().trim()
+      .replace(/[^a-z0-9\s-]/g, '') // remove special chars
+      .replace(/\s+/g, '-')       // spaces to dashes
+      .replace(/-+/g, '-')        // double dashes to single
+    );
+  };
+
+  // Trigger modal for creating subcategory under category
+  const openAddSubcategory = (catId: string) => {
+    resetForm();
+    setParentCatId(catId);
+    setActiveModal('subcategory');
+  };
+
+  // Trigger modal for creating type under subcategory
+  const openAddType = (catId: string, subId: string) => {
+    resetForm();
+    setParentCatId(catId);
+    setParentSubId(subId);
+    setActiveModal('type');
+  };
+
+  const resetForm = () => {
+    setName('');
+    setSlug('');
+    setDescription('');
+    setImage('');
+    setBanner('');
+    setMetaTitle('');
+    setMetaDesc('');
+    setStatus('active');
+    setParentCatId('');
+    setParentSubId('');
+    setEditTarget(null);
+  };
+
+  // Handle Create or Update Subcategory
+  const handleSaveSubcategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    if (editTarget) {
+      // Edit mode
+      const updatedCategories = categories.map(cat => {
+        if (cat.id !== editTarget.item.categoryId) return cat;
+        return {
+          ...cat,
+          subcategories: cat.subcategories.map(sub => 
+            sub.id === editTarget.item.id 
+              ? { ...sub, name, slug, description, image, banner_image: banner, meta_title: metaTitle, meta_description: metaDesc, status }
+              : sub
+          )
+        };
+      });
+      setCategories(updatedCategories);
+      showToast(`Subcategory "${name}" updated successfully.`);
+    } else {
+      // Add mode
+      const newSub: Subcategory = {
+        id: `sub-${Date.now()}`,
+        categoryId: parentCatId,
+        name,
+        slug,
+        status,
+        description,
+        image: image || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80',
+        banner_image: banner,
+        meta_title: metaTitle,
+        meta_description: metaDesc,
+        types: []
+      };
+
+      const updatedCategories = categories.map(cat => {
+        if (cat.id !== parentCatId) return cat;
+        return {
+          ...cat,
+          subcategories: [...cat.subcategories, newSub]
+        };
+      });
+      setCategories(updatedCategories);
+      showToast(`Subcategory "${name}" created.`);
+    }
+
+    setActiveModal(null);
+    resetForm();
+  };
+
+  // Handle Create or Update Style/Type
+  const handleSaveType = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    if (editTarget) {
+      // Edit mode
+      const updatedCategories = categories.map(cat => {
+        return {
+          ...cat,
+          subcategories: cat.subcategories.map(sub => {
+            if (sub.id !== editTarget.item.subcategoryId) return sub;
+            return {
+              ...sub,
+              types: sub.types.map(t => 
+                t.id === editTarget.item.id 
+                  ? { ...t, name, slug, description, image, banner_image: banner, meta_title: metaTitle, meta_description: metaDesc, status }
+                  : t
+              )
+            };
+          })
+        };
+      });
+      setCategories(updatedCategories);
+      showToast(`Style Type "${name}" updated.`);
+    } else {
+      // Add mode
+      const newType: CategoryType = {
+        id: `type-${Date.now()}`,
+        subcategoryId: parentSubId,
+        name,
+        slug,
+        status,
+        description,
+        image: image,
+        banner_image: banner,
+        meta_title: metaTitle,
+        meta_description: metaDesc
+      };
+
+      const updatedCategories = categories.map(cat => {
+        if (cat.id !== parentCatId) return cat;
+        return {
+          ...cat,
+          subcategories: cat.subcategories.map(sub => {
+            if (sub.id !== parentSubId) return sub;
+            return {
+              ...sub,
+              types: [...sub.types, newType]
+            };
+          })
+        };
+      });
+      setCategories(updatedCategories);
+      showToast(`Style Type "${name}" added.`);
+    }
+
+    setActiveModal(null);
+    resetForm();
+  };
+
+  // Trigger edit for items
+  const startEditSubcategory = (sub: Subcategory) => {
+    setEditTarget({ type: 'subcategory', item: sub });
+    setName(sub.name);
+    setSlug(sub.slug);
+    setDescription(sub.description || '');
+    setImage(sub.image || '');
+    setBanner(sub.banner_image || '');
+    setMetaTitle(sub.meta_title || '');
+    setMetaDesc(sub.meta_description || '');
+    setStatus(sub.status);
+    setParentCatId(sub.categoryId);
+    setActiveModal('subcategory');
+  };
+
+  const startEditType = (catId: string, subId: string, type: CategoryType) => {
+    setEditTarget({ type: 'type', item: type });
+    setName(type.name);
+    setSlug(type.slug);
+    setDescription(type.description || '');
+    setImage(type.image || '');
+    setBanner(type.banner_image || '');
+    setMetaTitle(type.meta_title || '');
+    setMetaDesc(type.meta_description || '');
+    setStatus(type.status);
+    setParentCatId(catId);
+    setParentSubId(subId);
+    setActiveModal('type');
+  };
+
+  // Toggle active status from Tree list directly
+  const handleToggleSubStatus = (catId: string, subId: string, current: 'active' | 'inactive') => {
+    const nextStatus = current === 'active' ? 'inactive' : 'active';
+    setCategories(prev => prev.map(cat => {
+      if (cat.id !== catId) return cat;
+      return {
+        ...cat,
+        subcategories: cat.subcategories.map(sub => 
+          sub.id === subId ? { ...sub, status: nextStatus } : sub
+        )
+      };
+    }));
+    showToast(`Subcategory status set to ${nextStatus}.`);
+  };
+
+  const handleToggleTypeStatus = (catId: string, subId: string, typeId: string, current: 'active' | 'inactive') => {
+    const nextStatus = current === 'active' ? 'inactive' : 'active';
+    setCategories(prev => prev.map(cat => {
+      if (cat.id !== catId) return cat;
+      return {
+        ...cat,
+        subcategories: cat.subcategories.map(sub => {
+          if (sub.id !== subId) return sub;
+          return {
+            ...sub,
+            types: sub.types.map(t => 
+              t.id === typeId ? { ...t, status: nextStatus } : t
+            )
+          };
+        })
+      };
+    }));
+    showToast(`Style type status set to ${nextStatus}.`);
+  };
+
+  // DELETE OPERATIONS WITH GUARDS
+  const handleDeleteSubcategoryRequest = (catId: string, subId: string, name: string) => {
+    const linked = products.filter(p => p.subcategoryId === subId);
+    if (linked.length > 0) {
+      // Need warning reassignment
+      setDeleteWarning({
+        type: 'subcategory',
+        itemId: subId,
+        parentIds: { catId },
+        productCount: linked.length,
+        linkedProducts: linked
+      });
+      // Suggest first other subcategory as default reassign target
+      const otherSubs = categories.find(c => c.id === catId)?.subcategories.filter(s => s.id !== subId) || [];
+      setReassignTargetId(otherSubs[0]?.id || '');
+    } else {
+      // Safe delete directly
+      if (confirm(`Are you sure you want to delete the subcategory "${name}"? This cannot be undone.`)) {
+        performDeleteSubcategory(catId, subId);
+      }
+    }
+  };
+
+  const handleDeleteTypeRequest = (catId: string, subId: string, typeId: string, name: string) => {
+    const linked = products.filter(p => p.typeId === typeId);
+    if (linked.length > 0) {
+      setDeleteWarning({
+        type: 'type',
+        itemId: typeId,
+        parentIds: { catId, subId },
+        productCount: linked.length,
+        linkedProducts: linked
+      });
+      // Suggest another style type under same subcategory
+      const otherTypes = categories.find(c => c.id === catId)?.subcategories.find(s => s.id === subId)?.types.filter(t => t.id !== typeId) || [];
+      setReassignTargetId(otherTypes[0]?.id || '');
+    } else {
+      if (confirm(`Are you sure you want to delete the style "${name}"?`)) {
+        performDeleteType(catId, subId, typeId);
+      }
+    }
+  };
+
+  const performDeleteSubcategory = (catId: string, subId: string) => {
+    setCategories(prev => prev.map(cat => {
+      if (cat.id !== catId) return cat;
+      return {
+        ...cat,
+        subcategories: cat.subcategories.filter(s => s.id !== subId)
+      };
+    }));
+    showToast('Subcategory deleted successfully.');
+  };
+
+  const performDeleteType = (catId: string, subId: string, typeId: string) => {
+    setCategories(prev => prev.map(cat => {
+      if (cat.id !== catId) return cat;
+      return {
+        ...cat,
+        subcategories: cat.subcategories.map(sub => {
+          if (sub.id !== subId) return sub;
+          return {
+            ...sub,
+            types: sub.types.filter(t => t.id !== typeId)
+          };
+        })
+      };
+    }));
+    showToast('Style Type deleted successfully.');
+  };
+
+  const handleExecuteSafetyReassignAndDelete = () => {
+    if (!deleteWarning) return;
+
+    const { type, itemId, parentIds, linkedProducts } = deleteWarning;
+
+    if (type === 'subcategory') {
+      if (!reassignTargetId) {
+        alert('Please select a valid subcategory to transfer the products.');
+        return;
+      }
+      // 1. Reassign products to selected subcategory
+      setProducts(prev => prev.map(p => 
+        p.subcategoryId === itemId ? { ...p, subcategoryId: reassignTargetId } : p
+      ));
+      // 2. Perform deletion of original subcategory
+      performDeleteSubcategory(parentIds.catId!, itemId);
+      showToast(`Transferred ${linkedProducts.length} products and deleted subcategory.`);
+    } else {
+      if (!reassignTargetId) {
+        alert('Please select a valid style type to transfer the products.');
+        return;
+      }
+      // 1. Reassign products
+      setProducts(prev => prev.map(p => 
+        p.typeId === itemId ? { ...p, typeId: reassignTargetId } : p
+      ));
+      // 2. Delete type
+      performDeleteType(parentIds.catId!, parentIds.subId!, itemId);
+      showToast(`Transferred ${linkedProducts.length} products and deleted style.`);
+    }
+
+    setDeleteWarning(null);
+  };
+
+  // Filter Catalog Tree live
+  const filterCategories = () => {
+    if (!searchQuery.trim()) return categories;
+    const query = searchQuery.toLowerCase();
+
+    return categories.map(cat => {
+      const matchCat = cat.name.toLowerCase().includes(query);
+      const filteredSubs = cat.subcategories.map(sub => {
+        const matchSub = sub.name.toLowerCase().includes(query);
+        const filteredTypes = sub.types.filter(t => t.name.toLowerCase().includes(query));
+
+        if (matchSub || filteredTypes.length > 0 || matchCat) {
+          return {
+            ...sub,
+            // If sub matched, keep all types; otherwise keep matched types
+            types: matchSub || matchCat ? sub.types : filteredTypes
+          };
+        }
+        return null;
+      }).filter(Boolean) as Subcategory[];
+
+      if (matchCat || filteredSubs.length > 0) {
+        return {
+          ...cat,
+          subcategories: matchCat ? cat.subcategories : filteredSubs
+        };
+      }
+      return null;
+    }).filter(Boolean) as Category[];
+  };
+
+  const filteredTree = filterCategories();
+
+  return (
+    <div className="space-y-6 text-stone-800 animate-fade-in text-left">
+      {/* HEADER SECTION */}
+      <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold font-serif text-stone-900">Unified Catalog Hierarchy</h2>
+          <p className="text-xs text-stone-400">Fixed Top-Level Categories with complete dynamic Subcategories & Styles</p>
+        </div>
+
+        {/* Global Catalog Search */}
+        <div className="relative w-full md:w-80">
+          <Search className="absolute left-3.5 top-3 w-4 h-4 text-stone-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Type 'Sherwani' or 'Saree'..."
+            className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs outline-none focus:bg-white focus:border-[#C0654B] transition-colors"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-3 top-3 text-[10px] text-stone-400 hover:text-stone-700 cursor-pointer">✕</button>
+          )}
+        </div>
+      </div>
+
+      {/* TREE CONTENT */}
+      <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-hidden">
+        <div className="bg-stone-50 p-4 border-b border-stone-200 flex justify-between items-center text-xs font-bold text-stone-500">
+          <span>Catalog Tree Levels (Category → Subcategory → Style Type)</span>
+          <span>Linked Products count</span>
+        </div>
+
+        <div className="divide-y divide-stone-100">
+          {filteredTree.map(cat => {
+            const isCatExpanded = expandedCats[cat.id];
+            const catProdCount = getProductCountForCat(cat.id);
+
+            return (
+              <div key={cat.id} className="select-none">
+                {/* 1. Category Row (Fixed Parent) */}
+                <div className="flex items-center justify-between p-4 bg-stone-50/40 hover:bg-stone-50 transition-colors">
+                  <div className="flex items-center gap-2 cursor-pointer flex-1" onClick={() => toggleCategory(cat.id)}>
+                    {isCatExpanded ? (
+                      <ChevronDown className="w-5 h-5 text-[#C0654B]" />
+                    ) : (
+                      <ChevronRight className="w-5 h-5 text-stone-400" />
+                    )}
+                    <span className="text-sm font-bold font-serif text-stone-900">{cat.name}</span>
+                    <span className="text-[10px] uppercase font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded">Core Parent</span>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <span className="font-mono text-xs font-bold text-stone-500 bg-stone-100/80 px-2 py-1 rounded-lg border border-stone-200/60">
+                      {catProdCount} Products
+                    </span>
+                    <button
+                      onClick={() => openAddSubcategory(cat.id)}
+                      className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-[10px] font-bold rounded-lg cursor-pointer transition-colors flex items-center gap-1"
+                    >
+                      <Plus className="w-3 h-3" /> Subcategory
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Subcategories Container */}
+                {isCatExpanded && (
+                  <div className="pl-6 bg-stone-50/10 border-l-2 border-stone-100">
+                    {cat.subcategories.length === 0 ? (
+                      <div className="p-4 text-xs text-stone-400 text-center font-medium">No Subcategories created under {cat.name} yet.</div>
+                    ) : (
+                      cat.subcategories.map(sub => {
+                        const isSubExpanded = expandedSubs[sub.id];
+                        const subProdCount = getProductCountForSub(sub.id);
+
+                        return (
+                          <div key={sub.id} className="border-t border-stone-100/60">
+                            {/* Subcategory Row */}
+                            <div className="flex items-center justify-between p-3 hover:bg-stone-50/50 transition-colors">
+                              <div className="flex items-center gap-2 cursor-pointer flex-1 min-w-0" onClick={() => toggleSubcategory(sub.id)}>
+                                {isSubExpanded ? (
+                                  <ChevronDown className="w-4.5 h-4.5 text-[#C0654B]" />
+                                ) : (
+                                  <ChevronRight className="w-4.5 h-4.5 text-stone-400" />
+                                )}
+                                <div className="truncate text-xs">
+                                  <span className="font-bold text-stone-800">{sub.name}</span>
+                                  <span className="text-[10px] font-mono text-stone-400 ml-2">/{sub.slug}</span>
+                                </div>
+                                <span className={`w-2 h-2 rounded-full ${sub.status === 'active' ? 'bg-emerald-500' : 'bg-stone-300'}`}></span>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <span className="font-mono text-[11px] font-bold text-stone-400">
+                                  {subProdCount} Prods
+                                </span>
+
+                                <div className="flex items-center gap-1">
+                                  {/* Toggle Status */}
+                                  <button 
+                                    onClick={() => handleToggleSubStatus(cat.id, sub.id, sub.status)}
+                                    className="p-1 text-stone-400 hover:text-[#C0654B] cursor-pointer"
+                                    title="Toggle active/inactive status"
+                                  >
+                                    {sub.status === 'active' ? (
+                                      <ToggleRight className="w-5 h-5 text-emerald-600" />
+                                    ) : (
+                                      <ToggleLeft className="w-5 h-5 text-stone-300" />
+                                    )}
+                                  </button>
+
+                                  {/* Edit Sub */}
+                                  <button 
+                                    onClick={() => startEditSubcategory(sub)}
+                                    className="p-1.5 text-stone-500 hover:text-[#C0654B] hover:bg-stone-100 rounded-lg cursor-pointer"
+                                    title="Edit Subcategory Details"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {/* Delete Sub */}
+                                  <button 
+                                    onClick={() => handleDeleteSubcategoryRequest(cat.id, sub.id, sub.name)}
+                                    className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                                    title="Delete Subcategory"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  {/* Add Type Button */}
+                                  <button
+                                    onClick={() => openAddType(cat.id, sub.id)}
+                                    className="px-2 py-1 border border-[#C0654B] hover:bg-[#C0654B]/5 text-[#C0654B] text-[10px] font-bold rounded-lg cursor-pointer flex items-center gap-0.5 ml-1"
+                                  >
+                                    <Plus className="w-2.5 h-2.5" /> Style
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 3. Style Types Container */}
+                            {isSubExpanded && (
+                              <div className="pl-8 bg-stone-100/30 border-l border-dashed border-stone-200">
+                                {sub.types.length === 0 ? (
+                                  <div className="p-3 text-[11px] text-stone-400 font-medium">No Style Types registered here. Add your first Style Type!</div>
+                                ) : (
+                                  sub.types.map(type => {
+                                    const typeProdCount = getProductCountForType(type.id);
+
+                                    return (
+                                      <div key={type.id} className="flex items-center justify-between p-2.5 hover:bg-stone-50 text-xs border-t border-stone-100/40">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                          <div className="w-1.5 h-1.5 rounded-full bg-[#C0654B]/60 shrink-0"></div>
+                                          <span className="font-semibold text-stone-700 truncate">{type.name}</span>
+                                          <span className="text-[9px] font-mono text-stone-400 truncate">/{type.slug}</span>
+                                          <span className={`w-1.5 h-1.5 rounded-full ${type.status === 'active' ? 'bg-emerald-500' : 'bg-stone-300'}`}></span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-mono text-[10px] text-stone-400">{typeProdCount} items</span>
+
+                                          <div className="flex items-center gap-0.5">
+                                            {/* Toggle Status */}
+                                            <button 
+                                              onClick={() => handleToggleTypeStatus(cat.id, sub.id, type.id, type.status)}
+                                              className="p-1 text-stone-400 hover:text-stone-700 cursor-pointer"
+                                            >
+                                              {type.status === 'active' ? (
+                                                <ToggleRight className="w-4.5 h-4.5 text-emerald-600" />
+                                              ) : (
+                                                <ToggleLeft className="w-4.5 h-4.5 text-stone-300" />
+                                              )}
+                                            </button>
+
+                                            {/* Edit Type */}
+                                            <button 
+                                              onClick={() => startEditType(cat.id, sub.id, type)}
+                                              className="p-1 text-stone-500 hover:text-stone-800 cursor-pointer"
+                                            >
+                                              <Edit2 className="w-3 h-3" />
+                                            </button>
+
+                                            {/* Delete Type */}
+                                            <button 
+                                              onClick={() => handleDeleteTypeRequest(cat.id, sub.id, type.id, type.name)}
+                                              className="p-1 text-stone-400 hover:text-red-600 cursor-pointer"
+                                            >
+                                              <Trash2 className="w-3 h-3" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* CREATE/EDIT MODAL */}
+      {activeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-stone-200 p-6 space-y-4 animate-scale-in text-left">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <h3 className="text-base font-bold font-serif text-stone-900">
+                {editTarget ? 'Edit' : 'Create New'} {activeModal === 'subcategory' ? 'Subcategory' : 'Style/Type'}
+              </h3>
+              <button onClick={() => { setActiveModal(null); resetForm(); }} className="text-stone-400 hover:text-stone-800 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={activeModal === 'subcategory' ? handleSaveSubcategory : handleSaveType} className="space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">Name (Required)</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                    placeholder={activeModal === 'subcategory' ? "e.g., Casual Shirts" : "e.g., Slim-Fit Linens"}
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">URL Slug (Auto-generated)</label>
+                  <input
+                    type="text"
+                    required
+                    value={slug}
+                    onChange={(e) => setSlug(e.target.value)}
+                    className="w-full px-3 py-2 border border-stone-300 bg-stone-50 rounded-lg outline-none focus:border-[#C0654B] font-mono text-[11px]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Description (Optional)</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe this category branch (useful for store layout descriptions and SEO)..."
+                  rows={2}
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">Thumbnail Image URL</label>
+                  <input
+                    type="text"
+                    value={image}
+                    onChange={(e) => setImage(e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">Optional Banner Image URL</label>
+                  <input
+                    type="text"
+                    value={banner}
+                    onChange={(e) => setBanner(e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B]"
+                  />
+                </div>
+              </div>
+
+              {/* SEO parameters */}
+              <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-3">
+                <span className="font-bold text-stone-700 block uppercase tracking-wider text-[9px]">SEO Optimization Headers</span>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-stone-500 mb-0.5">Meta Title</label>
+                    <input
+                      type="text"
+                      value={metaTitle}
+                      onChange={(e) => setMetaTitle(e.target.value)}
+                      placeholder="SEO Title"
+                      className="w-full px-2 py-1.5 border border-stone-300 bg-white rounded-lg outline-none text-[11px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-stone-500 mb-0.5">Meta Description</label>
+                    <input
+                      type="text"
+                      value={metaDesc}
+                      onChange={(e) => setMetaDesc(e.target.value)}
+                      placeholder="SEO description hook"
+                      className="w-full px-2 py-1.5 border border-stone-300 bg-white rounded-lg outline-none text-[11px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-stone-100 pt-3">
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-stone-700">Display Status:</span>
+                  <div className="flex bg-stone-100 p-0.5 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setStatus('active')}
+                      className={`px-2 py-1 font-semibold rounded-md ${status === 'active' ? 'bg-[#C0654B] text-white shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                    >
+                      Active
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStatus('inactive')}
+                      className={`px-2 py-1 font-semibold rounded-md ${status === 'inactive' ? 'bg-red-600 text-white shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                    >
+                      Inactive
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setActiveModal(null); resetForm(); }}
+                    className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-sm"
+                  >
+                    {editTarget ? 'Update Level' : 'Save & Add'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* SAFETY REASSIGN MODAL */}
+      {deleteWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-stone-200 p-6 space-y-4 animate-scale-in text-left">
+            <div className="flex items-start gap-3">
+              <div className="p-3 bg-red-50 text-red-600 rounded-full shrink-0">
+                <HelpCircle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold font-serif text-stone-900">
+                  Warning: Linked Products Detected!
+                </h3>
+                <p className="text-xs text-stone-500 mt-1">
+                  You are trying to delete a catalog node that currently has <span className="font-bold text-red-600 font-mono">{deleteWarning.productCount}</span> active products linked to it. 
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs text-stone-600">
+              <span className="font-bold block text-stone-700 mb-1">Transfer Destination Required:</span>
+              <p className="text-[11px] text-stone-500 mb-3">To safeguard your storefront, select where these products should be moved before removing the old node:</p>
+              
+              {deleteWarning.type === 'subcategory' ? (
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">Move to another Subcategory:</label>
+                  <select
+                    value={reassignTargetId}
+                    onChange={(e) => setReassignTargetId(e.target.value)}
+                    className="w-full p-2 bg-white border border-stone-300 rounded-lg outline-none font-semibold text-xs"
+                  >
+                    <option value="">-- Choose Subcategory --</option>
+                    {categories.find(c => c.id === deleteWarning.parentIds.catId)?.subcategories
+                      .filter(s => s.id !== deleteWarning.itemId)
+                      .map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">Move to another Style Type:</label>
+                  <select
+                    value={reassignTargetId}
+                    onChange={(e) => setReassignTargetId(e.target.value)}
+                    className="w-full p-2 bg-white border border-stone-300 rounded-lg outline-none font-semibold text-xs"
+                  >
+                    <option value="">-- Choose Style --</option>
+                    {categories.find(c => c.id === deleteWarning.parentIds.catId)?.subcategories
+                      .find(s => s.id === deleteWarning.parentIds.subId)?.types
+                      .filter(t => t.id !== deleteWarning.itemId)
+                      .map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 text-xs pt-2 border-t border-stone-100">
+              <button
+                onClick={() => setDeleteWarning(null)}
+                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl cursor-pointer"
+              >
+                Cancel Delete
+              </button>
+              <button
+                onClick={handleExecuteSafetyReassignAndDelete}
+                disabled={!reassignTargetId}
+                className="px-5 py-2 bg-red-600 hover:bg-red-800 disabled:bg-stone-200 disabled:cursor-not-allowed text-white font-bold rounded-xl cursor-pointer shadow-md transition-colors flex items-center gap-1"
+              >
+                Move & Delete Node <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

@@ -1,0 +1,6 @@
+{
+  "name": "PGmart - Trusted Fashion & Quality Store",
+  "description": "PGmart is India's most trusted online fashion store offering premium clothing, footwear, innerwear, and accessories with 100% genuine quality and fast delivery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
