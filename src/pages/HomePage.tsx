@@ -448,7 +448,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             if (cat.id === 'kids') {
               catImg = '/src/assets/images/kids_department_nano_banana.png';
             } else if (cat.id === 'undergarments') {
-              catImg = '/src/assets/images/innerwear_department_nano_banana.png';
+              catImg = '/src/assets/images/innerwear_department_new.png';
             }
 
             return (

@@ -230,7 +230,7 @@ export const initialCategories: Category[] = [
     id: 'undergarments',
     name: "Innerwear & Lingerie",
     slug: 'undergarments',
-    image: '/src/assets/images/innerwear_department_nano_banana.png',
+    image: '/src/assets/images/innerwear_department_new.png',
     banner: innerwearBannerImg,
     status: 'active',
     sortOrder: 4,
