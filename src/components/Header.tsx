@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { MegaMenu } from './MegaMenu';
-import { Search, Heart, ShoppingBag, User, ShieldCheck, Phone, MapPin, Settings, Menu, X, Sparkles, ChevronDown } from 'lucide-react';
+import { Search, Heart, ShoppingBag, User, ShieldCheck, Phone, MapPin, Settings, Menu, X, Sparkles, ChevronDown, MessageSquare } from 'lucide-react';
 
 interface HeaderProps {
   onNavigate: (path: string) => void;
@@ -17,7 +17,8 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
     user,
     isAdminLoggedIn,
     setSearchModalOpen,
-    setCartDrawerOpen
+    setCartDrawerOpen,
+    setChatOpen
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -150,14 +151,14 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               )}
             </button>
 
-            {/* AI Stylist */}
+            {/* Live Chat Support */}
             <button
-              onClick={() => onNavigate('/ai-stylist')}
+              onClick={() => setChatOpen(true)}
               className="relative min-w-[44px] min-h-[44px] flex flex-col items-center justify-center text-stone-700 hover:text-[#C0654B] transition-colors cursor-pointer group"
-              aria-label="AI Stylist"
+              aria-label="Live Chat Support"
             >
-              <Sparkles className="w-5 h-5 text-[#C0654B] group-hover:scale-110 transition-transform animate-pulse" />
-              <span className="hidden lg:inline text-[10px] font-medium mt-0.5 text-[#C0654B]">AI Stylist</span>
+              <MessageSquare className="w-5 h-5 text-[#C0654B] group-hover:scale-110 transition-transform" />
+              <span className="hidden lg:inline text-[10px] font-medium mt-0.5 text-[#C0654B]">Live Chat</span>
             </button>
 
             {/* Cart Drawer Button */}

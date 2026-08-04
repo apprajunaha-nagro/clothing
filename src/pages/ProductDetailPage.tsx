@@ -17,7 +17,8 @@ import {
   ChevronUp,
   Camera,
   MapPin,
-  Sparkles
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 
 interface ProductDetailPageProps {
@@ -26,7 +27,7 @@ interface ProductDetailPageProps {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate, productId }) => {
-  const { products, addToCart, wishlist, toggleWishlist, setSizeChartCategory, showToast } = useStore();
+  const { products, addToCart, wishlist, toggleWishlist, setSizeChartCategory, showToast, setChatOpen } = useStore();
 
   const product = products.find(p => p.id === productId || p.slug === productId) || products[0];
 
@@ -328,20 +329,21 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             )}
           </div>
 
-          {/* AI STYLIST INTERACTIVE PROMPT */}
+          {/* CUSTOMER SUPPORT LIVE CHAT ASSISTANT PROMPT */}
           <div className="bg-[#FAF7F5] border border-[#C0654B]/20 p-4 rounded-xl space-y-2.5 text-xs">
             <p className="font-bold text-stone-800 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-[#C0654B]" />
-              Need help styling this garment?
+              <MessageSquare className="w-4 h-4 text-[#C0654B]" />
+              Need instant help with this product?
             </p>
             <p className="text-stone-600 leading-relaxed">
-              Consult our AI Stylist for trend checks, accessory recommendations, sizing advice, or customized looks.
+              Ask our live chat assistant about sizing advice, delivery times, payment options, or active coupons.
             </p>
             <button
-              onClick={() => onNavigate('/ai-stylist')}
-              className="w-full bg-[#C0654B] text-white hover:bg-stone-900 font-bold py-2 rounded-lg cursor-pointer transition-colors text-center block"
+              onClick={() => setChatOpen(true)}
+              className="w-full bg-[#C0654B] text-white hover:bg-stone-900 font-bold py-2 rounded-lg cursor-pointer transition-colors text-center block flex items-center justify-center gap-2"
             >
-              Consult AI Fashion Stylist
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>Chat with Customer Support</span>
             </button>
           </div>
 

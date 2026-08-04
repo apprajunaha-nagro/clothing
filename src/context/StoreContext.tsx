@@ -59,6 +59,8 @@ interface StoreContextType {
   setQuickViewProduct: (prod: Product | null) => void;
   sizeChartCategory: string | null;
   setSizeChartCategory: (catId: string | null) => void;
+  chatOpen: boolean;
+  setChatOpen: (open: boolean) => void;
   reloadCatalog: () => Promise<void>;
 }
 
@@ -124,6 +126,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
   const [sizeChartCategory, setSizeChartCategory] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   // Apply CSS Variables dynamically based on site settings
   useEffect(() => {
@@ -450,6 +453,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setQuickViewProduct,
         sizeChartCategory,
         setSizeChartCategory,
+        chatOpen,
+        setChatOpen,
         reloadCatalog
       }}
     >

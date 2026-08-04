@@ -1050,7 +1050,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
 
               {/* MODAL FOOTER */}
               <div className="px-6 py-4 bg-stone-50 border-t border-stone-200 flex justify-between items-center text-xs">
-                <span className="text-stone-500">Need specific size advice? Use our AI Stylist in the lounge.</span>
+                <span className="text-stone-500">Need specific size advice? Ask our Live Chatbot assistant.</span>
                 <button
                   onClick={() => setIsCompareModalOpen(false)}
                   className="bg-stone-900 hover:bg-stone-800 text-white font-bold px-4 py-2 rounded-xl cursor-pointer"

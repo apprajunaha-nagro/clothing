@@ -11,7 +11,7 @@ interface HomePageProps {
 }
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
-  const { banners, categories, brands, products, showToast } = useStore();
+  const { banners, categories, brands, products, showToast, setChatOpen } = useStore();
   const [activeBannerIndex, setActiveBannerIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'all' | 'women' | 'men' | 'kids' | 'undergarments'>('all');
   const [activeOccasionFilter, setActiveOccasionFilter] = useState<string>('all');
@@ -669,11 +669,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               </div>
             </div>
             <button
-              onClick={() => onNavigate('/ai-stylist')}
+              onClick={() => setChatOpen(true)}
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#C0654B] to-[#a85038] hover:from-[#a85038] hover:to-[#8c3d27] text-white text-xs font-bold tracking-wider uppercase transition-all shadow-md hover:shadow-lg flex items-center gap-2 shrink-0 cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              Launch AI Personal Stylist
+              <MessageSquare className="w-3.5 h-3.5" />
+              Ask Live Chat Assistant
             </button>
           </div>
 

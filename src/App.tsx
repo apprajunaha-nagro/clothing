@@ -7,6 +7,7 @@ import { CartDrawer } from './components/CartDrawer';
 import { SearchModal } from './components/SearchModal';
 import { QuickViewModal } from './components/QuickViewModal';
 import { SizeChartModal } from './components/SizeChartModal';
+import { ChatbotWidget } from './components/ChatbotWidget';
 import { Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { PageLoadingSkeleton } from './components/skeletons/PageLoadingSkeleton';
@@ -158,17 +159,8 @@ function AppContent() {
       <QuickViewModal onNavigate={navigateTo} />
       <SizeChartModal />
 
-      {/* FLOATING AI STYLIST WIDGET */}
-      {!isAdminRoute && currentPath !== '/ai-stylist' && (
-        <button
-          onClick={() => navigateTo('/ai-stylist')}
-          className="fixed bottom-6 right-6 z-40 bg-[#C0654B] text-white hover:bg-stone-900 px-4 py-3 rounded-full font-bold text-xs shadow-lg flex items-center gap-2 group transition-all duration-300 animate-bounce cursor-pointer"
-        >
-          <Sparkles className="w-4 h-4 text-amber-300 animate-pulse group-hover:rotate-12 transition-transform" />
-          <span>AI Stylist Lounge</span>
-          <span className="bg-white/20 px-1.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide uppercase">New</span>
-        </button>
-      )}
+      {/* FLOATING CUSTOMER SUPPORT CHATBOT WIDGET */}
+      {!isAdminRoute && <ChatbotWidget onNavigate={navigateTo} />}
     </div>
   );
 }
