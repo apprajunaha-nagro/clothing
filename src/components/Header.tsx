@@ -151,15 +151,6 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               )}
             </button>
 
-            {/* Live Chat Support */}
-            <button
-              onClick={() => setChatOpen(true)}
-              className="relative min-w-[44px] min-h-[44px] flex flex-col items-center justify-center text-stone-700 hover:text-[#C0654B] transition-colors cursor-pointer group"
-              aria-label="Live Chat Support"
-            >
-              <MessageSquare className="w-5 h-5 text-[#C0654B] group-hover:scale-110 transition-transform" />
-              <span className="hidden lg:inline text-[10px] font-medium mt-0.5 text-[#C0654B]">Live Chat</span>
-            </button>
 
             {/* Cart Drawer Button */}
             <button
