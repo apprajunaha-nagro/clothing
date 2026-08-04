@@ -366,10 +366,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             </AnimatePresence>
           </div>
 
-          {/* Slider Arrow Controls */}
+          {/* Slider Arrow Controls - Positioned at bottom corners to avoid text overlap */}
           <button
             onClick={handlePrevSlide}
-            className="absolute left-2 sm:left-5 z-20 bg-stone-900/60 hover:bg-[#C0654B] text-white p-2.5 sm:p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full backdrop-blur-md transition-all border border-white/20 hover:scale-110 active:scale-95 shadow-lg cursor-pointer"
+            className="absolute bottom-12 sm:bottom-14 left-3 sm:left-5 z-20 bg-stone-900/70 hover:bg-[#C0654B] text-white p-2 sm:p-2.5 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center rounded-full backdrop-blur-md transition-all border border-white/20 hover:scale-110 active:scale-95 shadow-lg cursor-pointer"
             aria-label="Previous Slide"
           >
             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -377,7 +377,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
           <button
             onClick={handleNextSlide}
-            className="absolute right-2 sm:right-5 z-20 bg-stone-900/60 hover:bg-[#C0654B] text-white p-2.5 sm:p-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full backdrop-blur-md transition-all border border-white/20 hover:scale-110 active:scale-95 shadow-lg cursor-pointer"
+            className="absolute bottom-12 sm:bottom-14 right-3 sm:right-5 z-20 bg-stone-900/70 hover:bg-[#C0654B] text-white p-2 sm:p-2.5 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center rounded-full backdrop-blur-md transition-all border border-white/20 hover:scale-110 active:scale-95 shadow-lg cursor-pointer"
             aria-label="Next Slide"
           >
             <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
