@@ -715,7 +715,7 @@ export const AdminOrdersView: React.FC = () => {
                       <div key={p.id} className="p-2 flex flex-col gap-1 hover:bg-stone-50">
                         <span className="font-bold text-stone-800">{p.name} (Base: ₹{p.basePrice})</span>
                         <div className="flex flex-wrap gap-1">
-                          {p.variants.map(v => (
+                          {(p.variants || []).map(v => (
                             <button
                               key={v.id}
                               type="button"

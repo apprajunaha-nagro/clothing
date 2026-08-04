@@ -440,7 +440,7 @@ export const AdminProductsView: React.FC = () => {
   const handleExportCSV = () => {
     let csv = "Product ID,Name,Category,Subcategory,Style,Base Price,Discount Price,SKU,Stock\n";
     products.forEach(p => {
-      p.variants.forEach(v => {
+      (p.variants || []).forEach(v => {
         csv += `"${p.id}","${p.name}","${p.categoryId}","${p.subcategoryId}","${p.typeId || ''}",${p.basePrice},${p.discountPrice || ''},"${v.sku}",${v.stock}\n`;
       });
     });

@@ -26,7 +26,7 @@ import {
 } from './src/types';
 
 export const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 async function startServer() {
 

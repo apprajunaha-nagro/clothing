@@ -29,7 +29,7 @@ export const AdminDashboardView: React.FC = () => {
   const lowStockThreshold = 10;
   const lowStockVariants: { product: Product; variant: ProductVariant }[] = [];
   products.forEach(p => {
-    p.variants.forEach(v => {
+    (p.variants || []).forEach(v => {
       if (v.stock <= lowStockThreshold) {
         lowStockVariants.push({ product: p, variant: v });
       }
@@ -92,7 +92,7 @@ export const AdminDashboardView: React.FC = () => {
   const handleQuickRestock = async (product: Product, variant: ProductVariant) => {
     const qty = restockStock[variant.id];
     if (!qty || qty <= 0) return;
-    const updatedVariants = product.variants.map(v => 
+    const updatedVariants = (product.variants || []).map(v => 
       v.id === variant.id ? { ...v, stock: v.stock + Number(qty) } : v
     );
     await updateProduct(product.id, { variants: updatedVariants });
