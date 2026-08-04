@@ -818,7 +818,7 @@ const typeMetadata: Record<string, {
     occasions: ['Casual Wear'],
     sizes: ['2-4Y', '4-6Y', '6-8Y', '8-10Y', '10-12Y'],
     imagePool: [
-      'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80'
     ],
     basePriceRange: [499, 1299]
@@ -841,7 +841,7 @@ const typeMetadata: Record<string, {
     occasions: ['Festive Wear', 'Wedding Wear'],
     sizes: ['2-4Y', '4-6Y', '6-8Y', '8-10Y', '10-12Y'],
     imagePool: [
-      'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80'
     ],
     basePriceRange: [999, 2999]
   },
@@ -863,7 +863,7 @@ const typeMetadata: Record<string, {
     occasions: ['Casual Wear'],
     sizes: ['2-4Y', '4-6Y', '6-8Y', '8-10Y', '10-12Y'],
     imagePool: [
-      'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80'
     ],
     basePriceRange: [699, 1699]
   },
@@ -885,7 +885,7 @@ const typeMetadata: Record<string, {
     occasions: ['Party Wear', 'Casual Wear'],
     sizes: ['2-4Y', '4-6Y', '6-8Y', '8-10Y', '10-12Y'],
     imagePool: [
-      'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1518831959646-742c3a14ebf7?auto=format&fit=crop&w=800&q=80'
     ],
     basePriceRange: [799, 2499]
@@ -908,7 +908,7 @@ const typeMetadata: Record<string, {
     occasions: ['Festive Wear', 'Wedding Wear'],
     sizes: ['2-4Y', '4-6Y', '6-8Y', '8-10Y', '10-12Y'],
     imagePool: [
-      'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80'
     ],
     basePriceRange: [1199, 3299]
   },
@@ -930,7 +930,7 @@ const typeMetadata: Record<string, {
     occasions: ['Casual Wear', 'Party Wear'],
     sizes: ['2-4Y', '4-6Y', '6-8Y', '8-10Y', '10-12Y'],
     imagePool: [
-      'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80'
     ],
     basePriceRange: [499, 1299]
   },
@@ -952,7 +952,7 @@ const typeMetadata: Record<string, {
     occasions: ['Casual Wear', 'Everyday Basics'],
     sizes: ['0-3M', '3-6M', '6-12M', '12-18M', '18-24M'],
     imagePool: [
-      'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80'
     ],
     basePriceRange: [599, 1499]
   },
@@ -974,7 +974,7 @@ const typeMetadata: Record<string, {
     occasions: ['Everyday Basics'],
     sizes: ['0-3M', '3-6M', '6-12M', '12-18M'],
     imagePool: [
-      'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80'
     ],
     basePriceRange: [699, 1799]
   },
@@ -1978,7 +1978,7 @@ export const menBriefsCustomProducts = [
 export const boysTShirtCustomProducts = [
   {
     title: 'Bio-Wash Organic Cotton Printed Boys T-Shirt',
-    image: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80',
+    image: '/src/assets/images/boys_biowash_cotton_tshirt.png',
     secondaryImage: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80',
     fabric: '100% Bio-Wash Organic Cotton',
     colorName: 'Royal Cobalt Blue',
@@ -1988,7 +1988,7 @@ export const boysTShirtCustomProducts = [
   {
     title: 'Colorblock Cotton Pique Boys Polo Shirt',
     image: 'https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?auto=format&fit=crop&w=800&q=80',
-    secondaryImage: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=800&q=80',
+    secondaryImage: '/src/assets/images/boys_biowash_cotton_tshirt.png',
     fabric: 'Cotton Pique',
     colorName: 'Navy / Mustard',
     colorHex: '#1E293B',
@@ -2071,7 +2071,7 @@ const menWesternImageIds = [
 ];
 
 const kidsImageIds = [
-  'photo-1519238263530-99bdd11df2ea',
+  'photo-1503944583220-79d8926ad5e2',
   'photo-1503944583220-79d8926ad5e2',
   'photo-1518831959646-742c3a14ebf7',
   'photo-1522771739844-6a9f6d5f14af',

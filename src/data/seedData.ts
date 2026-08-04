@@ -36,7 +36,7 @@ export const initialBrands: Brand[] = [
   { id: 'b2', name: 'Clay Urban', slug: 'clay-urban', logo: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=200&q=80', description: 'Modern Western & Minimalist Streetwear', isFeatured: true },
   { id: 'b3', name: 'Bare Essentials', slug: 'bare-essentials', logo: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=200&q=80', description: 'Ultra-Soft Breathable Innerwear & Lingerie', isFeatured: true },
   { id: 'b4', name: 'Velour Men', slug: 'velour-men', logo: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=200&q=80', description: 'Tailored Formals & Casual Menswear', isFeatured: true },
-  { id: 'b5', name: 'Aura Kids', slug: 'aura-kids', logo: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?auto=format&fit=crop&w=200&q=80', description: 'Skin-Friendly Vibrant Kids Apparel', isFeatured: true },
+  { id: 'b5', name: 'Aura Kids', slug: 'aura-kids', logo: '/src/assets/images/kids_department_nano_banana.png', description: 'Skin-Friendly Vibrant Kids Apparel', isFeatured: true },
 ];
 
 export const initialCategories: Category[] = [
