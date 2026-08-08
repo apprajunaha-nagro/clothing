@@ -192,43 +192,6 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* 2.5. AD BANNER SECTION (Admin Controlled, Placed Just Above Deals of the Day) */}
-      {settings.adBannerEnabled !== false && activeAdBanners.length > 0 && (
-        <section className="max-w-7xl mx-auto px-2 sm:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {activeAdBanners.map((ad) => (
-              <div
-                key={ad.id}
-                onClick={() => onNavigate(ad.link || '/category/women')}
-                className="relative bg-gradient-to-r from-stone-900 via-rose-950 to-stone-900 text-white rounded-md overflow-hidden p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:opacity-95 shadow-2xs group min-h-[110px]"
-              >
-                <div className="space-y-1 z-10 max-w-[65%]">
-                  <span className="text-[9px] sm:text-[10px] bg-[#C0654B] text-white font-black px-2 py-0.5 rounded uppercase tracking-wider">
-                    PROMO OFFER
-                  </span>
-                  <h3 className="text-sm sm:text-base font-extrabold line-clamp-1 group-hover:text-amber-200 transition-colors">
-                    {ad.title}
-                  </h3>
-                  {ad.subtitle && (
-                    <p className="text-[11px] text-stone-300 font-medium line-clamp-1">
-                      {ad.subtitle}
-                    </p>
-                  )}
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#C0654B] group-hover:underline pt-1">
-                    {ad.buttonText || 'Shop Now'} →
-                  </span>
-                </div>
-                <img
-                  src={getOptimizedImageUrl(ad.image, { width: 400, quality: 80 })}
-                  alt={ad.title}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-cover border border-white/20 group-hover:scale-105 transition-transform shrink-0"
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {/* 3. DEALS OF THE DAY RAIL (Admin Controlled with Countdown Timer) */}
       {settings.dealsEnabled !== false && (
         <section className="max-w-7xl mx-auto px-2 sm:px-6">
