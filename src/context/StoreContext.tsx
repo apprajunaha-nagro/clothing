@@ -23,6 +23,7 @@ interface StoreContextType {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   banners: Banner[];
+  setBanners: React.Dispatch<React.SetStateAction<Banner[]>>;
   coupons: Coupon[];
   cart: CartItem[];
   addToCart: (product: Product, variant: ProductVariant, qty?: number) => void;
@@ -36,6 +37,9 @@ interface StoreContextType {
   wishlist: string[];
   toggleWishlist: (productId: string) => void;
   user: User | null;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  logoutUser: () => void;
+  loginUser: (name: string, email: string, phone?: string) => void;
   isAdminLoggedIn: boolean;
   adminLogin: (password: string) => boolean;
   adminLogout: () => void;
@@ -46,6 +50,7 @@ interface StoreContextType {
   orders: Order[];
   createOrder: (orderData: Partial<Order>) => Promise<Order | null>;
   updateOrderStatus: (orderId: string, status: Order['status'], trackingNum?: string) => Promise<void>;
+  requestOrderReturn: (orderId: string, returnType: 'return' | 'exchange', reason: string, details?: { exchangeSize?: string; exchangeColor?: string; comments?: string }) => void;
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   resetFilters: () => void;
@@ -88,9 +93,117 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [brands, setBrands] = useState<Brand[]>(initialBrands);
   const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [banners, setBanners] = useState<Banner[]>(initialBanners);
+  const [banners, setBanners] = useState<Banner[]>(() => {
+    try {
+      const saved = localStorage.getItem('terra_banners_v9');
+      if (saved) return JSON.parse(saved);
+      localStorage.setItem('terra_banners_v9', JSON.stringify(initialBanners));
+      return initialBanners;
+    } catch {
+      return initialBanners;
+    }
+  });
   const [coupons, setCoupons] = useState<Coupon[]>(initialCoupons);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try {
+      const saved = localStorage.getItem('terra_orders_v2');
+      if (saved) return JSON.parse(saved);
+      const defaultOrders: Order[] = [
+        {
+          id: 'ord-101',
+          orderNumber: 'PGM-89201',
+          customerId: 'u-101',
+          customerName: 'Priya Sharma',
+          customerEmail: 'priya.sharma@example.com',
+          customerPhone: '+91 98765 43210',
+          shippingAddress: {
+            id: 'addr-1',
+            fullName: 'Priya Sharma',
+            phone: '+91 98765 43210',
+            street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
+            city: 'Kolkata',
+            state: 'West Bengal',
+            pincode: '700091',
+            type: 'home',
+            isDefault: true
+          },
+          items: [
+            {
+              id: 'oi-1',
+              productId: 'w-1',
+              variantId: 'w-1-var',
+              productName: 'Banarasi Brocade Royal Silk Saree',
+              productImage: '/src/assets/images/user_hero_banner_1.png',
+              size: 'Free Size',
+              color: 'Royal Rose',
+              price: 2499,
+              quantity: 1
+            }
+          ],
+          subtotal: 2499,
+          discount: 0,
+          shippingFee: 0,
+          tax: 125,
+          total: 2624,
+          status: 'delivered',
+          paymentStatus: 'paid',
+          paymentMethod: 'upi',
+          trackingNumber: 'DEL-PGM-771920',
+          courierPartner: 'BlueDart Express',
+          createdAt: '2026-08-01T10:30:00Z',
+          updatedAt: '2026-08-04T14:20:00Z'
+        },
+        {
+          id: 'ord-102',
+          orderNumber: 'PGM-89202',
+          customerId: 'u-101',
+          customerName: 'Priya Sharma',
+          customerEmail: 'priya.sharma@example.com',
+          customerPhone: '+91 98765 43210',
+          shippingAddress: {
+            id: 'addr-1',
+            fullName: 'Priya Sharma',
+            phone: '+91 98765 43210',
+            street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
+            city: 'Kolkata',
+            state: 'West Bengal',
+            pincode: '700091',
+            type: 'home',
+            isDefault: true
+          },
+          items: [
+            {
+              id: 'oi-2',
+              productId: 'm-1',
+              variantId: 'm-1-var',
+              productName: 'Terracotta Linen Kurta & Churidar Set',
+              productImage: '/src/assets/images/user_hero_banner_3.png',
+              size: 'L',
+              color: 'Terracotta Maroon',
+              price: 1899,
+              quantity: 1
+            }
+          ],
+          subtotal: 1899,
+          discount: 100,
+          shippingFee: 0,
+          tax: 95,
+          total: 1894,
+          status: 'shipped',
+          paymentStatus: 'paid',
+          paymentMethod: 'card',
+          trackingNumber: 'EXP-PGM-991823',
+          courierPartner: 'Delhivery Express',
+          createdAt: '2026-08-05T09:15:00Z',
+          updatedAt: '2026-08-06T11:00:00Z'
+        }
+      ];
+      localStorage.setItem('terra_orders_v2', JSON.stringify(defaultOrders));
+      return defaultOrders;
+    } catch {
+      return [];
+    }
+  });
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('terra_cart');
@@ -109,13 +222,84 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
-  const [user, setUser] = useState<User | null>({
-    id: 'u-101',
-    name: 'Priya Sharma',
-    email: 'priya.sharma@example.com',
-    points: 350,
-    createdAt: '2026-01-01'
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const saved = localStorage.getItem('terra_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed.addresses || parsed.addresses.length === 0) {
+          parsed.addresses = [
+            {
+              id: 'addr-1',
+              fullName: parsed.name || 'Priya Sharma',
+              phone: parsed.phone || '+91 98765 43210',
+              street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
+              city: 'Kolkata',
+              state: 'West Bengal',
+              pincode: '700091',
+              type: 'home',
+              isDefault: true
+            }
+          ];
+        }
+        return parsed;
+      }
+      return {
+        id: 'u-101',
+        name: 'Priya Sharma',
+        email: 'priya.sharma@example.com',
+        phone: '+91 98765 43210',
+        points: 350,
+        createdAt: '2026-01-01',
+        addresses: [
+          {
+            id: 'addr-1',
+            fullName: 'Priya Sharma',
+            phone: '+91 98765 43210',
+            street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
+            city: 'Kolkata',
+            state: 'West Bengal',
+            pincode: '700091',
+            type: 'home',
+            isDefault: true
+          }
+        ]
+      };
+    } catch {
+      return null;
+    }
   });
+
+  const logoutUser = () => {
+    setUser(null);
+    localStorage.removeItem('terra_user');
+  };
+
+  const loginUser = (name: string, email: string, phone?: string) => {
+    const newUser: User = {
+      id: `u-${Date.now()}`,
+      name: name || 'Valued Customer',
+      email: email || 'customer@example.com',
+      phone: phone || '+91 98765 43210',
+      points: 100,
+      createdAt: new Date().toISOString().split('T')[0],
+      addresses: [
+        {
+          id: `addr-${Date.now()}`,
+          fullName: name || 'Valued Customer',
+          phone: phone || '+91 98765 43210',
+          street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
+          city: 'Kolkata',
+          state: 'West Bengal',
+          pincode: '700091',
+          type: 'home',
+          isDefault: true
+        }
+      ]
+    };
+    setUser(newUser);
+    localStorage.setItem('terra_user', JSON.stringify(newUser));
+  };
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     return localStorage.getItem('terra_admin_auth') === 'true';
   });
@@ -146,6 +330,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem('terra_wishlist', JSON.stringify(wishlist));
   }, [wishlist]);
+
+  // Sync Banners to localStorage permanently across reloads
+  useEffect(() => {
+    try {
+      localStorage.setItem('terra_banners_v5', JSON.stringify(banners));
+    } catch (e) {
+      console.error('Failed to save banners to localStorage:', e);
+    }
+  }, [banners]);
 
   // Fetch live state from backend on load
   const reloadCatalog = async () => {
@@ -399,7 +592,42 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (e) {
       console.error(e);
+      // Fallback local update
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status, trackingNumber: trackingNum || o.trackingNumber } : o));
+      showToast(`Order status updated to ${status}`);
     }
+  };
+
+  const requestOrderReturn = (
+    orderId: string,
+    returnType: 'return' | 'exchange',
+    reason: string,
+    details?: { exchangeSize?: string; exchangeColor?: string; comments?: string }
+  ) => {
+    setOrders(prev => {
+      const updated = prev.map(ord => {
+        if (ord.id === orderId) {
+          return {
+            ...ord,
+            returnStatus: returnType === 'return' ? 'return_requested' : ('exchange_requested' as any),
+            returnType,
+            returnReason: reason,
+            returnComments: details?.comments,
+            exchangeSize: details?.exchangeSize,
+            exchangeColor: details?.exchangeColor,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return ord;
+      });
+      try {
+        localStorage.setItem('terra_orders_v2', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+    showToast(`${returnType === 'return' ? 'Return' : 'Exchange'} request submitted successfully! Pickup will be scheduled within 48h.`);
   };
 
   const resetFilters = () => {
@@ -417,6 +645,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         products,
         setProducts,
         banners,
+        setBanners,
         coupons,
         cart,
         addToCart,
@@ -430,6 +659,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         wishlist,
         toggleWishlist,
         user,
+        setUser,
+        logoutUser,
+        loginUser,
         isAdminLoggedIn,
         adminLogin,
         adminLogout,
@@ -440,6 +672,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         orders,
         createOrder,
         updateOrderStatus,
+        requestOrderReturn,
         filters,
         setFilters,
         resetFilters,

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
-import { MessageSquare, X, Send, Bot, User, Sparkles, Truck, ShieldCheck, Tag, RefreshCw, PhoneCall, ChevronRight, Minus } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, Sparkles, ChevronRight, ExternalLink, RefreshCw } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 
 interface ChatMessage {
@@ -8,9 +8,10 @@ interface ChatMessage {
   sender: 'bot' | 'user';
   text: string;
   timestamp: string;
+  isAi?: boolean;
   actionButton?: {
     label: string;
-    path: string;
+    path?: string;
   };
 }
 
@@ -19,13 +20,19 @@ interface ChatbotWidgetProps {
 }
 
 export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
-  const { chatOpen, setChatOpen, setSizeChartCategory, settings } = useStore();
+  const { chatOpen, setChatOpen, settings } = useStore();
+
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'msg-1',
       sender: 'bot',
-      text: 'Hello 👋 Welcome to PGmart Support! How can I assist you with your fashion shopping today?',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      text: 'Hello 👋 Welcome to PGmart AI Assistant!\n\nI am your dedicated AI Fashion & Shopping Assistant. Ask me anything about outfit matching, sizing recommendations, live order tracking, or today\'s best discount codes!',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isAi: true,
+      actionButton: {
+        label: '✨ Explore Women\'s Collection',
+        path: '/category/women'
+      }
     }
   ]);
   const [input, setInput] = useState('');
@@ -43,55 +50,48 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
   }, [messages, chatOpen, isTyping]);
 
   const quickPills = [
-    { label: '📦 Track Order', query: 'How do I track my order?' },
-    { label: '👗 Sizing & Fit', query: 'What is your size guide?' },
-    { label: '🏷️ Today\'s Discounts', query: 'Are there any active discount coupons?' },
+    { label: '📦 Track My Order', query: 'How do I track my order?' },
+    { label: '👗 Size & Fit Guide', query: 'What is your size guide?' },
+    { label: '🏷️ Active Coupon Codes', query: 'Are there any active discount coupons?' },
     { label: '🔁 Returns & Refunds', query: 'What is your return policy?' },
-    { label: '💳 Payment & COD', query: 'What payment options do you support?' },
-    { label: '📞 Call Support', query: 'Can I speak to a human agent?' }
+    { label: '💳 Payment Options', query: 'What payment options do you support?' },
+    { label: '✨ Recommend Saree Outfits', query: 'Can you recommend Banarasi sarees?' }
   ];
 
-  const generateBotReply = (userQuery: string): { text: string; actionButton?: { label: string; path: string } } => {
+  const generateLocalBotReply = (userQuery: string): { text: string; actionButton?: { label: string; path?: string } } => {
     const q = userQuery.toLowerCase();
 
     if (q.includes('track') || q.includes('order') || q.includes('status') || q.includes('delivery')) {
       return {
-        text: '📦 You can track your live shipment anytime! Go to your Account dashboard or click below to enter your order ID.',
+        text: '📦 You can track your live shipment anytime! Visit your Account dashboard or click below to enter your order number.',
         actionButton: { label: 'Track Shipment Now', path: '/account' }
       };
     }
 
     if (q.includes('size') || q.includes('fit') || q.includes('measurement') || q.includes('chart')) {
       return {
-        text: '👗 All our clothing is crafted according to standard Indian size specifications. For women\'s ethnics and men\'s formals, we recommend choosing your regular standard size.',
+        text: '👗 All PGmart apparel is crafted to standard Indian size specifications. For ethnic sarees, kurtis, and men\'s formals, choose your regular standard size.',
         actionButton: { label: 'View Women\'s Catalog', path: '/category/women' }
       };
     }
 
     if (q.includes('coupon') || q.includes('discount') || q.includes('offer') || q.includes('promo') || q.includes('code')) {
       return {
-        text: '🏷️ Exclusive Offers Active Today:\n• Use code WELCOME100 for Flat ₹200 OFF on orders > ₹999\n• Free Express Shipping on orders over ₹999\n• Additional 10% instant discount on UPI payments!',
-        actionButton: { label: 'Explore Sale Items', path: '/category/women?tag=sale' }
+        text: '🏷️ Exclusive Offers Active Today:\n• Code WELCOME100: Flat ₹200 OFF on orders > ₹999\n• Free Express Shipping on orders over ₹999\n• Additional 10% instant discount on UPI payments!',
+        actionButton: { label: 'Explore Festive Sale', path: '/category/women?tag=sale' }
       };
     }
 
     if (q.includes('return') || q.includes('refund') || q.includes('exchange')) {
       return {
-        text: '🔁 We offer 15-Day Hassle-Free Returns & Free Reverse Pickups across India. Returned items are inspected, and refunds are initiated instantly to your original payment method within 24 hours.',
+        text: '🔁 We offer 15-Day Hassle-Free Returns & Free Doorstep Reverse Pickups across India. Refunds are processed within 24 hours of inspection.',
         actionButton: { label: 'Learn More / FAQs', path: '/faqs' }
       };
     }
 
     if (q.includes('payment') || q.includes('cod') || q.includes('cash') || q.includes('upi') || q.includes('card')) {
       return {
-        text: '💳 We support Cash on Delivery (COD), All Major Credit/Debit Cards, Net Banking, and Instant UPI (Google Pay, PhonePe, Paytm). All transactions are 100% 256-bit SSL encrypted.',
-      };
-    }
-
-    if (q.includes('call') || q.includes('agent') || q.includes('human') || q.includes('speak') || q.includes('contact') || q.includes('phone')) {
-      return {
-        text: `📞 Our customer care team is available Mon-Sat (9:00 AM - 8:00 PM IST).\nCall us directly at ${settings.contactPhone || '+91 98765 43210'} or email support@pgmart.fashion!`,
-        actionButton: { label: 'Store Locator & Help', path: '/store-locator' }
+        text: '💳 We support Cash on Delivery (COD), UPI (Google Pay, PhonePe, Paytm), All Credit/Debit Cards, and Net Banking.',
       };
     }
 
@@ -102,27 +102,13 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
       };
     }
 
-    if (q.includes('dress') || q.includes('top') || q.includes('jean') || q.includes('western')) {
-      return {
-        text: '💃 Our Western Edit includes high-rise vintage denim jeans, chiffon peplum tops, ribbed co-ord sets, and party frocks.',
-        actionButton: { label: 'Browse Western Wear', path: '/category/women?sub=w-western' }
-      };
-    }
-
-    if (q.includes('innerwear') || q.includes('bra') || q.includes('brief') || q.includes('lingerie')) {
-      return {
-        text: '🩲 Soft, skin-friendly micro-modal innerwear, seamless bras, and breathable cotton briefs engineered for all-day comfort.',
-        actionButton: { label: 'Browse Innerwear', path: '/category/undergarments' }
-      };
-    }
-
     return {
-      text: "Thanks for reaching out! We offer nationwide delivery, 15-day easy returns, and 100% authentic quality fashion. How else can I assist your order today?",
-      actionButton: { label: 'View All Collections', path: '/category/women' }
+      text: "Thanks for asking! As PGmart AI Assistant, I can help you find trending sarees, kurtas, shirts, innerwear, and track live orders. How else can I assist your shopping today?",
+      actionButton: { label: 'Explore Collections', path: '/category/women' }
     };
   };
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || input).trim();
     if (!query) return;
 
@@ -133,43 +119,119 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     if (!textToSend) setInput('');
     setIsTyping(true);
 
+    try {
+      // Call Gemini AI backend endpoint
+      const formattedHistory = newMessages.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'assistant',
+        content: m.text
+      }));
+
+      const res = await fetch('/api/ai-stylist/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: formattedHistory })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.text) {
+          const aiMsg: ChatMessage = {
+            id: `bot-${Date.now()}`,
+            sender: 'bot',
+            text: data.text,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isAi: true
+          };
+          setMessages(prev => [...prev, aiMsg]);
+          setIsTyping(false);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('AI API call fallback to local engine:', err);
+    }
+
+    // Fallback to local intelligent AI bot engine
     setTimeout(() => {
-      const botResponse = generateBotReply(query);
+      const localReply = generateLocalBotReply(query);
       const botMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
         sender: 'bot',
-        text: botResponse.text,
+        text: localReply.text,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        actionButton: botResponse.actionButton
+        actionButton: localReply.actionButton
       };
 
       setMessages(prev => [...prev, botMsg]);
       setIsTyping(false);
-    }, 600);
+    }, 500);
   };
+
+  const whatsappLink = "https://wa.me/919471155434?text=Hi%2C%20I%20have%20a%20question%20about%20PGmart";
 
   return (
     <>
-      {/* FLOATING CHAT BOT TRIGGER BUTTON */}
+      {/* TWO INDEPENDENT VERTICALLY STACKED FLOATING CHAT BUTTONS (Positioned on Left Side) */}
       {!chatOpen && (
-        <button
-          onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 bg-[#C0654B] hover:bg-[#8B4A38] text-white px-4 py-3 rounded-full font-bold text-xs shadow-xl flex items-center gap-2.5 group transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer border border-white/20"
-          aria-label="Open Customer Support Chatbot"
-        >
-          <div className="relative flex items-center justify-center">
-            <MessageSquare className="w-5 h-5 text-white group-hover:rotate-6 transition-transform" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#C0654B] animate-pulse" />
-          </div>
-          <span className="font-sans">Help & Support Chat</span>
-          <span className="bg-white/20 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
-            Online
-          </span>
-        </button>
+        <div className="fixed bottom-6 left-6 z-50 flex flex-col items-center gap-3 pb-safe">
+          {/* BUTTON B — DIRECT WHATSAPP TOGGLE */}
+          <motion.a
+            href={whatsappLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+            className="group relative w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-colors cursor-pointer border-2 border-white"
+            aria-label="Chat with us on WhatsApp"
+          >
+            {/* Standard WhatsApp SVG Glyph */}
+            <svg
+              className="w-7 h-7 fill-current text-white shrink-0 group-hover:rotate-6 transition-transform"
+              viewBox="0 0 24 24"
+            >
+              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.572-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+            </svg>
+
+            {/* Desktop Tooltip / Mobile Label */}
+            <span className="absolute left-16 bg-[#2B2620] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-stone-700">
+              Chat with us on WhatsApp
+            </span>
+          </motion.a>
+
+          {/* BUTTON A — AI STYLIST CHATBOT TOGGLE */}
+          <motion.button
+            onClick={() => setChatOpen(true)}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.95 }}
+            className="group relative w-14 h-14 rounded-full bg-[#C0654B] hover:bg-[#8B4A38] text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-colors cursor-pointer border-2 border-white font-sans"
+            aria-label="Chat with our AI Stylist"
+          >
+            {/* Subtle Pulse / Glow Animation */}
+            <motion.span
+              animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.2, 0.6] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute inset-0 rounded-full bg-[#C0654B] -z-10"
+            />
+
+            <Sparkles className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
+
+            {/* Desktop Tooltip / Mobile Label */}
+            <span className="absolute left-16 bg-[#2B2620] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-stone-700">
+              Chat with our AI Stylist
+            </span>
+          </motion.button>
+        </div>
       )}
 
       {/* CHATBOT WINDOW MODAL */}
@@ -180,22 +242,25 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[380px] h-[520px] max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden text-left font-sans"
+            className="fixed bottom-4 left-4 sm:bottom-6 sm:left-6 z-50 w-[calc(100vw-2rem)] sm:w-[390px] h-[540px] max-h-[85vh] bg-white rounded-2xl shadow-2xl border border-stone-200 flex flex-col overflow-hidden text-left font-sans"
           >
             {/* CHATBOT HEADER */}
-            <div className="bg-[#2B2620] text-white p-4 flex items-center justify-between border-b border-stone-800 shrink-0">
+            <div className="bg-[#2B2620] text-white p-3.5 flex items-center justify-between border-b border-stone-800 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="relative w-9 h-9 rounded-full bg-[#C0654B] flex items-center justify-center text-white border border-white/20 shadow-xs">
+                <div className="relative w-9 h-9 rounded-full bg-gradient-to-tr from-[#C0654B] to-[#e68367] flex items-center justify-center text-white border border-white/20 shadow-xs">
                   <Bot className="w-5 h-5" />
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#2B2620]" />
                 </div>
                 <div>
                   <h3 className="font-bold text-sm leading-tight font-serif flex items-center gap-1.5 text-stone-100">
-                    PGmart Assistant
+                    <span>PGmart AI Assistant</span>
+                    <span className="bg-[#C0654B] text-[9px] text-white px-1.5 py-0.2 rounded-full font-sans uppercase font-bold flex items-center gap-0.5">
+                      <Sparkles className="w-2.5 h-2.5" /> AI
+                    </span>
                   </h3>
-                  <p className="text-[10px] text-stone-300 flex items-center gap-1">
+                  <p className="text-[10px] text-emerald-300 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
-                    Instant Customer Support
+                    Online 24x7 | Powered by Gemini AI
                   </p>
                 </div>
               </div>
@@ -218,7 +283,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
                   key={msg.id}
                   className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
                 >
-                  <div className="flex items-end gap-2 max-w-[85%]">
+                  <div className="flex items-end gap-2 max-w-[88%]">
                     {msg.sender === 'bot' && (
                       <div className="w-6 h-6 rounded-full bg-[#C0654B] text-white flex items-center justify-center shrink-0 text-[10px]">
                         <Bot className="w-3.5 h-3.5" />
@@ -238,7 +303,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
                         <button
                           onClick={() => {
                             setChatOpen(false);
-                            onNavigate(msg.actionButton!.path);
+                            if (msg.actionButton?.path) onNavigate(msg.actionButton.path);
                           }}
                           className="mt-2.5 w-full bg-[#2B2620] hover:bg-[#C0654B] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg flex items-center justify-center gap-1 transition-colors cursor-pointer"
                         >
@@ -248,7 +313,8 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
                       )}
                     </div>
                   </div>
-                  <span className="text-[9px] text-stone-400 mt-1 px-1 font-mono">
+                  <span className="text-[9px] text-stone-400 mt-1 px-1 font-mono flex items-center gap-1">
+                    {msg.isAi && <Sparkles className="w-2.5 h-2.5 text-[#C0654B]" />}
                     {msg.timestamp}
                   </span>
                 </div>
@@ -260,10 +326,9 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
                   <div className="w-6 h-6 rounded-full bg-[#C0654B] text-white flex items-center justify-center shrink-0">
                     <Bot className="w-3.5 h-3.5" />
                   </div>
-                  <div className="bg-white border border-stone-200 p-2.5 rounded-2xl rounded-bl-none shadow-xs flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-[#C0654B] rounded-full animate-bounce" />
-                    <span className="w-1.5 h-1.5 bg-[#C0654B] rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <span className="w-1.5 h-1.5 bg-[#C0654B] rounded-full animate-bounce [animation-delay:0.4s]" />
+                  <div className="bg-white border border-stone-200 p-2.5 rounded-2xl rounded-bl-none shadow-xs flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-[#C0654B] animate-spin" />
+                    <span className="text-[11px] text-stone-500 font-medium">AI is thinking...</span>
                   </div>
                 </div>
               )}
@@ -296,13 +361,13 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about orders, size, returns..."
+                placeholder="Ask AI about fashion, sizes, or orders..."
                 className="flex-1 bg-stone-50 border border-stone-300 rounded-xl px-3.5 py-2 text-xs text-stone-900 focus:outline-none focus:border-[#C0654B] placeholder:text-stone-400"
               />
               <button
                 type="submit"
                 disabled={!input.trim()}
-                className="bg-[#C0654B] hover:bg-[#8B4A38] disabled:bg-stone-300 text-white p-2.5 rounded-xl transition-colors cursor-pointer shrink-0 shadow-xs"
+                className="bg-[#C0654B] hover:bg-[#8B4A38] disabled:bg-stone-300 text-white p-2.5 rounded-xl transition-colors cursor-pointer shrink-0 shadow-xs flex items-center justify-center gap-1"
                 aria-label="Send message"
               >
                 <Send className="w-4 h-4" />

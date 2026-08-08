@@ -25,6 +25,8 @@ const AccountPage         = lazy(() => import('./pages/AccountPage').then(m => (
 const AdminPage           = lazy(() => import('./pages/AdminPage').then(m => ({ default: m.AdminPage })));
 const StaticPages         = lazy(() => import('./pages/StaticPages').then(m => ({ default: m.StaticPages })));
 const AiStylistPage       = lazy(() => import('./pages/AiStylistPage').then(m => ({ default: m.AiStylistPage })));
+const BlogPage            = lazy(() => import('./pages/BlogPage').then(m => ({ default: m.BlogPage })));
+const BlogPostPage        = lazy(() => import('./pages/BlogPostPage').then(m => ({ default: m.BlogPostPage })));
 
 // Page transition config — lightweight fade + 8px vertical slide
 const pageVariants = {
@@ -110,6 +112,22 @@ function AppContent() {
     }
     if (currentPath === '/store-locator') {
       return <StaticPages pageType="store-locator" onNavigate={navigateTo} />;
+    }
+    if (currentPath === '/blog') {
+      return <BlogPage onNavigate={navigateTo} />;
+    }
+    if (currentPath.startsWith('/blog/')) {
+      const slug = currentPath.replace('/blog/', '');
+      return <BlogPostPage onNavigate={navigateTo} slug={slug} />;
+    }
+    if (currentPath === '/privacy-policy') {
+      return <StaticPages pageType="privacy-policy" onNavigate={navigateTo} />;
+    }
+    if (currentPath === '/terms') {
+      return <StaticPages pageType="terms" onNavigate={navigateTo} />;
+    }
+    if (currentPath === '/shipping-policy' || currentPath === '/return-policy') {
+      return <StaticPages pageType="policies" onNavigate={navigateTo} />;
     }
     if (currentPath === '/faqs') {
       return <StaticPages pageType="faqs" onNavigate={navigateTo} />;

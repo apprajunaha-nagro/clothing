@@ -9,6 +9,8 @@ export interface User {
   addresses?: Address[];
   points?: number;
   createdAt: string;
+  gender?: string;
+  dob?: string;
 }
 
 export interface Address {
@@ -20,6 +22,8 @@ export interface Address {
   state: string;
   pincode: string;
   type: 'home' | 'work' | 'other';
+  locality?: string;
+  addressLine2?: string;
   isDefault?: boolean;
 }
 
@@ -78,7 +82,7 @@ export interface Brand {
   isFeatured?: boolean;
 }
 
-export type ProductTag = 'new_arrival' | 'bestseller' | 'trending' | 'sale' | 'online_exclusive' | 'value_pack' | 'curves_plus_size';
+export type ProductTag = 'new_arrival' | 'bestseller' | 'trending' | 'sale' | 'online_exclusive' | 'value_pack' | 'curves_plus_size' | 'deal_of_the_day';
 
 export interface ColorVariant {
   name: string;
@@ -121,6 +125,7 @@ export interface Product {
   discountPrice?: number;
   discountPercent?: number;
   tags: ProductTag[];
+  isDealOfTheDay?: boolean;
   status: 'published' | 'draft' | 'out_of_stock' | 'discontinued';
   variants: ProductVariant[];
   colors: ColorVariant[];
@@ -180,6 +185,12 @@ export interface Order {
   couponCode?: string;
   createdAt: string;
   updatedAt: string;
+  returnStatus?: 'none' | 'return_requested' | 'return_approved' | 'exchange_requested' | 'exchange_approved' | 'completed' | 'rejected';
+  returnType?: 'return' | 'exchange';
+  returnReason?: string;
+  returnComments?: string;
+  exchangeSize?: string;
+  exchangeColor?: string;
 }
 
 export interface Review {
@@ -217,7 +228,7 @@ export interface Banner {
   mobileImage?: string;
   link: string;
   buttonText: string;
-  position: 'hero' | 'category' | 'promo_strip';
+  position: 'hero' | 'category' | 'promo_strip' | 'ad_banner';
   sortOrder: number;
   isActive: boolean;
 }
@@ -234,6 +245,9 @@ export interface SiteSettings {
   fontFamily: string;
   contactEmail: string;
   contactPhone: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  whatsappNumber?: string;
   address: string;
   currencySymbol: string;
   currencyCode: string;
@@ -246,6 +260,12 @@ export interface SiteSettings {
   razorpayKeyId: string;
   stripePublicKey: string;
   gstNumber: string;
+  dealsEnabled?: boolean;
+  dealsTitle?: string;
+  dealsTimerHours?: number;
+  dealsTimerMinutes?: number;
+  dealsMinDiscount?: number;
+  adBannerEnabled?: boolean;
 }
 
 export interface FilterState {

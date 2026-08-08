@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Product, ProductVariant } from '../types';
 import { useStore } from '../context/StoreContext';
-import { Heart, Eye, ShoppingBag, Star, Check } from 'lucide-react';
+import { Heart, Eye, ShoppingCart, Star, Check } from 'lucide-react';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 import { useReducedMotion } from '../utils/useReducedMotion';
 
@@ -10,10 +10,12 @@ interface ProductCardProps {
   onNavigate: (path: string) => void;
   onToggleCompare?: (product: Product) => void;
   isCompared?: boolean;
+  hideBadges?: boolean;
+  hideColorAndSize?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = React.memo(
-  ({ product, onNavigate, onToggleCompare, isCompared = false }) => {
+  ({ product, onNavigate, onToggleCompare, isCompared = false, hideBadges = false, hideColorAndSize = false }) => {
     const { wishlist, toggleWishlist, addToCart, setQuickViewProduct } = useStore();
     const reducedMotion = useReducedMotion();
 
@@ -86,61 +88,33 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
 
     return (
       <div
-        className="group relative bg-white border border-stone-200/80 rounded-xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col h-full"
-        style={
-          reducedMotion
-            ? {}
-            : { transition: 'box-shadow 0.25s ease, transform 0.25s ease' }
-        }
-        onMouseEnter={
-          reducedMotion
-            ? undefined
-            : e => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)';
-              }
-        }
-        onMouseLeave={
-          reducedMotion
-            ? undefined
-            : e => {
-                (e.currentTarget as HTMLElement).style.transform = 'translateY(0)';
-              }
-        }
+        className="group relative bg-white border border-stone-200 rounded-md overflow-hidden shadow-2xs hover:shadow-md transition-shadow duration-200 flex flex-col h-full select-none"
+        onClick={() => onNavigate(`/product/${product.id}`)}
       >
-        {/* BADGES */}
-        <div className="absolute top-3 left-3 z-20 flex flex-col gap-1 items-start">
-          {discountPercent > 0 && (
-            <span className="bg-[#C0654B] text-white text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-sm shadow-xs uppercase">
-              {discountPercent}% OFF
+        {/* TOP OVERLAYS: PGmart Assured / Bestseller Badge */}
+        <div className="absolute top-2 left-2 z-20 flex flex-col gap-1 items-start pointer-events-none">
+          {!hideBadges && (
+            <span className="pgmart-assured-badge shadow-2xs">
+              ✦ PGmart Assured
             </span>
           )}
-          {product.tags.includes('bestseller') && (
-            <span className="bg-amber-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-xs uppercase tracking-wider">
+          {!hideBadges && product.tags.includes('bestseller') && (
+            <span className="bg-amber-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-xs uppercase tracking-wider shadow-2xs">
               BESTSELLER
-            </span>
-          )}
-          {product.tags.includes('new_arrival') && (
-            <span className="bg-[#2B2620] text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-xs uppercase tracking-wider">
-              NEW
-            </span>
-          )}
-          {product.tags.includes('curves_plus_size') && (
-            <span className="bg-rose-100 text-[#C0654B] text-[9px] font-bold px-1.5 py-0.5 rounded-xs uppercase">
-              CURVES
             </span>
           )}
         </div>
 
-        {/* WISHLIST BUTTON — with pulse scale on toggle */}
+        {/* WISHLIST BUTTON */}
         <button
           onClick={handleWishlistToggle}
-          className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 min-w-[44px] min-h-[44px] rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-stone-600 hover:text-[#C0654B] shadow-sm cursor-pointer"
+          className="absolute top-2 right-2 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-stone-500 hover:text-[#C0654B] shadow-xs cursor-pointer transition-transform hover:scale-110"
           style={
             reducedMotion
               ? {}
               : {
                   transition: 'transform 0.15s ease',
-                  transform: wishlistPulse ? 'scale(1.35)' : 'scale(1)',
+                  transform: wishlistPulse ? 'scale(1.25)' : 'scale(1)',
                 }
           }
           aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
@@ -153,27 +127,24 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
           />
         </button>
 
-        {/* PRODUCT IMAGE */}
-        <div
-          className="relative aspect-[4/5] overflow-hidden bg-stone-100 cursor-pointer border-b border-stone-100"
-          onClick={() => onNavigate(`/product/${product.id}`)}
-        >
+        {/* PRODUCT IMAGE CONTAINER (Flipkart style contain/fit on crisp white bg) */}
+        <div className="relative aspect-[4/5] sm:aspect-square w-full overflow-hidden bg-white cursor-pointer border-b border-stone-100 flex items-center justify-center p-2">
           <img
-            src={getOptimizedImageUrl(primaryImage, { width: 600, quality: 75 })}
+            src={getOptimizedImageUrl(primaryImage, { width: 450, quality: 75 })}
             alt={product.name}
-            className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+            className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-102"
             loading="lazy"
             decoding="async"
           />
 
-          {/* QUICK VIEW OVERLAY */}
-          <div className="absolute inset-x-2 bottom-2 sm:inset-x-3 sm:bottom-3 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 flex gap-2">
+          {/* QUICK VIEW HOVER OVERLAY */}
+          <div className="absolute inset-x-2 bottom-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden sm:flex">
             <button
               onClick={e => {
                 e.stopPropagation();
                 setQuickViewProduct(product);
               }}
-              className="flex-1 bg-white/95 hover:bg-white text-stone-900 text-xs font-bold py-2 rounded-lg shadow-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="w-full bg-white/95 hover:bg-stone-900 hover:text-white text-stone-900 text-xs font-bold py-1.5 rounded shadow-sm flex items-center justify-center gap-1 transition-colors cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5 text-[#C0654B]" />
               <span>Quick View</span>
@@ -181,17 +152,17 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
           </div>
         </div>
 
-        {/* DETAILS */}
-        <div className="p-4 flex flex-col flex-1 justify-between bg-white text-left">
+        {/* DETAILS SECTION (Dense Flipkart hierarchy) */}
+        <div className="p-2.5 sm:p-3 flex flex-col flex-1 justify-between bg-white text-left">
           <div>
-            {/* Brand & Rating */}
-            <div className="flex items-center justify-between text-[11px] text-stone-500 mb-1">
-              <span className="font-semibold text-[#C0654B] tracking-wider uppercase">
-                {product.brandName || 'Terra & Clay'}
+            {/* Brand / Short Descriptor */}
+            <div className="flex items-center justify-between text-[11px] mb-0.5">
+              <span className="font-bold text-stone-400 uppercase tracking-wide truncate max-w-[120px]">
+                {product.brandName || 'PGmart Classic'}
               </span>
               {onToggleCompare && (
                 <label
-                  className="flex items-center gap-1 cursor-pointer select-none border border-stone-200 bg-stone-50/80 px-1.5 py-0.5 rounded-sm hover:bg-[#F3E9E4] hover:border-[#C0654B]/30 transition-colors"
+                  className="flex items-center gap-1 cursor-pointer select-none text-[10px] text-stone-500 hover:text-[#C0654B]"
                   onClick={e => e.stopPropagation()}
                 >
                   <input
@@ -200,39 +171,41 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
                     onChange={() => onToggleCompare(product)}
                     className="w-3 h-3 accent-[#C0654B] cursor-pointer rounded-xs"
                   />
-                  <span
-                    className={`text-[9px] font-bold tracking-wide uppercase ${
-                      isCompared ? 'text-[#C0654B]' : 'text-stone-500'
-                    }`}
-                  >
-                    Compare
-                  </span>
+                  <span>Compare</span>
                 </label>
               )}
-              <div className="flex items-center gap-1 text-amber-500">
-                <Star className="w-3 h-3 fill-amber-400" />
-                <span className="font-bold text-stone-700 text-[10px]">{product.rating}</span>
-                <span className="text-stone-400 text-[9px]">({product.reviewCount})</span>
-              </div>
             </div>
 
-            {/* Title */}
-            <h3
-              onClick={() => onNavigate(`/product/${product.id}`)}
-              className="font-medium text-stone-800 text-xs sm:text-sm line-clamp-2 hover:text-[#C0654B] transition-colors cursor-pointer mb-2"
-            >
+            {/* Title (1-2 lines, clean sans-serif) */}
+            <h3 className="font-normal text-stone-800 text-xs sm:text-sm line-clamp-1 group-hover:text-[#C0654B] transition-colors mb-1.5">
               {product.name}
             </h3>
 
+            {/* RATING BADGE (Signature Flipkart Green Pill) */}
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="rating-pill-green">
+                <span>{product.rating.toFixed(1)}</span>
+                <Star className="w-2.5 h-2.5 fill-white text-white" />
+              </span>
+              <span className="text-[11px] font-semibold text-stone-400">
+                ({product.reviewCount.toLocaleString()})
+              </span>
+            </div>
+          </div>
+
+          <div>
             {/* COLOR SWATCHES */}
-            {product.colors && product.colors.length > 0 && (
-              <div className="flex items-center gap-1.5 my-2">
-                {product.colors.map((c, idx) => (
+            {!hideColorAndSize && product.colors && product.colors.length > 0 && (
+              <div className="flex items-center gap-1 mb-2">
+                {product.colors.slice(0, 4).map((c, idx) => (
                   <button
                     key={c.name}
-                    onClick={() => setSelectedColorIndex(idx)}
+                    onClick={e => {
+                      e.stopPropagation();
+                      setSelectedColorIndex(idx);
+                    }}
                     style={{ backgroundColor: c.hex }}
-                    className={`w-4 h-4 rounded-full border border-stone-300 transition-transform cursor-pointer ${
+                    className={`w-3.5 h-3.5 rounded-full border border-stone-300 transition-transform cursor-pointer ${
                       selectedColorIndex === idx
                         ? 'ring-2 ring-[#C0654B] ring-offset-1 scale-110'
                         : 'hover:scale-105'
@@ -240,64 +213,60 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
                     title={c.name}
                   />
                 ))}
-                <span className="text-[10px] text-stone-400 ml-1">
-                  {product.colors[selectedColorIndex]?.name}
-                </span>
-              </div>
-            )}
-
-            {/* SIZES */}
-            <div className="flex flex-wrap gap-1 my-2">
-              {(product.availableSizes || []).slice(0, 5).map(size => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`text-[10px] px-1.5 py-0.5 rounded-xs border cursor-pointer transition-colors ${
-                    selectedSize === size
-                      ? 'border-[#C0654B] bg-[#F3E9E4] text-[#C0654B] font-bold'
-                      : 'border-stone-200 text-stone-600 hover:border-stone-400'
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* PRICE & ADD TO BAG */}
-          <div className="pt-2 border-t border-stone-100 flex items-center justify-between mt-2">
-            <div>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-bold text-stone-900 text-sm sm:text-base">
-                  ₹{effectivePrice.toLocaleString('en-IN')}
-                </span>
-                {originalPrice > effectivePrice && (
-                  <span className="text-stone-400 text-xs line-through">
-                    ₹{originalPrice.toLocaleString('en-IN')}
+                {product.colors.length > 4 && (
+                  <span className="text-[10px] text-stone-400 font-medium ml-0.5">
+                    +{product.colors.length - 4}
                   </span>
                 )}
               </div>
-              <p className="text-[9px] text-stone-400">Incl. all taxes</p>
+            )}
+
+            {/* FLIPKART PRICE ROW: ₹799  ₹1,499  47% off */}
+            <div className="flex items-baseline flex-wrap gap-1.5 my-1">
+              <span className="font-extrabold text-stone-900 text-sm sm:text-base tracking-tight">
+                ₹{effectivePrice.toLocaleString('en-IN')}
+              </span>
+              {originalPrice > effectivePrice && (
+                <span className="text-xs text-stone-400 line-through font-normal">
+                  ₹{originalPrice.toLocaleString('en-IN')}
+                </span>
+              )}
+              {discountPercent > 0 && (
+                <span className="text-xs font-bold text-[#26A541]">
+                  {discountPercent}% off
+                </span>
+              )}
             </div>
 
-            {/* Add-to-cart button — shows ✓ checkmark for 1.2s after click */}
-            <button
-              onClick={handleAddToCart}
-              className={`p-2 sm:px-3 sm:py-2 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all duration-200 ${
-                addedToCart
-                  ? 'bg-emerald-600 text-white scale-105'
-                  : 'bg-[#2B2620] hover:bg-[#C0654B] text-white'
-              }`}
-              style={reducedMotion ? {} : { transition: 'background-color 0.2s, transform 0.15s' }}
-              aria-label="Add to Bag"
-            >
-              {addedToCart ? (
-                <Check className="w-3.5 h-3.5" />
-              ) : (
-                <ShoppingBag className="w-3.5 h-3.5" />
-              )}
-              <span className="hidden sm:inline">{addedToCart ? 'Added!' : 'Add'}</span>
-            </button>
+            {/* ACTION ROW */}
+            <div className="mt-2 pt-2 border-t border-stone-100 flex items-center justify-between">
+              <span className="text-[10px] text-stone-400 font-medium">
+                Free Delivery
+              </span>
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  handleAddToCart();
+                }}
+                className={`px-2.5 py-1 rounded text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                  addedToCart
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-[#C0654B]/10 hover:bg-[#C0654B] text-[#C0654B] hover:text-white'
+                }`}
+              >
+                {addedToCart ? (
+                  <>
+                    <Check className="w-3 h-3" />
+                    <span>Added</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-3 h-3" />
+                    <span>Add</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

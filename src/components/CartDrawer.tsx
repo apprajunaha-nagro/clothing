@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag, ShieldCheck, Truck } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingCart, ArrowRight, Tag, ShieldCheck, Truck } from 'lucide-react';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -77,8 +77,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-stone-200 flex items-center justify-between bg-stone-50">
             <div className="flex items-center gap-2">
-              <ShoppingBag className="w-5 h-5 text-[#C0654B]" />
-              <h2 className="text-base font-bold text-stone-900 font-serif">Your Shopping Bag</h2>
+              <ShoppingCart className="w-5 h-5 text-[#C0654B]" />
+              <h2 className="text-base font-bold text-stone-900 font-serif">Your Shopping Cart</h2>
               <span className="bg-[#F3E9E4] text-[#C0654B] font-bold text-xs px-2 py-0.5 rounded-full">
                 {cart.length} items
               </span>
@@ -116,10 +116,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
             {cart.length === 0 ? (
               <div className="text-center py-16 space-y-4">
                 <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto text-stone-400">
-                  <ShoppingBag className="w-8 h-8" />
+                  <ShoppingCart className="w-8 h-8" />
                 </div>
                 <div>
-                  <p className="font-bold text-stone-800 text-base">Your Bag is Empty</p>
+                  <p className="font-bold text-stone-800 text-base">Your Cart is Empty</p>
                   <p className="text-xs text-stone-500 mt-1">Explore our latest terracotta ethnic & western collection</p>
                 </div>
                 <button
@@ -232,45 +232,47 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
               )}
               {couponError && <p className="text-[11px] text-red-600 font-medium">{couponError}</p>}
 
-              {/* COST BREAKDOWN */}
-              <div className="space-y-1.5 text-xs text-stone-600 pt-2 border-t border-stone-100">
+              {/* FLIPKART PRICE DETAILS CARD */}
+              <div className="bg-stone-50 p-3 rounded border border-stone-200 space-y-2 text-xs text-stone-600">
+                <p className="font-extrabold text-stone-900 text-xs uppercase tracking-wider border-b border-stone-200 pb-1.5">
+                  Price Details
+                </p>
                 <div className="flex justify-between">
-                  <span>Bag Subtotal</span>
-                  <span className="font-semibold text-stone-900">₹{subtotal.toLocaleString('en-IN')}</span>
+                  <span>Price ({cart.length} items)</span>
+                  <span className="font-semibold text-stone-900">₹{(subtotal + couponDiscount + 300).toLocaleString('en-IN')}</span>
                 </div>
-                {couponDiscount > 0 && (
-                  <div className="flex justify-between text-emerald-700">
-                    <span>Coupon Discount</span>
-                    <span className="font-bold">-₹{couponDiscount.toLocaleString('en-IN')}</span>
-                  </div>
-                )}
+                <div className="flex justify-between text-[#26A541]">
+                  <span>Discount</span>
+                  <span className="font-bold">-₹{(couponDiscount + 300).toLocaleString('en-IN')}</span>
+                </div>
                 <div className="flex justify-between">
-                  <span>Shipping Fee</span>
-                  <span className={remainingForFreeShipping === 0 ? 'text-emerald-700 font-bold' : ''}>
+                  <span>Delivery Charges</span>
+                  <span className={remainingForFreeShipping === 0 ? 'text-[#26A541] font-bold' : ''}>
                     {remainingForFreeShipping === 0 ? 'FREE' : `₹${settings.standardShippingFee}`}
                   </span>
                 </div>
-                <div className="flex justify-between font-bold text-stone-900 text-sm pt-2 border-t border-stone-200">
-                  <span>Total Payable</span>
-                  <span className="text-[#C0654B]">₹{finalTotal.toLocaleString('en-IN')}</span>
+                <div className="flex justify-between font-extrabold text-stone-900 text-sm pt-2 border-t border-stone-200">
+                  <span>Total Amount</span>
+                  <span className="text-stone-900">₹{finalTotal.toLocaleString('en-IN')}</span>
                 </div>
+                <p className="text-[10px] text-[#26A541] font-bold">You will save ₹{(couponDiscount + 300).toLocaleString('en-IN')} on this order</p>
               </div>
 
-              {/* CHECKOUT BUTTON */}
+              {/* CHECKOUT BUTTON (Place Order) */}
               <button
                 onClick={() => {
                   setCartDrawerOpen(false);
                   onNavigate('/checkout');
                 }}
-                className="w-full bg-[#C0654B] hover:bg-[#8B4A38] text-white text-sm font-bold py-3.5 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-colors cursor-pointer min-h-[44px]"
+                className="w-full bg-[#C0654B] hover:bg-[#a85239] text-white text-xs font-black py-3 rounded shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer uppercase tracking-wider"
               >
-                <span>PROCEED TO CHECKOUT</span>
+                <span>Place Order</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
-              <div className="flex items-center justify-center gap-2 text-[10px] text-stone-400">
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-stone-400">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>100% Authentic Products | 15-Day Easy Returns</span>
+                <span>Safe and Secure Payments. 100% Authentic Products.</span>
               </div>
             </div>
           )}

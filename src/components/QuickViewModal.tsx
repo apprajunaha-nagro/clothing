@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { X, Star, ShoppingBag, Heart, ShieldCheck, Truck } from 'lucide-react';
+import { X, Star, Heart, ShoppingCart, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 
 interface QuickViewModalProps {
@@ -157,8 +157,8 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onNavigate }) =>
                 }}
                 className="flex-1 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
-                <ShoppingBag className="w-4 h-4" />
-                <span>ADD TO BAG</span>
+                <ShoppingCart className="w-4 h-4" />
+                <span>ADD TO CART</span>
               </button>
 
               <button

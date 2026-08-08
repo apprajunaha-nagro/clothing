@@ -91,6 +91,82 @@ a, button, [role="button"], input[type="button"], input[type="submit"] {
 ::-webkit-scrollbar-thumb  { background: #d6d3d1; border-radius: 9999px; }
 ::-webkit-scrollbar-thumb:hover { background: #C0654B; }
 
+/* Filter sidebar independent scrollbar */
+.filter-scroll-container {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #c0654b #f5f5f4;
+}
+
+/* ============================================================
+   FLIPKART-STYLE UI UTILITIES
+   ============================================================ */
+.rating-pill-green {
+  background-color: #26a541;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 3px;
+  padding: 1px 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.rating-pill-green-sm {
+  background-color: #388e3c;
+  color: #ffffff;
+  font-weight: 700;
+  border-radius: 3px;
+  padding: 1px 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  line-height: 12px;
+}
+
+.assured-tag {
+  background: linear-gradient(135deg, #1b3060 0%, #2874f0 100%);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  font-style: italic;
+  padding: 1px 5px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+
+.pgmart-assured-badge {
+  background: linear-gradient(135deg, #2B2620 0%, #C0654B 100%);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.filter-scroll-container::-webkit-scrollbar {
+  width: 5px;
+}
+.filter-scroll-container::-webkit-scrollbar-track {
+  background: #f5f5f4;
+  border-radius: 4px;
+}
+.filter-scroll-container::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border-radius: 4px;
+}
+.filter-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #c0654b;
+}
+
 /* ============================================================
    PAGE TRANSITION WRAPPER
    Keeps layout stable during route-change fade animations.

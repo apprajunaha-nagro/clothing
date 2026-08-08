@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from '../components/ProductCard';
 import { Filter, SlidersHorizontal, X, ChevronRight, Check, Grid, List, Sparkles, ArrowLeftRight, Scale, ShoppingBag, Star } from 'lucide-react';
-import { Product } from '../types';
+import { Product, FilterState } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
 import { useDebounce } from '../utils/useDebounce';
 
@@ -146,19 +146,22 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
   const availableOccasions = ['Casual Wear', 'Festive Wear', 'Work Wear', 'Party Wear', 'Wedding Wear', 'Active & Loungewear'];
 
-  // FILTER LOGIC
-  const filteredProducts = products.filter((p) => {
-    // Wishlist tag special section
-    if (tagParam === 'wishlist') {
-      return wishlist.includes(p.id);
-    }
+  // STAGED DRAFT FILTERS STATE (unapplied until user clicks 'Apply Filters')
+  const [draftFilters, setDraftFilters] = useState<FilterState>({ ...filters });
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>({ ...filters });
 
-    // Main category match (skip if 'all', 'sale', 'new-arrivals', 'bestsellers', 'curves')
+  // Sync draft and applied filters when route/query changes
+  useEffect(() => {
+    setDraftFilters({ ...filters });
+    setAppliedFilters({ ...filters });
+  }, [categorySlug, queryString, filters.maxPrice]);
+
+  // DRAFT FILTERED PRODUCTS (calculates preview count for Apply Filters button)
+  const draftFilteredProducts = products.filter((p) => {
+    if (tagParam === 'wishlist') return wishlist.includes(p.id);
     if (rawSlug && !['all', 'sale', 'new-arrivals', 'bestsellers', 'curves', 'ethnic', 'western'].includes(rawSlug)) {
       if (currentCategory?.id && p.categoryId !== currentCategory.id) return false;
     }
-
-    // Special category / tag filters
     if (rawSlug === 'sale' || tagParam === 'sale') {
       if (!p.tags.includes('sale') && !p.discountPrice && (!p.discountPercent || p.discountPercent <= 0)) return false;
     }
@@ -168,49 +171,37 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     if (rawSlug === 'bestsellers' || tagParam === 'bestseller') {
       if (!p.tags.includes('bestseller') && p.rating < 4.5) return false;
     }
-    if (rawSlug === 'curves' || tagParam === 'curves_plus_size' || filters.plusSizeOnly) {
+    if (rawSlug === 'curves' || tagParam === 'curves_plus_size' || draftFilters.plusSizeOnly) {
       if (!p.tags.includes('curves_plus_size') && !p.availableSizes.some(s => ['XL', 'XXL', '3XL', 'Free Size'].includes(s))) return false;
     }
-
-    // Subcategory match
     if (subParam) {
       const matchSubId = currentSubcategory?.id || subParam;
       if (p.subcategoryId !== matchSubId && !p.subcategoryId.toLowerCase().includes(subParam.toLowerCase())) return false;
     }
-
-    // Product Type match
     if (currentType) {
       if (p.typeId !== currentType.id) return false;
     } else if (typeParam) {
       const matchTypeId = currentType?.id || typeParam;
       if (p.typeId !== matchTypeId && !p.typeId.toLowerCase().includes(typeParam.toLowerCase())) return false;
     }
-    if (filters.types && filters.types.length > 0) {
-      if (!p.typeId || !filters.types.some(tId => p.typeId === tId || p.typeId.toLowerCase().includes(tId.toLowerCase()))) return false;
+    if (draftFilters.types && draftFilters.types.length > 0) {
+      if (!p.typeId || !draftFilters.types.some(tId => p.typeId === tId || p.typeId.toLowerCase().includes(tId.toLowerCase()))) return false;
     }
-
-    // Brand match
     if (brandParam) {
       const matchBrandId = currentBrand?.id || brandParam;
       if (p.brandId !== matchBrandId && !p.brandName.toLowerCase().includes(brandParam.toLowerCase())) return false;
     }
-
-    // Occasion match
     if (occasionParam) {
       const occLower = occasionParam.toLowerCase();
       if (!p.occasion.toLowerCase().includes(occLower) && !p.name.toLowerCase().includes(occLower)) return false;
     }
-
-    // Age band match (for Kids)
     if (ageParam) {
       const ageLower = ageParam.toLowerCase();
       if (!p.tags.some(t => t.toLowerCase().includes(ageLower)) && !p.name.toLowerCase().includes(ageLower) && !p.description.toLowerCase().includes(ageLower)) {
         if (ageLower === 'toddler' && !p.availableSizes.some(s => ['1-2Y', '2-3Y', 'S'].includes(s))) return false;
       }
     }
-
-    // Search query match
-    const activeSearch = searchParam || filters.searchQuery;
+    const activeSearch = searchParam || draftFilters.searchQuery;
     if (activeSearch) {
       const q = activeSearch.toLowerCase();
       const matchesSearch = p.name.toLowerCase().includes(q) ||
@@ -220,16 +211,79 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                             p.brandName.toLowerCase().includes(q);
       if (!matchesSearch) return false;
     }
+    if (draftFilters.occasions.length > 0 && !draftFilters.occasions.some(o => p.occasion.toLowerCase().includes(o.toLowerCase()))) return false;
+    if (draftFilters.sizes.length > 0 && !p.availableSizes.some(s => draftFilters.sizes.includes(s))) return false;
+    if (draftFilters.colors.length > 0 && !p.colors.some(c => draftFilters.colors.includes(c.name))) return false;
+    if (draftFilters.fabrics.length > 0 && !draftFilters.fabrics.includes(p.fabric)) return false;
 
-    // Sidebar filters
-    if (filters.occasions.length > 0 && !filters.occasions.some(o => p.occasion.toLowerCase().includes(o.toLowerCase()))) return false;
-    if (filters.sizes.length > 0 && !p.availableSizes.some(s => filters.sizes.includes(s))) return false;
-    if (filters.colors.length > 0 && !p.colors.some(c => filters.colors.includes(c.name))) return false;
-    if (filters.fabrics.length > 0 && !filters.fabrics.includes(p.fabric)) return false;
-
-    // Price
     const price = p.discountPrice || p.basePrice;
-    if (price < filters.minPrice || price > filters.maxPrice) return false;
+    if (price < draftFilters.minPrice || price > draftFilters.maxPrice) return false;
+
+    return true;
+  });
+
+  // APPLIED FILTERED PRODUCTS (for product grid display — only updates on Apply Filters click)
+  const filteredProducts = products.filter((p) => {
+    if (tagParam === 'wishlist') return wishlist.includes(p.id);
+    if (rawSlug && !['all', 'sale', 'new-arrivals', 'bestsellers', 'curves', 'ethnic', 'western'].includes(rawSlug)) {
+      if (currentCategory?.id && p.categoryId !== currentCategory.id) return false;
+    }
+    if (rawSlug === 'sale' || tagParam === 'sale') {
+      if (!p.tags.includes('sale') && !p.discountPrice && (!p.discountPercent || p.discountPercent <= 0)) return false;
+    }
+    if (rawSlug === 'new-arrivals' || tagParam === 'new_arrival') {
+      if (!p.tags.includes('new_arrival')) return false;
+    }
+    if (rawSlug === 'bestsellers' || tagParam === 'bestseller') {
+      if (!p.tags.includes('bestseller') && p.rating < 4.5) return false;
+    }
+    if (rawSlug === 'curves' || tagParam === 'curves_plus_size' || appliedFilters.plusSizeOnly) {
+      if (!p.tags.includes('curves_plus_size') && !p.availableSizes.some(s => ['XL', 'XXL', '3XL', 'Free Size'].includes(s))) return false;
+    }
+    if (subParam) {
+      const matchSubId = currentSubcategory?.id || subParam;
+      if (p.subcategoryId !== matchSubId && !p.subcategoryId.toLowerCase().includes(subParam.toLowerCase())) return false;
+    }
+    if (currentType) {
+      if (p.typeId !== currentType.id) return false;
+    } else if (typeParam) {
+      const matchTypeId = currentType?.id || typeParam;
+      if (p.typeId !== matchTypeId && !p.typeId.toLowerCase().includes(typeParam.toLowerCase())) return false;
+    }
+    if (appliedFilters.types && appliedFilters.types.length > 0) {
+      if (!p.typeId || !appliedFilters.types.some(tId => p.typeId === tId || p.typeId.toLowerCase().includes(tId.toLowerCase()))) return false;
+    }
+    if (brandParam) {
+      const matchBrandId = currentBrand?.id || brandParam;
+      if (p.brandId !== matchBrandId && !p.brandName.toLowerCase().includes(brandParam.toLowerCase())) return false;
+    }
+    if (occasionParam) {
+      const occLower = occasionParam.toLowerCase();
+      if (!p.occasion.toLowerCase().includes(occLower) && !p.name.toLowerCase().includes(occLower)) return false;
+    }
+    if (ageParam) {
+      const ageLower = ageParam.toLowerCase();
+      if (!p.tags.some(t => t.toLowerCase().includes(ageLower)) && !p.name.toLowerCase().includes(ageLower) && !p.description.toLowerCase().includes(ageLower)) {
+        if (ageLower === 'toddler' && !p.availableSizes.some(s => ['1-2Y', '2-3Y', 'S'].includes(s))) return false;
+      }
+    }
+    const activeSearch = searchParam || appliedFilters.searchQuery;
+    if (activeSearch) {
+      const q = activeSearch.toLowerCase();
+      const matchesSearch = p.name.toLowerCase().includes(q) ||
+                            p.description.toLowerCase().includes(q) ||
+                            p.fabric.toLowerCase().includes(q) ||
+                            p.occasion.toLowerCase().includes(q) ||
+                            p.brandName.toLowerCase().includes(q);
+      if (!matchesSearch) return false;
+    }
+    if (appliedFilters.occasions.length > 0 && !appliedFilters.occasions.some(o => p.occasion.toLowerCase().includes(o.toLowerCase()))) return false;
+    if (appliedFilters.sizes.length > 0 && !p.availableSizes.some(s => appliedFilters.sizes.includes(s))) return false;
+    if (appliedFilters.colors.length > 0 && !p.colors.some(c => appliedFilters.colors.includes(c.name))) return false;
+    if (appliedFilters.fabrics.length > 0 && !appliedFilters.fabrics.includes(p.fabric)) return false;
+
+    const price = p.discountPrice || p.basePrice;
+    if (price < appliedFilters.minPrice || price > appliedFilters.maxPrice) return false;
 
     return true;
   });
@@ -238,16 +292,17 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     const pA = a.discountPrice || a.basePrice;
     const pB = b.discountPrice || b.basePrice;
-    if (filters.sortBy === 'price_asc') return pA - pB;
-    if (filters.sortBy === 'price_desc') return pB - pA;
-    if (filters.sortBy === 'rating') return b.rating - a.rating;
-    if (filters.sortBy === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    if (appliedFilters.sortBy === 'price_asc') return pA - pB;
+    if (appliedFilters.sortBy === 'price_desc') return pB - pA;
+    if (appliedFilters.sortBy === 'rating') return b.rating - a.rating;
+    if (appliedFilters.sortBy === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     return b.reviewCount - a.reviewCount;
   });
 
-  const toggleFilterItem = (key: 'occasions' | 'sizes' | 'colors' | 'fabrics', value: string) => {
-    setFilters(prev => {
-      const list = prev[key];
+  // MULTIPLE FILTER TOGGLE HELPERS (Mutates local draft state)
+  const toggleDraftFilterItem = (key: 'occasions' | 'sizes' | 'colors' | 'fabrics', value: string) => {
+    setDraftFilters(prev => {
+      const list = prev[key] || [];
       const exists = list.includes(value);
       return {
         ...prev,
@@ -255,6 +310,55 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       };
     });
   };
+
+  const toggleDraftType = (typeId: string) => {
+    setDraftFilters(prev => {
+      const exists = prev.types.includes(typeId);
+      return {
+        ...prev,
+        types: exists ? prev.types.filter(id => id !== typeId) : [...prev.types, typeId]
+      };
+    });
+  };
+
+  // APPLY FILTERS ACTION
+  const handleApplyFilters = () => {
+    setAppliedFilters({ ...draftFilters });
+    setFilters({ ...draftFilters });
+    setMobileFilterOpen(false);
+    const el = document.getElementById('products-grid-container');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    showToast(`Filters Applied (${draftFilteredProducts.length} items found)`);
+  };
+
+  // RESET ALL FILTERS ACTION
+  const handleResetFilters = () => {
+    const emptyFilters: FilterState = {
+      searchQuery: '',
+      minPrice: 0,
+      maxPrice: 10000,
+      types: [],
+      occasions: [],
+      sizes: [],
+      colors: [],
+      fabrics: [],
+      fits: [],
+      tags: [],
+      minDiscount: 0,
+      rating: 0,
+      plusSizeOnly: false,
+      sortBy: 'popularity'
+    };
+    setDraftFilters(emptyFilters);
+    setAppliedFilters(emptyFilters);
+    setLocalMaxPrice(10000);
+    resetFilters();
+    showToast("Filters Reset");
+  };
+
+  const hasUnappliedChanges = JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 text-left">
@@ -358,15 +462,15 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
         </div>
       )}
 
-      {/* FILTER TOP BAR & CONTROLS */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl border border-stone-200 shadow-xs">
+      {/* FILTER TOP BAR & FLIPKART HORIZONTAL SORT TABS */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-3 rounded border border-stone-200 shadow-2xs">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setMobileFilterOpen(true)}
-            className="lg:hidden bg-stone-100 hover:bg-[#F3E9E4] text-stone-800 text-xs font-bold px-3.5 py-2 rounded-lg flex items-center gap-2 cursor-pointer"
+            className="lg:hidden bg-[#C0654B] text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
-            <SlidersHorizontal className="w-4 h-4 text-[#C0654B]" />
-            <span>Filters ({filters.occasions.length + filters.sizes.length + filters.colors.length})</span>
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <span>Filter</span>
           </button>
 
           <p className="text-xs text-stone-600 font-medium">
@@ -374,253 +478,295 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           </p>
         </div>
 
-        {/* SORT DROPDOWN & VIEW MODE TOGGLE */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-stone-500 hidden sm:inline">Sort by:</span>
-            <select
-              value={filters.sortBy}
-              onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value as any }))}
-              className="bg-stone-50 border border-stone-300 text-stone-900 rounded-lg text-xs font-semibold px-3 py-2 focus:outline-none focus:border-[#C0654B]"
-            >
-              <option value="popularity">Most Popular</option>
-              <option value="newest">New Arrivals</option>
-              <option value="price_asc">Price: Low to High</option>
-              <option value="price_desc">Price: High to Low</option>
-              <option value="rating">Customer Rating</option>
-            </select>
-          </div>
-
-          <div className="hidden sm:flex border border-stone-200 rounded-lg p-0.5 bg-stone-50">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md cursor-pointer ${viewMode === 'grid' ? 'bg-white shadow-xs text-[#C0654B]' : 'text-stone-400'}`}
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-md cursor-pointer ${viewMode === 'list' ? 'bg-white shadow-xs text-[#C0654B]' : 'text-stone-400'}`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
+        {/* FLIPKART HORIZONTAL SORT TABS */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar text-xs">
+          <span className="text-stone-500 font-bold mr-1 shrink-0">Sort By:</span>
+          {[
+            { id: 'popularity', label: 'Popularity' },
+            { id: 'price_asc', label: 'Price -- Low to High' },
+            { id: 'price_desc', label: 'Price -- High to Low' },
+            { id: 'newest', label: 'Newest First' },
+            { id: 'rating', label: 'Customer Rating' },
+          ].map((tab) => {
+            const isSelected = appliedFilters.sortBy === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  const newSort = tab.id as any;
+                  setDraftFilters(prev => ({ ...prev, sortBy: newSort }));
+                  setAppliedFilters(prev => ({ ...prev, sortBy: newSort }));
+                  setFilters(prev => ({ ...prev, sortBy: newSort }));
+                }}
+                className={`px-3 py-1.5 rounded text-xs font-semibold whitespace-nowrap cursor-pointer transition-all ${
+                  isSelected
+                    ? 'text-[#C0654B] border-b-2 border-[#C0654B] font-extrabold bg-[#C0654B]/5'
+                    : 'text-stone-600 hover:text-[#C0654B]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* MAIN TWO COLUMN LAYOUT: SIDEBAR FILTERS + PRODUCTS GRID */}
+      {/* MAIN TWO COLUMN LAYOUT: INDEPENDENT SCROLLING SIDEBAR FILTERS + INDEPENDENT SCROLLING PRODUCTS GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* DESKTOP FILTER SIDEBAR */}
-        <aside className="hidden lg:block space-y-6 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs h-fit text-xs">
-          <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-            <span className="font-bold text-stone-900 text-sm flex items-center gap-2 font-serif">
-              <Filter className="w-4 h-4 text-[#C0654B]" />
-              Filter Catalog
-            </span>
-            <button onClick={resetFilters} className="text-[#C0654B] font-bold hover:underline">
-              Reset All
+        {/* DESKTOP FILTER SIDEBAR (INDEPENDENT SCROLL COLUMN) */}
+        <aside className="hidden lg:flex flex-col space-y-3 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs sticky top-24 h-[calc(100vh-7rem)] overflow-hidden text-xs">
+          {/* HEADER SECTION (PINNED AT TOP WITH APPLY FILTERS BUTTON) */}
+          <div className="shrink-0 space-y-2.5 pb-3 border-b border-stone-200 bg-white z-10">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-stone-900 text-sm flex items-center gap-2 font-serif">
+                <Filter className="w-4 h-4 text-[#C0654B]" />
+                Filter Catalog
+              </span>
+              <button 
+                onClick={handleResetFilters} 
+                className="text-stone-500 hover:text-[#C0654B] font-bold text-[11px] transition-colors cursor-pointer"
+              >
+                Reset All
+              </button>
+            </div>
+
+            {/* APPLY FILTERS BUTTON (TOP POSITION — APPLIES DRAFT SELECTIONS) */}
+            <button
+              onClick={handleApplyFilters}
+              className={`w-full text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                hasUnappliedChanges
+                  ? 'bg-[#C0654B] hover:bg-[#8B4A38] ring-2 ring-[#C0654B]/40 scale-[1.01]'
+                  : 'bg-[#C0654B] hover:bg-[#8B4A38]'
+              }`}
+            >
+              <Check className="w-4 h-4" />
+              <span>Apply Filters ({draftFilteredProducts.length} Items)</span>
+              {hasUnappliedChanges && (
+                <span className="bg-white text-[#C0654B] text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase ml-1 animate-pulse">
+                  Unapplied
+                </span>
+              )}
             </button>
           </div>
 
-          {/* CURVES / PLUS-SIZE TOGGLE */}
-          <div className="bg-[#F3E9E4] p-3 rounded-xl border border-[#C0654B]/30 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <p className="font-bold text-[#C0654B] text-xs">CURVES (Plus-Size)</p>
-              <p className="text-[10px] text-stone-600">Show size XL, XXL & 3XL items</p>
-            </div>
-            <input
-              type="checkbox"
-              checked={filters.plusSizeOnly}
-              onChange={(e) => setFilters(prev => ({ ...prev, plusSizeOnly: e.target.checked }))}
-              className="w-4 h-4 accent-[#C0654B] cursor-pointer"
-            />
-          </div>
-
-          {/* Subcategories Filter */}
-          {currentCategory?.subcategories && currentCategory.subcategories.length > 0 && (
-            <div className="space-y-2 border-b border-stone-100 pb-4">
-              <div className="flex items-center justify-between">
-                <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Subcategory</p>
-                {subParam && (
-                  <button
-                    onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
-                    className="text-[10px] text-[#C0654B] font-bold hover:underline"
-                  >
-                    Clear
-                  </button>
-                )}
+          {/* INDEPENDENTLY SCROLLABLE FILTER LIST BODY */}
+          <div className="flex-1 overflow-y-auto filter-scroll-container overscroll-contain pr-1.5 py-1 space-y-5">
+            {/* CURVES / PLUS-SIZE TOGGLE */}
+            <div className="bg-[#F3E9E4] p-3 rounded-xl border border-[#C0654B]/30 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="font-bold text-[#C0654B] text-xs">CURVES (Plus-Size)</p>
+                <p className="text-[10px] text-stone-600">Show size XL, XXL & 3XL items</p>
               </div>
-              <div className="space-y-1">
-                <button
-                  onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
-                  className={`block w-full text-left py-1 px-2 rounded-md transition-colors cursor-pointer text-xs ${
-                    !subParam ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
-                  }`}
-                >
-                  All {currentCategory.name}
-                </button>
-                {currentCategory.subcategories.map(sub => {
-                  const isSubActive = subParam === sub.id || subParam === sub.slug;
-                  return (
-                    <button
-                      key={sub.id}
-                      onClick={() => {
-                        if (isSubActive) {
-                          onNavigate(`/category/${currentCategory.slug}`);
-                        } else {
-                          onNavigate(`/category/${currentCategory.slug}?sub=${sub.id}`);
-                        }
-                      }}
-                      className={`block w-full text-left py-1 px-2 rounded-md transition-colors cursor-pointer text-xs ${
-                        isSubActive ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
-                      }`}
-                    >
-                      {sub.name}
-                    </button>
-                  );
-                })}
-              </div>
+              <input
+                type="checkbox"
+                checked={draftFilters.plusSizeOnly}
+                onChange={(e) => setDraftFilters(prev => ({ ...prev, plusSizeOnly: e.target.checked }))}
+                className="w-4 h-4 accent-[#C0654B] cursor-pointer"
+              />
             </div>
-          )}
 
-          {/* Product Type / Style Section Filter */}
-          {(() => {
-            const displayTypes = currentSubcategory
-              ? (currentSubcategory.types || [])
-              : (currentCategory?.subcategories ? currentCategory.subcategories.flatMap(s => s.types || []) : allTypes);
-
-            if (!displayTypes || displayTypes.length === 0) return null;
-
-            return (
+            {/* Subcategories Filter */}
+            {currentCategory?.subcategories && currentCategory.subcategories.length > 0 && (
               <div className="space-y-2 border-b border-stone-100 pb-4">
                 <div className="flex items-center justify-between">
-                  <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">
-                    Product Type / Section
-                  </p>
-                  {(typeParam || filters.types.length > 0) && (
+                  <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Subcategory</p>
+                  {subParam && (
                     <button
-                      onClick={() => {
-                        setFilters(prev => ({ ...prev, types: [] }));
-                        onNavigate(`/category/${currentCategory.slug}${subParam ? '?sub=' + subParam : ''}`);
-                      }}
-                      className="text-[10px] text-[#C0654B] font-bold hover:underline"
+                      onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
+                      className="text-[10px] text-[#C0654B] font-bold hover:underline cursor-pointer"
                     >
                       Clear
                     </button>
                   )}
                 </div>
-                <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
-                  {displayTypes.map(t => {
-                    const isTypeActive = typeParam === t.id || typeParam === t.slug || filters.types.includes(t.id);
+                <div className="space-y-1">
+                  <button
+                    onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
+                    className={`block w-full text-left py-1 px-2 rounded-md transition-colors cursor-pointer text-xs ${
+                      !subParam ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
+                    }`}
+                  >
+                    All {currentCategory.name}
+                  </button>
+                  {currentCategory.subcategories.map(sub => {
+                    const isSubActive = subParam === sub.id || subParam === sub.slug;
                     return (
                       <button
-                        key={t.id}
+                        key={sub.id}
                         onClick={() => {
-                          if (isTypeActive) {
-                            setFilters(prev => ({ ...prev, types: prev.types.filter(id => id !== t.id) }));
-                            onNavigate(`/category/${currentCategory.slug}${subParam ? '?sub=' + subParam : ''}`);
+                          if (isSubActive) {
+                            onNavigate(`/category/${currentCategory.slug}`);
                           } else {
-                            setFilters(prev => ({ ...prev, types: [t.id] }));
-                            onNavigate(`/category/${currentCategory.slug}?sub=${t.subcategoryId}&type=${t.id}`);
+                            onNavigate(`/category/${currentCategory.slug}?sub=${sub.id}`);
                           }
                         }}
-                        className={`w-full text-left py-1.5 px-2 rounded-md transition-colors cursor-pointer text-xs flex items-center justify-between ${
-                          isTypeActive
-                            ? 'bg-[#F3E9E4] text-[#C0654B] font-bold border border-[#C0654B]/30'
-                            : 'text-stone-700 hover:bg-stone-50'
+                        className={`block w-full text-left py-1 px-2 rounded-md transition-colors cursor-pointer text-xs ${
+                          isSubActive ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
                         }`}
                       >
-                        <span className="truncate">{t.name}</span>
-                        {isTypeActive && <Check className="w-3.5 h-3.5 text-[#C0654B] shrink-0 ml-1" />}
+                        {sub.name}
                       </button>
                     );
                   })}
                 </div>
               </div>
-            );
-          })()}
+            )}
 
-          {/* Occasion Filter */}
-          <div className="space-y-2 border-b border-stone-100 pb-4">
-            <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Occasion</p>
-            <div className="space-y-1.5">
-              {availableOccasions.map(occ => (
-                <label key={occ} className="flex items-center gap-2 cursor-pointer text-stone-700">
-                  <input
-                    type="checkbox"
-                    checked={filters.occasions.includes(occ) || occasionParam === occ}
-                    onChange={() => toggleFilterItem('occasions', occ)}
-                    className="w-3.5 h-3.5 accent-[#C0654B]"
+            {/* Product Type / Style Section Filter */}
+            {(() => {
+              const displayTypes = currentSubcategory
+                ? (currentSubcategory.types || [])
+                : (currentCategory?.subcategories ? currentCategory.subcategories.flatMap(s => s.types || []) : allTypes);
+
+              if (!displayTypes || displayTypes.length === 0) return null;
+
+              return (
+                <div className="space-y-2 border-b border-stone-100 pb-4">
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">
+                      Product Type / Section
+                    </p>
+                    {(typeParam || draftFilters.types.length > 0) && (
+                      <button
+                        onClick={() => {
+                          setDraftFilters(prev => ({ ...prev, types: [] }));
+                        }}
+                        className="text-[10px] text-[#C0654B] font-bold hover:underline cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <div className="space-y-1 max-h-56 overflow-y-auto filter-scroll-container pr-1">
+                    {displayTypes.map(t => {
+                      const isTypeActive = typeParam === t.id || typeParam === t.slug || draftFilters.types.includes(t.id);
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => toggleDraftType(t.id)}
+                          className={`w-full text-left py-1.5 px-2 rounded-md transition-colors cursor-pointer text-xs flex items-center justify-between ${
+                            isTypeActive
+                              ? 'bg-[#F3E9E4] text-[#C0654B] font-bold border border-[#C0654B]/30'
+                              : 'text-stone-700 hover:bg-stone-50'
+                          }`}
+                        >
+                          <span className="truncate">{t.name}</span>
+                          {isTypeActive && <Check className="w-3.5 h-3.5 text-[#C0654B] shrink-0 ml-1" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Occasion Filter (MULTIPLE SELECTABLE) */}
+            <div className="space-y-2 border-b border-stone-100 pb-4">
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Occasion</p>
+                {draftFilters.occasions.length > 0 && (
+                  <span className="text-[10px] text-[#C0654B] font-bold">
+                    {draftFilters.occasions.length} selected
+                  </span>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                {availableOccasions.map(occ => (
+                  <label key={occ} className="flex items-center gap-2 cursor-pointer text-stone-700 hover:text-stone-900 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={draftFilters.occasions.includes(occ) || occasionParam === occ}
+                      onChange={() => toggleDraftFilterItem('occasions', occ)}
+                      className="w-3.5 h-3.5 accent-[#C0654B] cursor-pointer"
+                    />
+                    <span>{occ}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Sizes Filter (MULTIPLE SELECTABLE) */}
+            <div className="space-y-2 border-b border-stone-100 pb-4">
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Size Pick</p>
+                {draftFilters.sizes.length > 0 && (
+                  <span className="text-[10px] text-[#C0654B] font-bold">
+                    {draftFilters.sizes.length} selected
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {availableSizes.map(size => (
+                  <button
+                    key={size}
+                    onClick={() => toggleDraftFilterItem('sizes', size)}
+                    className={`px-2.5 py-1 rounded-md border text-xs font-semibold cursor-pointer transition-colors ${
+                      draftFilters.sizes.includes(size)
+                        ? 'border-[#C0654B] bg-[#F3E9E4] text-[#C0654B] shadow-2xs font-bold'
+                        : 'border-stone-200 text-stone-700 hover:border-stone-400'
+                    }`}
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Colors Filter (MULTIPLE SELECTABLE) */}
+            <div className="space-y-2 border-b border-stone-100 pb-4">
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Color Swatches</p>
+                {draftFilters.colors.length > 0 && (
+                  <span className="text-[10px] text-[#C0654B] font-bold">
+                    {draftFilters.colors.length} selected
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {availableColors.map(col => (
+                  <button
+                    key={col.name}
+                    onClick={() => toggleDraftFilterItem('colors', col.name)}
+                    style={{ backgroundColor: col.hex }}
+                    className={`w-6 h-6 rounded-full border border-stone-300 cursor-pointer transition-transform ${
+                      draftFilters.colors.includes(col.name) ? 'ring-2 ring-[#C0654B] ring-offset-2 scale-110' : 'hover:scale-105'
+                    }`}
+                    title={col.name}
                   />
-                  <span>{occ}</span>
-                </label>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Sizes Filter */}
-          <div className="space-y-2 border-b border-stone-100 pb-4">
-            <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Size Pick</p>
-            <div className="flex flex-wrap gap-1.5">
-              {availableSizes.map(size => (
-                <button
-                  key={size}
-                  onClick={() => toggleFilterItem('sizes', size)}
-                  className={`px-2.5 py-1 rounded-md border text-xs font-semibold cursor-pointer ${
-                    filters.sizes.includes(size)
-                      ? 'border-[#C0654B] bg-[#F3E9E4] text-[#C0654B]'
-                      : 'border-stone-200 text-stone-700 hover:border-stone-400'
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+            {/* Price Filter Slider */}
+            <div className="space-y-2 pb-2">
+              <div className="flex justify-between items-center font-bold text-stone-900 text-xs">
+                <span>Max Price</span>
+                <span className="text-[#C0654B]">₹{localMaxPrice}</span>
+              </div>
+              <input
+                type="range"
+                min="500"
+                max="10000"
+                step="500"
+                value={localMaxPrice}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setLocalMaxPrice(val);
+                  setDraftFilters(prev => ({ ...prev, maxPrice: val }));
+                }}
+                className="w-full accent-[#C0654B] cursor-pointer"
+              />
             </div>
-          </div>
-
-          {/* Colors Filter */}
-          <div className="space-y-2 border-b border-stone-100 pb-4">
-            <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Color Swatches</p>
-            <div className="flex flex-wrap gap-2">
-              {availableColors.map(col => (
-                <button
-                  key={col.name}
-                  onClick={() => toggleFilterItem('colors', col.name)}
-                  style={{ backgroundColor: col.hex }}
-                  className={`w-6 h-6 rounded-full border border-stone-300 cursor-pointer transition-transform ${
-                    filters.colors.includes(col.name) ? 'ring-2 ring-[#C0654B] ring-offset-2 scale-110' : ''
-                  }`}
-                  title={col.name}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Price Filter — debounced so grid only re-renders after slider rests */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center font-bold text-stone-900 text-xs">
-              <span>Max Price</span>
-              <span className="text-[#C0654B]">₹{localMaxPrice}</span>
-            </div>
-            <input
-              type="range"
-              min="500"
-              max="10000"
-              step="500"
-              value={localMaxPrice}
-              onChange={(e) => setLocalMaxPrice(Number(e.target.value))}
-              className="w-full accent-[#C0654B] cursor-pointer"
-            />
           </div>
         </aside>
 
-        {/* PRODUCTS LIST GRID */}
-        <main className="lg:col-span-3">
+        {/* PRODUCTS LIST GRID (INDEPENDENT SCROLL COLUMN) */}
+        <main id="products-grid-container" className="lg:col-span-3 lg:h-[calc(100vh-7rem)] lg:overflow-y-auto filter-scroll-container overscroll-contain pr-2 py-1">
           {sortedProducts.length === 0 ? (
             <div className="bg-white p-12 rounded-2xl border border-stone-200 text-center space-y-4 shadow-xs">
               <Sparkles className="w-10 h-10 text-[#C0654B] mx-auto" />
               <h3 className="text-lg font-bold text-stone-900">No Clothing Items Found in "{sectionTitle}"</h3>
-              <p className="text-xs text-stone-500">Try clearing active section filters or exploring our wider catalog.</p>
+              <p className="text-xs text-stone-500">Try adjusting your selected filters or clearing active section criteria.</p>
               <div className="flex justify-center gap-3 pt-2">
                 <button
                   onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
@@ -629,7 +775,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                   View All {currentCategory.name}
                 </button>
                 <button
-                  onClick={resetFilters}
+                  onClick={handleResetFilters}
                   className="bg-stone-100 text-stone-800 text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer hover:bg-stone-200"
                 >
                   Reset All Filters
@@ -637,16 +783,41 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-              {sortedProducts.map((product) => (
-                <ProductCard 
-                  key={product.id} 
-                  product={product} 
-                  onNavigate={onNavigate} 
-                  onToggleCompare={handleToggleCompare}
-                  isCompared={comparedProductIds.includes(product.id)}
-                />
-              ))}
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {sortedProducts.map((product) => (
+                  <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    onNavigate={onNavigate} 
+                    onToggleCompare={handleToggleCompare}
+                    isCompared={comparedProductIds.includes(product.id)}
+                  />
+                ))}
+              </div>
+
+              {/* FLIPKART NUMBERED PAGINATION BAR */}
+              <div className="bg-white p-3 rounded border border-stone-200 flex items-center justify-between text-xs font-semibold shadow-2xs">
+                <span className="text-stone-500">Page 1 of 4</span>
+                <div className="flex items-center gap-1">
+                  <button className="w-8 h-8 rounded-full bg-[#C0654B] text-white font-bold flex items-center justify-center cursor-pointer shadow-xs">
+                    1
+                  </button>
+                  <button className="w-8 h-8 rounded-full hover:bg-stone-100 text-stone-700 font-bold flex items-center justify-center cursor-pointer">
+                    2
+                  </button>
+                  <button className="w-8 h-8 rounded-full hover:bg-stone-100 text-stone-700 font-bold flex items-center justify-center cursor-pointer">
+                    3
+                  </button>
+                  <button className="w-8 h-8 rounded-full hover:bg-stone-100 text-stone-700 font-bold flex items-center justify-center cursor-pointer">
+                    4
+                  </button>
+                  <button className="px-3 py-1.5 rounded hover:bg-stone-100 text-[#C0654B] font-bold flex items-center gap-1 cursor-pointer">
+                    <span>NEXT</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </main>
@@ -669,179 +840,187 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'tween', duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-white p-5 overflow-y-auto space-y-6 z-10 shadow-2xl pb-safe flex flex-col justify-between">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+            className="fixed inset-y-0 left-0 w-80 max-w-[85vw] bg-white p-5 overflow-hidden z-10 shadow-2xl pb-safe flex flex-col"
+          >
+            {/* PINNED HEADER AT TOP OF MOBILE FILTER SECTION WITH APPLY FILTERS BUTTON */}
+            <div className="shrink-0 space-y-3 pb-3 border-b border-stone-200 bg-white z-10">
+              <div className="flex items-center justify-between">
                 <span className="font-bold text-stone-900 text-base font-serif">Filter Catalog</span>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={resetFilters}
-                    className="text-[11px] font-bold text-[#C0654B] hover:underline"
+                    onClick={handleResetFilters}
+                    className="text-xs font-bold text-stone-500 hover:text-[#C0654B] transition-colors"
                   >
                     Reset
                   </button>
-                  <button onClick={() => setMobileFilterOpen(false)} className="min-w-[44px] min-h-[44px] flex items-center justify-center text-stone-500">
+                  <button 
+                    onClick={() => setMobileFilterOpen(false)} 
+                    className="min-w-[36px] min-h-[36px] flex items-center justify-center text-stone-500 hover:text-stone-900 rounded-lg hover:bg-stone-100 cursor-pointer"
+                    aria-label="Close filters"
+                  >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-            {/* Mobile Subcategory */}
-            {currentCategory?.subcategories && currentCategory.subcategories.length > 0 && (
-              <div className="space-y-2 border-b border-stone-100 pb-4">
-                <p className="font-bold text-xs uppercase text-stone-900">Subcategory</p>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
-                    className={`block w-full text-left py-1.5 px-2 rounded-md text-xs ${
-                      !subParam ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
-                    }`}
-                  >
-                    All {currentCategory.name}
-                  </button>
-                  {currentCategory.subcategories.map(sub => {
-                    const isSubActive = subParam === sub.id || subParam === sub.slug;
-                    return (
-                      <button
-                        key={sub.id}
-                        onClick={() => {
-                          if (isSubActive) {
-                            onNavigate(`/category/${currentCategory.slug}`);
-                          } else {
-                            onNavigate(`/category/${currentCategory.slug}?sub=${sub.id}`);
-                          }
-                        }}
-                        className={`block w-full text-left py-1.5 px-2 rounded-md text-xs ${
-                          isSubActive ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
-                        }`}
-                      >
-                        {sub.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+              {/* APPLY FILTERS BUTTON (TOP POSITION IN MOBILE FILTER DRAWER) */}
+              <button
+                onClick={handleApplyFilters}
+                className={`w-full text-white font-bold py-3 rounded-xl text-xs shadow-md cursor-pointer flex items-center justify-center gap-2 min-h-[44px] ${
+                  hasUnappliedChanges ? 'bg-[#C0654B] hover:bg-[#8B4A38] ring-2 ring-[#C0654B]/40' : 'bg-[#C0654B] hover:bg-[#8B4A38]'
+                }`}
+              >
+                <Check className="w-4 h-4" />
+                <span>Apply Filters ({draftFilteredProducts.length} Items)</span>
+              </button>
+            </div>
 
-            {/* Mobile Product Type / Style Section */}
-            {(() => {
-              const displayTypes = currentSubcategory
-                ? (currentSubcategory.types || [])
-                : (currentCategory?.subcategories ? currentCategory.subcategories.flatMap(s => s.types || []) : allTypes);
-
-              if (!displayTypes || displayTypes.length === 0) return null;
-
-              return (
+            {/* INDEPENDENT SCROLL CONTAINER FOR MOBILE FILTERS BODY */}
+            <div className="flex-1 overflow-y-auto filter-scroll-container overscroll-contain py-4 space-y-5 pr-1">
+              {/* Mobile Subcategory */}
+              {currentCategory?.subcategories && currentCategory.subcategories.length > 0 && (
                 <div className="space-y-2 border-b border-stone-100 pb-4">
-                  <p className="font-bold text-xs uppercase text-stone-900">Product Type / Section</p>
-                  <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
-                    {displayTypes.map(t => {
-                      const isTypeActive = typeParam === t.id || typeParam === t.slug || filters.types.includes(t.id);
+                  <p className="font-bold text-xs uppercase text-stone-900">Subcategory</p>
+                  <div className="space-y-1">
+                    <button
+                      onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
+                      className={`block w-full text-left py-1.5 px-2 rounded-md text-xs ${
+                        !subParam ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
+                      }`}
+                    >
+                      All {currentCategory.name}
+                    </button>
+                    {currentCategory.subcategories.map(sub => {
+                      const isSubActive = subParam === sub.id || subParam === sub.slug;
                       return (
                         <button
-                          key={t.id}
+                          key={sub.id}
                           onClick={() => {
-                            if (isTypeActive) {
-                              setFilters(prev => ({ ...prev, types: prev.types.filter(id => id !== t.id) }));
-                              onNavigate(`/category/${currentCategory.slug}${subParam ? '?sub=' + subParam : ''}`);
+                            if (isSubActive) {
+                              onNavigate(`/category/${currentCategory.slug}`);
                             } else {
-                              setFilters(prev => ({ ...prev, types: [t.id] }));
-                              onNavigate(`/category/${currentCategory.slug}?sub=${t.subcategoryId}&type=${t.id}`);
+                              onNavigate(`/category/${currentCategory.slug}?sub=${sub.id}`);
                             }
                           }}
-                          className={`w-full text-left py-1.5 px-2 rounded-md text-xs flex items-center justify-between ${
-                            isTypeActive ? 'bg-[#F3E9E4] text-[#C0654B] font-bold border border-[#C0654B]/30' : 'text-stone-700 hover:bg-stone-50'
+                          className={`block w-full text-left py-1.5 px-2 rounded-md text-xs ${
+                            isSubActive ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
                           }`}
                         >
-                          <span className="truncate">{t.name}</span>
-                          {isTypeActive && <Check className="w-3.5 h-3.5 text-[#C0654B] shrink-0 ml-1" />}
+                          {sub.name}
                         </button>
                       );
                     })}
                   </div>
                 </div>
-              );
-            })()}
+              )}
 
-            {/* Mobile Occasions */}
-            <div className="space-y-2 border-b border-stone-100 pb-4">
-              <p className="font-bold text-xs uppercase text-stone-900">Occasion</p>
-              <div className="space-y-1.5">
-                {availableOccasions.map(occ => (
-                  <label key={occ} className="flex items-center gap-2 text-xs text-stone-700">
-                    <input
-                      type="checkbox"
-                      checked={filters.occasions.includes(occ) || occasionParam === occ}
-                      onChange={() => toggleFilterItem('occasions', occ)}
-                      className="w-3.5 h-3.5 accent-[#C0654B]"
+              {/* Mobile Product Type / Style Section */}
+              {(() => {
+                const displayTypes = currentSubcategory
+                  ? (currentSubcategory.types || [])
+                  : (currentCategory?.subcategories ? currentCategory.subcategories.flatMap(s => s.types || []) : allTypes);
+
+                if (!displayTypes || displayTypes.length === 0) return null;
+
+                return (
+                  <div className="space-y-2 border-b border-stone-100 pb-4">
+                    <p className="font-bold text-xs uppercase text-stone-900">Product Type / Section</p>
+                    <div className="space-y-1 max-h-48 overflow-y-auto filter-scroll-container pr-1">
+                      {displayTypes.map(t => {
+                        const isTypeActive = typeParam === t.id || typeParam === t.slug || draftFilters.types.includes(t.id);
+                        return (
+                          <button
+                            key={t.id}
+                            onClick={() => toggleDraftType(t.id)}
+                            className={`w-full text-left py-1.5 px-2 rounded-md text-xs flex items-center justify-between ${
+                              isTypeActive ? 'bg-[#F3E9E4] text-[#C0654B] font-bold border border-[#C0654B]/30' : 'text-stone-700 hover:bg-stone-50'
+                            }`}
+                          >
+                            <span className="truncate">{t.name}</span>
+                            {isTypeActive && <Check className="w-3.5 h-3.5 text-[#C0654B] shrink-0 ml-1" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Mobile Occasions */}
+              <div className="space-y-2 border-b border-stone-100 pb-4">
+                <p className="font-bold text-xs uppercase text-stone-900">Occasion</p>
+                <div className="space-y-1.5">
+                  {availableOccasions.map(occ => (
+                    <label key={occ} className="flex items-center gap-2 text-xs text-stone-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={draftFilters.occasions.includes(occ) || occasionParam === occ}
+                        onChange={() => toggleDraftFilterItem('occasions', occ)}
+                        className="w-3.5 h-3.5 accent-[#C0654B] cursor-pointer"
+                      />
+                      <span>{occ}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mobile Sizes */}
+              <div className="space-y-2 border-b border-stone-100 pb-4">
+                <p className="font-bold text-xs uppercase text-stone-900">Size</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {availableSizes.map(size => (
+                    <button
+                      key={size}
+                      onClick={() => toggleDraftFilterItem('sizes', size)}
+                      className={`px-3 py-1 rounded-md border text-xs font-semibold cursor-pointer ${
+                        draftFilters.sizes.includes(size) ? 'bg-[#C0654B] text-white border-[#C0654B]' : 'border-stone-300'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mobile Colors */}
+              <div className="space-y-2 border-b border-stone-100 pb-4">
+                <p className="font-bold text-xs uppercase text-stone-900">Color Swatches</p>
+                <div className="flex flex-wrap gap-2">
+                  {availableColors.map(col => (
+                    <button
+                      key={col.name}
+                      onClick={() => toggleDraftFilterItem('colors', col.name)}
+                      style={{ backgroundColor: col.hex }}
+                      className={`w-6 h-6 rounded-full border border-stone-300 transition-transform cursor-pointer ${
+                        draftFilters.colors.includes(col.name) ? 'ring-2 ring-[#C0654B] ring-offset-2 scale-110' : ''
+                      }`}
+                      title={col.name}
                     />
-                    <span>{occ}</span>
-                  </label>
-                ))}
+                  ))}
+                </div>
+              </div>
+
+              {/* Mobile Price */}
+              <div className="space-y-2 pb-2">
+                <div className="flex justify-between items-center font-bold text-xs">
+                  <span>Max Price</span>
+                  <span className="text-[#C0654B]">₹{localMaxPrice}</span>
+                </div>
+                <input
+                  type="range"
+                  min="500"
+                  max="10000"
+                  step="500"
+                  value={localMaxPrice}
+                  onChange={(e) => {
+                    const val = Number(e.target.value);
+                    setLocalMaxPrice(val);
+                    setDraftFilters(prev => ({ ...prev, maxPrice: val }));
+                  }}
+                  className="w-full accent-[#C0654B] cursor-pointer"
+                />
               </div>
             </div>
-
-            {/* Mobile Sizes */}
-            <div className="space-y-2 border-b border-stone-100 pb-4">
-              <p className="font-bold text-xs uppercase text-stone-900">Size</p>
-              <div className="flex flex-wrap gap-1.5">
-                {availableSizes.map(size => (
-                  <button
-                    key={size}
-                    onClick={() => toggleFilterItem('sizes', size)}
-                    className={`px-3 py-1 rounded-md border text-xs font-semibold ${
-                      filters.sizes.includes(size) ? 'bg-[#C0654B] text-white border-[#C0654B]' : 'border-stone-300'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Mobile Colors */}
-            <div className="space-y-2 border-b border-stone-100 pb-4">
-              <p className="font-bold text-xs uppercase text-stone-900">Color Swatches</p>
-              <div className="flex flex-wrap gap-2">
-                {availableColors.map(col => (
-                  <button
-                    key={col.name}
-                    onClick={() => toggleFilterItem('colors', col.name)}
-                    style={{ backgroundColor: col.hex }}
-                    className={`w-6 h-6 rounded-full border border-stone-300 transition-transform ${
-                      filters.colors.includes(col.name) ? 'ring-2 ring-[#C0654B] ring-offset-2 scale-110' : ''
-                    }`}
-                    title={col.name}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Mobile Price — debounced */}
-            <div className="space-y-2 pb-2">
-              <div className="flex justify-between items-center font-bold text-xs">
-                <span>Max Price</span>
-                <span className="text-[#C0654B]">₹{localMaxPrice}</span>
-              </div>
-              <input
-                type="range"
-                min="500"
-                max="10000"
-                step="500"
-                value={localMaxPrice}
-                onChange={(e) => setLocalMaxPrice(Number(e.target.value))}
-                className="w-full accent-[#C0654B]"
-              />
-            </div>
-
-            </div>
-
-            <button
-              onClick={() => setMobileFilterOpen(false)}
-              className="w-full bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold py-3.5 rounded-xl text-xs shadow-md cursor-pointer mt-4 min-h-[44px]"
-            >
-              Apply Filters ({sortedProducts.length} Items)
-            </button>
           </motion.div>
           </div>
         )}

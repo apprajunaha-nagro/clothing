@@ -6,7 +6,7 @@ import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 import {
   Star,
   Heart,
-  ShoppingBag,
+  ShoppingCart,
   Truck,
   ShieldCheck,
   RotateCcw,
@@ -156,50 +156,69 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
         </div>
 
         {/* RIGHT: BUYING CONTROLS & SPECS */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div>
-            <div className="flex items-center justify-between text-xs mb-1">
-              <span className="font-bold text-[#C0654B] uppercase tracking-widest">{product.brandName}</span>
-              <div className="flex items-center gap-1.5 text-amber-500 font-bold">
-                <Star className="w-4 h-4 fill-amber-400" />
-                <span>{product.rating}</span>
-                <span className="text-stone-400 font-normal">({product.reviewCount} customer reviews)</span>
-              </div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-extrabold text-stone-400 text-xs uppercase tracking-wider">{product.brandName || 'PGmart Classic'}</span>
+              <span className="rating-pill-green">
+                <span>{product.rating.toFixed(1)}</span>
+                <Star className="w-2.5 h-2.5 fill-white text-white" />
+              </span>
+              <a href="#reviews-section" className="text-xs font-bold text-stone-500 hover:text-[#C0654B]">
+                {product.reviewCount.toLocaleString()} Ratings & Reviews
+              </a>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-bold font-serif text-stone-900 leading-snug">
+            <h1 className="text-xl sm:text-2xl font-normal text-stone-900 leading-snug">
               {product.name}
             </h1>
-            <p className="text-xs text-stone-500 mt-1">SKU: {currentVariant.sku} | HSN Code: {product.hsnCode}</p>
+            <p className="text-[11px] text-stone-400 mt-0.5">Special Price | Free Delivery</p>
           </div>
 
-          {/* PRICE & TAX BADGE */}
-          <div className="bg-[#F3E9E4]/60 p-4 rounded-xl border border-stone-200 flex items-center justify-between">
-            <div>
-              <div className="flex items-baseline gap-3">
-                <span className="text-2xl sm:text-3xl font-extrabold text-stone-900">
-                  ₹{effectivePrice.toLocaleString('en-IN')}
+          {/* FLIPKART PRICE BLOCK */}
+          <div className="bg-stone-50 p-3 rounded border border-stone-200">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+                ₹{effectivePrice.toLocaleString('en-IN')}
+              </span>
+              {originalPrice > effectivePrice && (
+                <span className="text-sm text-stone-400 line-through">
+                  ₹{originalPrice.toLocaleString('en-IN')}
                 </span>
-                {originalPrice > effectivePrice && (
-                  <span className="text-sm sm:text-base text-stone-400 line-through">
-                    ₹{originalPrice.toLocaleString('en-IN')}
-                  </span>
-                )}
-                {discountPercent > 0 && (
-                  <span className="bg-[#C0654B] text-white text-xs font-bold px-2.5 py-0.5 rounded-sm">
-                    SAVE {discountPercent}%
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-stone-500 mt-0.5">Inclusive of GST ({product.gstPercent}%) & All Taxes</p>
+              )}
+              {discountPercent > 0 && (
+                <span className="text-sm font-extrabold text-[#26A541]">
+                  {discountPercent}% off
+                </span>
+              )}
             </div>
-            <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full">
-              In Stock ({currentVariant.stock} available)
-            </span>
+            <p className="text-[10px] text-stone-500 mt-1">Inclusive of all taxes</p>
+          </div>
+
+          {/* AVAILABLE OFFERS (Flipkart Green Bullet Tags) */}
+          <div className="bg-emerald-50/60 p-3 rounded border border-emerald-200/80 space-y-1.5 text-xs">
+            <p className="font-bold text-stone-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Available Offers</span>
+            </p>
+            <ul className="space-y-1 text-stone-700 text-[11px]">
+              <li className="flex items-start gap-1.5">
+                <span className="bg-emerald-700 text-white text-[9px] font-bold px-1 rounded shrink-0 mt-0.5">Bank Offer</span>
+                <span>5% Cashback on PGmart Axis Bank Card. <strong className="text-emerald-800">T&C</strong></span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <span className="bg-emerald-700 text-white text-[9px] font-bold px-1 rounded shrink-0 mt-0.5">Special Price</span>
+                <span>Get extra 15% off on festive wear orders above ₹1,499. <strong className="text-emerald-800">T&C</strong></span>
+              </li>
+              <li className="flex items-start gap-1.5">
+                <span className="bg-emerald-700 text-white text-[9px] font-bold px-1 rounded shrink-0 mt-0.5">Partner Offer</span>
+                <span>Buy 2 get additional 10% instant checkout discount with code <strong className="text-stone-900 font-mono bg-white px-1 border border-stone-200">WELCOME100</strong></span>
+              </li>
+            </ul>
           </div>
 
           {/* COLOR SELECTOR */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <label className="text-xs font-bold text-stone-800">
               Color: <span className="text-[#C0654B]">{currentColor?.name}</span>
             </label>
@@ -212,8 +231,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
                     setActiveImageIndex(0);
                   }}
                   style={{ backgroundColor: c.hex }}
-                  className={`w-8 h-8 rounded-full border-2 cursor-pointer transition-all ${
-                    colorIndex === idx ? 'border-[#C0654B] ring-2 ring-[#C0654B] ring-offset-2 scale-110' : 'border-stone-300'
+                  className={`w-7 h-7 rounded-full border cursor-pointer transition-all ${
+                    colorIndex === idx ? 'border-[#C0654B] ring-2 ring-[#C0654B] ring-offset-1 scale-105' : 'border-stone-300'
                   }`}
                   title={c.name}
                 />
@@ -221,16 +240,16 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             </div>
           </div>
 
-          {/* SIZE SELECTOR WITH SIZE CHART GUIDE LINK */}
-          <div className="space-y-2">
+          {/* SIZE SELECTOR */}
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-stone-800">Select Size</label>
               <button
                 onClick={() => setSizeChartCategory(product.categoryId)}
-                className="text-xs font-bold text-[#C0654B] underline flex items-center gap-1 cursor-pointer min-h-[36px]"
+                className="text-xs font-bold text-[#C0654B] hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <Ruler className="w-3.5 h-3.5" />
-                <span>Size Chart Guide</span>
+                <Ruler className="w-3 h-3" />
+                <span>Size Chart</span>
               </button>
             </div>
 
@@ -239,9 +258,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
-                  className={`text-xs px-4 py-2.5 min-w-[44px] min-h-[44px] rounded-xl border font-bold cursor-pointer transition-all flex items-center justify-center ${
+                  className={`text-xs px-3 py-1.5 rounded border font-bold cursor-pointer transition-all ${
                     selectedSize === size
-                      ? 'border-[#C0654B] bg-[#F3E9E4] text-[#C0654B] shadow-xs'
+                      ? 'border-[#C0654B] bg-[#C0654B]/10 text-[#C0654B]'
                       : 'border-stone-300 text-stone-700 hover:border-stone-500'
                   }`}
                 >
@@ -251,60 +270,29 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             </div>
           </div>
 
-          {/* ACTION BUTTONS */}
-          <div className="space-y-3 pt-2">
-            <div className="flex gap-3">
-              <button
-                onClick={() => addToCart(product, currentVariant, quantity)}
-                className="flex-1 bg-[#2B2620] hover:bg-stone-800 text-white font-bold py-3.5 min-h-[48px] rounded-xl shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer transition-colors"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>ADD TO BAG</span>
-              </button>
+          {/* SIDE-BY-SIDE ACTION BUTTONS (Add to Cart outlined, Buy Now solid Rose Clay) */}
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button
+              onClick={() => addToCart(product, currentVariant, quantity)}
+              className="bg-white hover:bg-stone-50 text-[#C0654B] border-2 border-[#C0654B] font-extrabold py-3 rounded text-xs sm:text-sm shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer uppercase transition-colors"
+            >
+              <ShoppingCart className="w-4 h-4 text-[#C0654B]" />
+              <span>Add to Cart</span>
+            </button>
 
-              <button
-                onClick={handleBuyNow}
-                className="flex-1 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold py-3.5 min-h-[48px] rounded-xl shadow-lg text-xs sm:text-sm cursor-pointer transition-colors"
-              >
-                BUY IT NOW
-              </button>
-            </div>
-          </div>
-
-          {/* MOBILE STICKY BOTTOM BUY BAR */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-stone-200/90 p-3 px-4 pb-safe shadow-2xl flex items-center justify-between gap-3 animate-slide-up">
-            <div>
-              <p className="text-[10px] text-stone-500 font-medium line-clamp-1">{product.name}</p>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-extrabold text-stone-900 text-sm">₹{effectivePrice.toLocaleString('en-IN')}</span>
-                {originalPrice > effectivePrice && (
-                  <span className="text-[10px] text-stone-400 line-through">₹{originalPrice.toLocaleString('en-IN')}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                onClick={() => addToCart(product, currentVariant, quantity)}
-                className="bg-[#2B2620] hover:bg-stone-800 text-white font-bold px-3.5 py-2.5 min-h-[44px] rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>ADD</span>
-              </button>
-              <button
-                onClick={handleBuyNow}
-                className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-4 py-2.5 min-h-[44px] rounded-xl text-xs cursor-pointer shadow-md"
-              >
-                BUY NOW
-              </button>
-            </div>
+            <button
+              onClick={handleBuyNow}
+              className="bg-[#C0654B] hover:bg-[#a85239] text-white font-extrabold py-3 rounded text-xs sm:text-sm shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer uppercase transition-colors"
+            >
+              <span>Buy Now</span>
+            </button>
           </div>
 
           {/* PINCODE CHECKER */}
-          <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-2 text-xs">
+          <div className="bg-stone-50 p-3 rounded border border-stone-200 space-y-1.5 text-xs">
             <p className="font-bold text-stone-800 flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-[#C0654B]" />
-              Check Delivery & COD Availability
+              <MapPin className="w-3.5 h-3.5 text-[#C0654B]" />
+              Delivery Options
             </p>
             <form onSubmit={handlePincodeCheck} className="flex gap-2">
               <input
@@ -312,12 +300,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
                 maxLength={6}
                 value={pincode}
                 onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
-                placeholder="Enter 6-digit Pincode (e.g. 700091)"
-                className="flex-1 bg-white border border-stone-300 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-[#C0654B]"
+                placeholder="Enter Pincode (e.g. 700091)"
+                className="flex-1 bg-white border border-stone-300 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-[#C0654B]"
               />
               <button
                 type="submit"
-                className="bg-stone-900 text-white font-bold px-4 py-2 rounded-lg cursor-pointer hover:bg-[#C0654B] text-xs"
+                className="bg-[#C0654B] text-white font-bold px-3 py-1.5 rounded cursor-pointer hover:bg-[#a85239] text-xs"
               >
                 Check
               </button>
@@ -329,90 +317,103 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             )}
           </div>
 
-          {/* CUSTOMER SUPPORT LIVE CHAT ASSISTANT PROMPT */}
-          <div className="bg-[#FAF7F5] border border-[#C0654B]/20 p-4 rounded-xl space-y-2.5 text-xs">
-            <p className="font-bold text-stone-800 flex items-center gap-1.5">
-              <MessageSquare className="w-4 h-4 text-[#C0654B]" />
-              Need instant help with this product?
-            </p>
-            <p className="text-stone-600 leading-relaxed">
-              Ask our live chat assistant about sizing advice, delivery times, payment options, or active coupons.
-            </p>
-            <button
-              onClick={() => setChatOpen(true)}
-              className="w-full bg-[#C0654B] text-white hover:bg-stone-900 font-bold py-2 rounded-lg cursor-pointer transition-colors text-center block flex items-center justify-center gap-2"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>Chat with Customer Support</span>
-            </button>
-          </div>
-
-          {/* ACCORDION SECTIONS */}
-          <div className="border-t border-stone-200 divide-y divide-stone-200 text-xs">
-            {/* Specs */}
-            <div className="py-3">
-              <button
-                onClick={() => setSpecsOpen(!specsOpen)}
-                className="w-full flex items-center justify-between font-bold text-stone-900 cursor-pointer"
-              >
-                <span>Product Specifications & Fabric</span>
-                {specsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-              {specsOpen && (
-                <div className="pt-3 grid grid-cols-2 gap-2 text-stone-600 leading-relaxed">
-                  <p><strong>Fabric:</strong> {product.fabric}</p>
-                  <p><strong>Fit:</strong> {product.fit}</p>
-                  <p><strong>Occasion:</strong> {product.occasion}</p>
-                  <p><strong>Pattern:</strong> {product.pattern || 'Solid'}</p>
-                  {product.neck && <p><strong>Neck:</strong> {product.neck}</p>}
-                  {product.sleeve && <p><strong>Sleeve:</strong> {product.sleeve}</p>}
-                </div>
-              )}
+          {/* TWO-COLUMN SPECIFICATIONS KEY-VALUE TABLE (Flipkart Style) */}
+          <div className="border border-stone-200 rounded overflow-hidden text-xs">
+            <div className="bg-stone-100 p-2.5 font-bold text-stone-900 border-b border-stone-200 uppercase tracking-wider">
+              Product Specifications
             </div>
-
-            {/* Shipping & Returns */}
-            <div className="py-3">
-              <button
-                onClick={() => setShippingOpen(!shippingOpen)}
-                className="w-full flex items-center justify-between font-bold text-stone-900 cursor-pointer"
-              >
-                <span>Shipping & 15-Day Return Policy</span>
-                {shippingOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-              {shippingOpen && (
-                <p className="pt-3 text-stone-600 leading-relaxed">
-                  Free shipping on orders above ₹999. Delivered in 3-5 business days. 15-day hassle-free doorstep return pickup available for non-innerwear garments.
-                </p>
-              )}
-            </div>
+            <table className="w-full text-left border-collapse text-[11px]">
+              <tbody>
+                <tr className="border-b border-stone-100">
+                  <td className="p-2 bg-stone-50 font-bold text-stone-500 w-1/3">Fabric</td>
+                  <td className="p-2 text-stone-800">{product.fabric}</td>
+                </tr>
+                <tr className="border-b border-stone-100">
+                  <td className="p-2 bg-stone-50 font-bold text-stone-500">Fit</td>
+                  <td className="p-2 text-stone-800">{product.fit}</td>
+                </tr>
+                <tr className="border-b border-stone-100">
+                  <td className="p-2 bg-stone-50 font-bold text-stone-500">Occasion</td>
+                  <td className="p-2 text-stone-800">{product.occasion}</td>
+                </tr>
+                <tr className="border-b border-stone-100">
+                  <td className="p-2 bg-stone-50 font-bold text-stone-500">Pattern</td>
+                  <td className="p-2 text-stone-800">{product.pattern || 'Solid'}</td>
+                </tr>
+                {product.neck && (
+                  <tr className="border-b border-stone-100">
+                    <td className="p-2 bg-stone-50 font-bold text-stone-500">Neckline</td>
+                    <td className="p-2 text-stone-800">{product.neck}</td>
+                  </tr>
+                )}
+                <tr className="border-b border-stone-100">
+                  <td className="p-2 bg-stone-50 font-bold text-stone-500">HSN Code</td>
+                  <td className="p-2 text-stone-800">{product.hsnCode}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-      {/* 2. REVIEWS & RATINGS BREAKDOWN */}
-      <section className="bg-white p-6 sm:p-8 rounded-2xl border border-stone-200 space-y-6">
-        <div className="border-b border-stone-200 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      {/* 2. REVIEWS & RATINGS BREAKDOWN (Flipkart Style Bar Chart 5★ to 1★) */}
+      <section id="reviews-section" className="bg-white p-4 sm:p-6 rounded border border-stone-200 space-y-6">
+        <div className="border-b border-stone-200 pb-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h3 className="text-xl font-bold font-serif text-stone-900">Customer Ratings & Reviews</h3>
-            <p className="text-xs text-stone-500">Verified buyer feedback & star ratings</p>
+            <h3 className="text-lg font-bold text-stone-900">Ratings & Reviews</h3>
+            <p className="text-xs text-stone-500">Verified buyer ratings from PGmart shoppers</p>
           </div>
 
-          <div className="flex items-center gap-3 bg-[#F3E9E4] px-4 py-2 rounded-xl">
-            <span className="text-2xl font-bold text-[#C0654B]">{product.rating}</span>
-            <div>
-              <div className="flex text-amber-500">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-3.5 h-3.5 fill-amber-400" />
-                ))}
+          <div className="flex items-center gap-6 bg-stone-50 p-3 rounded border border-stone-200 w-full md:w-auto">
+            <div className="text-center">
+              <span className="text-3xl font-extrabold text-stone-900">{product.rating.toFixed(1)} ★</span>
+              <p className="text-[10px] text-stone-500 font-semibold">{product.reviewCount} Ratings & 18 Reviews</p>
+            </div>
+
+            {/* Rating Bar Chart 5★ to 1★ */}
+            <div className="flex-1 space-y-1 text-[10px] min-w-[160px]">
+              <div className="flex items-center gap-2">
+                <span>5★</span>
+                <div className="flex-1 bg-stone-200 h-2 rounded overflow-hidden">
+                  <div className="bg-[#26A541] h-full w-[70%]" />
+                </div>
+                <span>70%</span>
               </div>
-              <p className="text-[10px] text-stone-600 font-bold">{product.reviewCount} Verified Ratings</p>
+              <div className="flex items-center gap-2">
+                <span>4★</span>
+                <div className="flex-1 bg-stone-200 h-2 rounded overflow-hidden">
+                  <div className="bg-[#26A541] h-full w-[20%]" />
+                </div>
+                <span>20%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>3★</span>
+                <div className="flex-1 bg-stone-200 h-2 rounded overflow-hidden">
+                  <div className="bg-amber-500 h-full w-[6%]" />
+                </div>
+                <span>6%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>2★</span>
+                <div className="flex-1 bg-stone-200 h-2 rounded overflow-hidden">
+                  <div className="bg-orange-500 h-full w-[3%]" />
+                </div>
+                <span>3%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>1★</span>
+                <div className="flex-1 bg-stone-200 h-2 rounded overflow-hidden">
+                  <div className="bg-red-500 h-full w-[1%]" />
+                </div>
+                <span>1%</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* WRITE A REVIEW FORM */}
-        <form onSubmit={handleReviewSubmit} className="bg-stone-50 p-4 sm:p-6 rounded-xl border border-stone-200 space-y-3 text-xs">
-          <p className="font-bold text-stone-800 text-sm">Write a Review for {product.name}</p>
+        <form onSubmit={handleReviewSubmit} className="bg-stone-50 p-4 rounded border border-stone-200 space-y-3 text-xs">
+          <p className="font-bold text-stone-800 text-xs uppercase tracking-wider">Rate & Review Product</p>
 
           <div className="flex items-center gap-2">
             <span className="text-stone-600 font-medium">Your Rating:</span>
@@ -431,12 +432,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
               required
               value={reviewName}
               onChange={(e) => setReviewName(e.target.value)}
-              placeholder="Your Full Name"
-              className="bg-white border border-stone-300 rounded-lg p-2.5 focus:outline-none focus:border-[#C0654B]"
+              placeholder="Your Name"
+              className="bg-white border border-stone-300 rounded p-2 focus:outline-none focus:border-[#C0654B]"
             />
-            <div className="flex items-center gap-2 bg-white border border-stone-300 rounded-lg px-3 py-2 text-stone-500">
+            <div className="flex items-center gap-2 bg-white border border-stone-300 rounded px-3 py-2 text-stone-500">
               <Camera className="w-4 h-4 text-[#C0654B]" />
-              <span>Attach Review Photo (Optional)</span>
+              <span>Attach Review Image</span>
             </div>
           </div>
 
@@ -445,24 +446,24 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             rows={3}
             value={reviewComment}
             onChange={(e) => setReviewComment(e.target.value)}
-            placeholder="Describe fit, fabric quality, color accuracy..."
-            className="w-full bg-white border border-stone-300 rounded-lg p-2.5 focus:outline-none focus:border-[#C0654B]"
+            placeholder="Write your detailed product review..."
+            className="w-full bg-white border border-stone-300 rounded p-2 focus:outline-none focus:border-[#C0654B]"
           />
 
           <button
             type="submit"
-            className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-6 py-2.5 rounded-lg transition-colors cursor-pointer"
+            className="bg-[#C0654B] hover:bg-[#a85239] text-white font-bold px-5 py-2 rounded transition-colors cursor-pointer text-xs uppercase tracking-wider"
           >
-            Submit Verified Review
+            Submit Review
           </button>
         </form>
       </section>
 
       {/* 3. RELATED RECOMMENDATIONS */}
       {relatedProducts.length > 0 && (
-        <section className="space-y-6">
-          <h3 className="text-2xl font-bold font-serif text-stone-900">You May Also Like</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+        <section className="space-y-4">
+          <h3 className="text-lg font-bold text-stone-900">Similar Products You Might Like</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {relatedProducts.map((p) => (
               <ProductCard key={p.id} product={p} onNavigate={onNavigate} />
             ))}

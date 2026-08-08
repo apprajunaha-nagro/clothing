@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { Sparkles, Flame, Tag, ChevronRight, Award, MapPin, Gift, Crown } from 'lucide-react';
+import { Sparkles, Flame, Tag, ChevronRight, ChevronDown, Award, MapPin, Gift, Crown } from 'lucide-react';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 
 interface MegaMenuProps {
@@ -44,32 +44,26 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ onNavigate }) => {
                 >
                   <button
                     onClick={() => onNavigate(`/category/${cat.slug}`)}
-                    className={`relative flex items-center gap-1.5 px-3 py-2 rounded-t-md transition-all duration-200 whitespace-nowrap cursor-pointer ${
+                    className={`relative flex items-center gap-1 px-3 py-2 transition-all duration-200 whitespace-nowrap cursor-pointer text-xs font-bold ${
                       isActive
-                        ? 'text-[#C0654B] bg-stone-50 font-extrabold'
-                        : 'text-stone-800 hover:text-[#C0654B] hover:bg-stone-50/80 font-bold'
+                        ? 'text-[#C0654B] font-extrabold'
+                        : 'text-stone-800 hover:text-[#C0654B]'
                     }`}
                   >
-                    <span className="tracking-widest">{cat.name}</span>
+                    <span>{cat.name}</span>
+                    <ChevronDown className={`w-3.5 h-3.5 text-stone-400 transition-transform duration-200 ${isActive ? 'rotate-180 text-[#C0654B]' : ''}`} />
 
                     {cat.id === 'undergarments' && (
-                      <span className="text-[9px] bg-rose-500 text-white font-extrabold px-1.5 py-0.2 rounded-full uppercase tracking-normal animate-pulse">
+                      <span className="text-[9px] bg-rose-500 text-white font-extrabold px-1.5 py-0.2 rounded-full uppercase tracking-normal">
                         SOFT
                       </span>
                     )}
 
                     {cat.id === 'women' && (
-                      <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.2 rounded-xs uppercase tracking-normal">
+                      <span className="text-[9px] bg-emerald-600 text-white font-bold px-1.5 py-0.2 rounded-xs uppercase tracking-normal">
                         NEW
                       </span>
                     )}
-
-                    {/* Pantaloons active/hover bottom indicator bar */}
-                    <span
-                      className={`absolute bottom-0 left-2 right-2 h-[3px] bg-[#C0654B] rounded-t-md transition-transform duration-250 ease-out ${
-                        isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 group-hover:scale-x-100 opacity-0 group-hover:opacity-100'
-                      }`}
-                    />
                   </button>
 
                   {/* FULL-WIDTH MEGA MENU CONTAINER */}
@@ -228,21 +222,24 @@ export const MegaMenu: React.FC<MegaMenuProps> = ({ onNavigate }) => {
                 HOT
               </span>
             </button>
+
+            {/* Blog Tab */}
+            <button
+              onClick={() => onNavigate('/blog')}
+              className="px-3 py-1.5 rounded-md text-stone-800 hover:text-[#C0654B] hover:bg-stone-50 transition-colors whitespace-nowrap cursor-pointer text-xs font-bold flex items-center gap-1.5"
+            >
+              <span className="tracking-widest">BLOG</span>
+            </button>
           </div>
 
-          {/* Pantaloons Style Right Utilities (Pincode & Club) */}
+          {/* Right Utilities */}
           <div className="hidden xl:flex items-center gap-4 text-[11px] text-stone-600 font-medium normal-case tracking-normal">
-            <div className="flex items-center gap-1.5 bg-stone-100 hover:bg-stone-200/70 text-stone-800 px-2.5 py-1 rounded-full border border-stone-200/80 cursor-pointer transition-colors">
-              <MapPin className="w-3 h-3 text-[#C0654B]" />
-              <span>Deliver to: <strong>400001</strong></span>
-            </div>
-
             <button
-              onClick={() => onNavigate('/greencard')}
+              onClick={() => onNavigate('/category/sale?tag=sale')}
               className="hover:text-[#C0654B] font-bold text-[#C0654B] transition-colors cursor-pointer flex items-center gap-1 bg-[#F3E9E4] px-2.5 py-1 rounded-full border border-[#C0654B]/30"
             >
-              <Crown className="w-3 h-3 text-[#C0654B]" />
-              <span>Greencard Rewards</span>
+              <Flame className="w-3 h-3 text-[#C0654B]" />
+              <span>Special Offers</span>
             </button>
           </div>
         </div>

@@ -1382,7 +1382,7 @@ export const AdminProductsView: React.FC = () => {
                     <div className="space-y-1 pt-1">
                       <span className="text-[10px] text-stone-400 block font-bold uppercase tracking-wider">Highlight Tags on site:</span>
                       <div className="flex flex-wrap gap-1">
-                        {['new_arrival', 'bestseller', 'trending', 'sale', 'online_exclusive'].map(tag => {
+                        {['new_arrival', 'bestseller', 'trending', 'sale', 'online_exclusive', 'deal_of_the_day'].map(tag => {
                           const hasT = pTags.includes(tag as any);
                           return (
                             <button
@@ -1393,7 +1393,7 @@ export const AdminProductsView: React.FC = () => {
                                 hasT ? 'bg-[#C0654B] text-white' : 'bg-white border border-stone-200 text-stone-500'
                               }`}
                             >
-                              {tag.replace(/_/g, ' ')}
+                              {tag === 'deal_of_the_day' ? '🔥 Deal of the Day' : tag.replace(/_/g, ' ')}
                             </button>
                           );
                         })}

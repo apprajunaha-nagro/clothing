@@ -1,27 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { 
   Plus, Calendar, Trash2, Edit, Check, X, Megaphone, Ticket, Image as ImageIcon, 
-  Settings, Sparkles, Send, Copy, AlertTriangle, Eye 
+  Settings, Sparkles, Send, Copy, AlertTriangle, Eye, Upload, Flame, Search
 } from 'lucide-react';
-import { Coupon, Banner, SiteSettings } from '../../types';
+import { Coupon, Banner, SiteSettings, Product } from '../../types';
 
 export const AdminMarketingView: React.FC = () => {
-  const { coupons, banners, settings, updateSettings, showToast } = useStore();
+  const { coupons, banners, setBanners, products, setProducts, settings, updateSettings, showToast } = useStore();
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
 
   // Banners List Local override/state
   const [bannersList, setBannersList] = useState<Banner[]>(banners);
   const [couponsList, setCouponsList] = useState<Coupon[]>(coupons);
 
   // Form toggles
-  const [activeTab, setActiveTab] = useState<'banners' | 'coupons' | 'popups' | 'campaigns' | 'pixels'>('banners');
+  const [activeTab, setActiveTab] = useState<'banners' | 'deals' | 'coupons' | 'popups' | 'campaigns' | 'pixels'>('deals');
+  const [dealSearchQuery, setDealSearchQuery] = useState('');
   
   // Banner creation fields
   const [bTitle, setBTitle] = useState('');
   const [bSubtitle, setBSubtitle] = useState('');
   const [bImage, setBImage] = useState('');
   const [bLink, setBLink] = useState('');
-  const [bPosition, setBPosition] = useState<'hero' | 'category' | 'promo_strip'>('hero');
+  const [bPosition, setBPosition] = useState<'hero' | 'category' | 'promo_strip' | 'ad_banner'>('hero');
   const [isBannerFormOpen, setIsBannerFormOpen] = useState(false);
 
   // Coupon creation fields
@@ -50,38 +52,76 @@ export const AdminMarketingView: React.FC = () => {
   const [campaignSubject, setCampaignSubject] = useState('Celebrate in Style: Festive Silk Sarees are back in Stock!');
   const [campaignBody, setCampaignBody] = useState('Hello {{customer_name}}, prepare for the upcoming celebrations with PGmart handcrafted sarees. Free shipping over ₹999!');
 
-  // BANNER HANDLERS
+  // BANNER HANDLERS WITH DEVICE UPLOAD & STORE CONTEXT SYNC
+  const handleDeviceFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 12 * 1024 * 1024) {
+      showToast('Image file size must be under 12MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setBImage(reader.result);
+        showToast('Photo uploaded from device successfully!');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleEditBannerImageFromDevice = (bannerId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        const newImgUrl = reader.result;
+        setBanners(prev => prev.map(b => b.id === bannerId ? { ...b, image: newImgUrl } : b));
+        setBannersList(prev => prev.map(b => b.id === bannerId ? { ...b, image: newImgUrl } : b));
+        showToast('Hero banner photo updated from device!');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveBanner = (e: React.FormEvent) => {
     e.preventDefault();
     const newBanner: Banner = {
       id: `ban-${Date.now()}`,
-      title: bTitle,
+      title: bTitle || 'Hero Fashion Banner',
       subtitle: bSubtitle || undefined,
-      image: bImage || 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80',
-      link: bLink || '/women',
+      image: bImage || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=2000&q=90',
+      link: bLink || '/category/women',
       buttonText: 'Shop Collection',
       position: bPosition,
       sortOrder: bannersList.length + 1,
       isActive: true
     };
-    setBannersList(prev => [...prev, newBanner]);
+    const updatedList = [...bannersList, newBanner];
+    setBannersList(updatedList);
+    setBanners(updatedList);
     setIsBannerFormOpen(false);
     // Reset
     setBTitle('');
     setBSubtitle('');
     setBImage('');
     setBLink('');
-    showToast(`Banner "${bTitle}" placed under slider schedules successfully.`);
+    showToast(`Banner frame added & synchronized with live store slider!`);
   };
 
   const handleToggleBannerStatus = (id: string) => {
-    setBannersList(prev => prev.map(b => b.id === id ? { ...b, isActive: !b.isActive } : b));
-    showToast('Banner active state updated.');
+    const updated = bannersList.map(b => b.id === id ? { ...b, isActive: !b.isActive } : b);
+    setBannersList(updated);
+    setBanners(updated);
+    showToast('Banner active state updated on live store.');
   };
 
   const handleDeleteBanner = (id: string) => {
-    setBannersList(prev => prev.filter(b => b.id !== id));
-    showToast('Banner removed.');
+    const updated = bannersList.filter(b => b.id !== id);
+    setBannersList(updated);
+    setBanners(updated);
+    showToast('Banner removed from hero slider.');
   };
 
   // COUPON HANDLERS
@@ -139,6 +179,13 @@ export const AdminMarketingView: React.FC = () => {
         {/* Tab Controls */}
         <div className="flex bg-stone-800 p-1 rounded-xl text-xs font-semibold">
           <button
+            onClick={() => setActiveTab('deals')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === 'deals' ? 'bg-[#C0654B] text-white font-bold' : 'text-stone-400 hover:text-stone-200'}`}
+          >
+            <Flame className="w-3.5 h-3.5 text-amber-300" />
+            <span>Deals of the Day</span>
+          </button>
+          <button
             onClick={() => setActiveTab('banners')}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${activeTab === 'banners' ? 'bg-[#C0654B] text-white' : 'text-stone-400 hover:text-stone-200'}`}
           >
@@ -171,59 +218,261 @@ export const AdminMarketingView: React.FC = () => {
         </div>
       </div>
 
+      {/* DEALS OF THE DAY MANAGER */}
+      {activeTab === 'deals' && (
+        <div className="space-y-6">
+          {/* Main Controls Card */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-50 text-[#C0654B] flex items-center justify-center shrink-0">
+                  <Flame className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold font-serif text-stone-900">Deals of the Day & Flash Sale Controls</h3>
+                  <p className="text-xs text-stone-500">Control storefront deals section visibility, title, countdown timer & featured products</p>
+                </div>
+              </div>
+
+              {/* Section Visibility Switch */}
+              <div className="flex items-center gap-3 bg-stone-50 px-4 py-2 rounded-xl border border-stone-200">
+                <span className="text-xs font-bold text-stone-700">Deals Section Status:</span>
+                <button
+                  onClick={() => {
+                    const nextVal = settings.dealsEnabled === false ? true : false;
+                    updateSettings({ dealsEnabled: nextVal });
+                    showToast(nextVal ? 'Deals of the Day is now LIVE on homepage!' : 'Deals of the Day section is hidden from homepage.');
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-extrabold cursor-pointer transition-colors ${
+                    settings.dealsEnabled !== false ? 'bg-emerald-600 text-white' : 'bg-stone-300 text-stone-600'
+                  }`}
+                >
+                  {settings.dealsEnabled !== false ? 'ACTIVE (LIVE)' : 'DISABLED (HIDDEN)'}
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Settings Form */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Section Display Title</label>
+                <input
+                  type="text"
+                  value={settings.dealsTitle || 'Deals of the Day'}
+                  onChange={(e) => updateSettings({ dealsTitle: e.target.value })}
+                  placeholder="e.g. Deals of the Day"
+                  className="w-full border border-stone-300 rounded-lg p-2.5 focus:border-[#C0654B] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Timer Duration (Hours)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={72}
+                  value={settings.dealsTimerHours ?? 14}
+                  onChange={(e) => updateSettings({ dealsTimerHours: Number(e.target.value) })}
+                  className="w-full border border-stone-300 rounded-lg p-2.5 focus:border-[#C0654B] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Timer Duration (Minutes)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={59}
+                  value={settings.dealsTimerMinutes ?? 22}
+                  onChange={(e) => updateSettings({ dealsTimerMinutes: Number(e.target.value) })}
+                  className="w-full border border-stone-300 rounded-lg p-2.5 focus:border-[#C0654B] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Auto Min Discount Threshold (%)</label>
+                <input
+                  type="number"
+                  min={5}
+                  max={90}
+                  value={settings.dealsMinDiscount ?? 20}
+                  onChange={(e) => updateSettings({ dealsMinDiscount: Number(e.target.value) })}
+                  className="w-full border border-stone-300 rounded-lg p-2.5 focus:border-[#C0654B] focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Product Deal Selector List */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+              <div>
+                <h4 className="font-bold text-stone-900 text-sm font-serif">
+                  Featured Deal Products ({products.filter(p => p.isDealOfTheDay || p.tags?.includes('deal_of_the_day')).length} Selected)
+                </h4>
+                <p className="text-xs text-stone-500">Toggle products ON/OFF to explicitly feature them in the Deals of the Day section on the storefront</p>
+              </div>
+
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={dealSearchQuery}
+                  onChange={(e) => setDealSearchQuery(e.target.value)}
+                  placeholder="Search catalog products..."
+                  className="w-full pl-9 pr-3 py-1.5 text-xs border border-stone-300 rounded-lg focus:outline-none focus:border-[#C0654B]"
+                />
+              </div>
+            </div>
+
+            {/* Product Cards Grid for Toggling */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto pr-1">
+              {products
+                .filter(p => p.name.toLowerCase().includes(dealSearchQuery.toLowerCase()))
+                .map(product => {
+                  const isDeal = product.isDealOfTheDay || product.tags?.includes('deal_of_the_day');
+                  return (
+                    <div
+                      key={product.id}
+                      className={`p-3 rounded-xl border flex items-center gap-3 transition-all ${
+                        isDeal ? 'border-[#C0654B] bg-[#F3E9E4]/40 shadow-xs' : 'border-stone-200 bg-stone-50/50'
+                      }`}
+                    >
+                      <img
+                        src={product.colors?.[0]?.images?.[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=150&q=80'}
+                        alt={product.name}
+                        className="w-12 h-14 object-cover rounded bg-white shrink-0 border border-stone-200"
+                      />
+                      <div className="flex-1 overflow-hidden">
+                        <p className="font-bold text-xs text-stone-900 truncate">{product.name}</p>
+                        <p className="text-[11px] text-stone-500">₹{product.discountPrice || product.basePrice} ({product.discountPercent || 0}% OFF)</p>
+                        <button
+                          onClick={() => {
+                            const newStatus = !isDeal;
+                            setProducts(prev => prev.map(p => {
+                              if (p.id === product.id) {
+                                const newTags = newStatus
+                                  ? Array.from(new Set([...p.tags, 'deal_of_the_day' as const]))
+                                  : p.tags.filter(t => t !== 'deal_of_the_day');
+                                return { ...p, isDealOfTheDay: newStatus, tags: newTags };
+                              }
+                              return p;
+                            }));
+                            showToast(newStatus ? `🔥 "${product.name}" added to Deals of the Day!` : `Removed "${product.name}" from Deals.`);
+                          }}
+                          className={`mt-1 text-[10px] font-extrabold px-2.5 py-1 rounded transition-colors cursor-pointer flex items-center gap-1 ${
+                            isDeal ? 'bg-[#C0654B] text-white hover:bg-[#8B4A38]' : 'bg-stone-200 text-stone-700 hover:bg-stone-300'
+                          }`}
+                        >
+                          <Flame className="w-3 h-3" />
+                          <span>{isDeal ? 'FEATURED IN DEALS' : '+ ADD TO DEALS'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. SLIDERS & BANNERS MANAGER */}
       {activeTab === 'banners' && (
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-bold font-serif text-stone-900">Homepage Sliders & Page Banners</h3>
-              <p className="text-xs text-stone-400">Design promotional headers or seasonal banners for your categories</p>
+              <p className="text-xs text-stone-400">Design promotional headers, hero sliders, and ad banners for your storefront</p>
             </div>
-            <button
-              onClick={() => setIsBannerFormOpen(true)}
-              className="px-4 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-1 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" /> Add Slider Frame
-            </button>
+            
+            <div className="flex items-center gap-3">
+              {/* Ad Banner Status Switch */}
+              <div className="flex items-center gap-2 bg-stone-50 px-3 py-1.5 rounded-xl border border-stone-200 text-xs">
+                <span className="font-bold text-stone-700">Ad Banners (Above Deals):</span>
+                <button
+                  onClick={() => {
+                    const nextVal = settings.adBannerEnabled === false ? true : false;
+                    updateSettings({ adBannerEnabled: nextVal });
+                    showToast(nextVal ? 'Ad Banners section is now LIVE above Deals of the Day!' : 'Ad Banners section is hidden.');
+                  }}
+                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold cursor-pointer transition-colors ${
+                    settings.adBannerEnabled !== false ? 'bg-emerald-600 text-white' : 'bg-stone-300 text-stone-600'
+                  }`}
+                >
+                  {settings.adBannerEnabled !== false ? 'LIVE' : 'HIDDEN'}
+                </button>
+              </div>
+
+              <button
+                onClick={() => setIsBannerFormOpen(true)}
+                className="px-4 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Add Slider Frame
+              </button>
+            </div>
           </div>
 
           {isBannerFormOpen && (
             <form onSubmit={handleSaveBanner} className="bg-white p-5 rounded-2xl border border-stone-200 space-y-4 text-xs font-medium">
               <span className="font-bold text-stone-900 block text-sm border-b border-stone-100 pb-2">Schedule Promo Banner Frame</span>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">Banner Primary Headline (Title)</label>
+              {/* Device Photo Upload Box */}
+              <div className="border border-dashed border-stone-300 rounded-xl p-4 bg-stone-50 space-y-3">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div>
+                    <label className="block font-bold text-stone-800 text-xs">Hero / Ad Banner Photo (Device Upload)</label>
+                    <p className="text-[11px] text-stone-500">Upload high-resolution Indian model fashion photos directly from your phone or computer.</p>
+                  </div>
+                  
                   <input
-                    type="text"
-                    required
-                    value={bTitle}
-                    onChange={(e) => setBTitle(e.target.value)}
-                    placeholder="e.g. Traditional Banarasi Silk Revival"
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none"
+                    type="file"
+                    ref={bannerFileInputRef}
+                    accept="image/*"
+                    onChange={handleDeviceFileUpload}
+                    className="hidden"
                   />
+                  
+                  <button
+                    type="button"
+                    onClick={() => bannerFileInputRef.current?.click()}
+                    className="px-4 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm cursor-pointer shrink-0"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>Upload Photo from Device</span>
+                  </button>
                 </div>
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">Banner Tagline / Subtitle</label>
-                  <input
-                    type="text"
-                    value={bSubtitle}
-                    onChange={(e) => setBSubtitle(e.target.value)}
-                    placeholder="e.g. Pure Zari Borders & Festive Weaves"
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none"
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <label className="block font-bold text-stone-700 mb-1">Slider Image URL</label>
+                {/* Or image URL input */}
+                <div className="pt-2 border-t border-stone-200/60 flex items-center gap-2">
+                  <span className="text-[10px] text-stone-400 font-bold uppercase shrink-0">Or Image URL:</span>
                   <input
                     type="text"
-                    required
                     value={bImage}
                     onChange={(e) => setBImage(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="https://images.unsplash.com/... or data:image/..."
+                    className="w-full px-3 py-1.5 border border-stone-300 rounded-lg outline-none text-xs font-mono"
+                  />
+                </div>
+
+                {/* Live Preview Box */}
+                {bImage && (
+                  <div className="relative aspect-[21/9] rounded-xl overflow-hidden border border-stone-200 shadow-inner max-h-48 bg-stone-900">
+                    <img src={bImage} alt="Banner Preview" className="w-full h-full object-contain" />
+                    <span className="absolute top-2 left-2 bg-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
+                      ✓ Live Upload Preview Ready
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">Banner Title / Name (Internal Reference)</label>
+                  <input
+                    type="text"
+                    value={bTitle}
+                    onChange={(e) => setBTitle(e.target.value)}
+                    placeholder="e.g. Royal Silk Saree Collection 2026"
                     className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none"
                   />
                 </div>
@@ -234,7 +483,8 @@ export const AdminMarketingView: React.FC = () => {
                     onChange={(e) => setBPosition(e.target.value as any)}
                     className="w-full p-2 bg-white border border-stone-300 rounded-lg"
                   >
-                    <option value="hero">Main Hero Slider</option>
+                    <option value="hero">Main Hero Slider (Homepage)</option>
+                    <option value="ad_banner">Ad Banner (Just Above Deals of the Day)</option>
                     <option value="category">Category Segment</option>
                     <option value="promo_strip">Bottom Promo Strip</option>
                   </select>
@@ -247,7 +497,7 @@ export const AdminMarketingView: React.FC = () => {
                   type="text"
                   value={bLink}
                   onChange={(e) => setBLink(e.target.value)}
-                  placeholder="e.g. /women?subcategory=women-ethnic"
+                  placeholder="e.g. /category/women?sub=w-ethnic"
                   className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none"
                 />
               </div>
@@ -273,11 +523,23 @@ export const AdminMarketingView: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {bannersList.map(ban => (
               <div key={ban.id} className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
-                <div className="relative aspect-video bg-stone-100 overflow-hidden">
-                  <img src={ban.image} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  <span className="absolute top-2 left-2 text-[8px] bg-black/70 text-white font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <div className="relative aspect-video bg-stone-900 overflow-hidden group">
+                  <img src={ban.image} alt="" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                  <span className="absolute top-2 left-2 text-[8px] bg-black/70 text-white font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-wider z-10">
                     {ban.position} Slider
                   </span>
+                  
+                  {/* Upload photo overlay */}
+                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer gap-1.5 p-4 z-20">
+                    <Upload className="w-6 h-6 text-[#C0654B]" />
+                    <span className="text-xs font-bold bg-[#C0654B] px-3 py-1 rounded-full shadow-md">Replace Photo from Device</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleEditBannerImageFromDevice(ban.id, e)}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
 
                 <div className="p-4 space-y-2 text-left">

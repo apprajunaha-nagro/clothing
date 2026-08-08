@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { Order, PaymentMethod, Address } from '../types';
 import { ShieldCheck, Lock, Truck, CreditCard, CheckCircle2, ArrowRight } from 'lucide-react';
+import { PincodeField } from '../components/PincodeField';
 
 interface CheckoutPageProps {
   onNavigate: (path: string) => void;
@@ -21,6 +22,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
   const [city, setCity] = useState('Kolkata');
   const [stateName, setStateName] = useState('West Bengal');
   const [pincode, setPincode] = useState('700091');
+  const [locality, setLocality] = useState('Salt Lake Sector 5');
+  const [isPincodeVerified, setIsPincodeVerified] = useState(true);
 
   // Payment State
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi');
@@ -177,45 +180,28 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block font-bold text-stone-700 mb-1">City</label>
-                    <input
-                      type="text"
-                      required
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className="w-full border border-stone-300 rounded-lg p-2.5 focus:outline-none focus:border-[#C0654B]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-stone-700 mb-1">State</label>
-                    <input
-                      type="text"
-                      required
-                      value={stateName}
-                      onChange={(e) => setStateName(e.target.value)}
-                      className="w-full border border-stone-300 rounded-lg p-2.5 focus:outline-none focus:border-[#C0654B]"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-stone-700 mb-1">PIN Code</label>
-                    <input
-                      type="text"
-                      required
-                      maxLength={6}
-                      value={pincode}
-                      onChange={(e) => setPincode(e.target.value)}
-                      className="w-full border border-stone-300 rounded-lg p-2.5 focus:outline-none focus:border-[#C0654B]"
-                    />
-                  </div>
-                </div>
+                <PincodeField
+                  pincode={pincode}
+                  city={city}
+                  stateName={stateName}
+                  locality={locality}
+                  onPincodeChange={(val) => setPincode(val)}
+                  onCityChange={(val) => setCity(val)}
+                  onStateChange={(val) => setStateName(val)}
+                  onLocalityChange={(val) => setLocality(val)}
+                  onVerificationStatusChange={(verified) => setIsPincodeVerified(verified)}
+                />
 
                 <button
                   type="submit"
-                  className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold py-3 px-6 rounded-xl text-xs transition-colors cursor-pointer"
+                  disabled={!isPincodeVerified || pincode.length !== 6}
+                  className={`py-3 px-6 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    isPincodeVerified && pincode.length === 6
+                      ? 'bg-[#C0654B] hover:bg-[#8B4A38] text-white shadow-md'
+                      : 'bg-stone-200 text-stone-400 cursor-not-allowed border border-stone-300'
+                  }`}
                 >
-                  CONTINUE TO PAYMENT
+                  Continue to Payment →
                 </button>
               </form>
             ) : (
@@ -310,54 +296,53 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
           )}
         </div>
 
-        {/* ORDER SUMMARY SIDEBAR */}
-        <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4 text-xs h-fit">
-          <h3 className="font-serif font-bold text-base text-stone-900 border-b border-stone-200 pb-3">
-            Order Item Summary ({cart.length})
+        {/* ORDER SUMMARY SIDEBAR (Flipkart Price Details Card) */}
+        <div className="bg-white p-4 rounded border border-stone-200 shadow-2xs space-y-4 text-xs h-fit">
+          <h3 className="font-extrabold text-stone-900 text-xs uppercase tracking-wider border-b border-stone-200 pb-2.5">
+            Price Details
           </h3>
 
-          <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
             {cart.map((item) => {
               const price = item.variant.discountPrice || item.variant.price || item.product.discountPrice || item.product.basePrice;
               const img = item.variant.images[0] || item.product.colors[0]?.images[0] || '';
               return (
-                <div key={item.id} className="flex gap-3">
-                  <img src={img} alt={item.product.name} className="w-12 h-14 object-cover rounded-md bg-stone-100 shrink-0" />
+                <div key={item.id} className="flex gap-2.5">
+                  <img src={img} alt={item.product.name} className="w-12 h-14 object-contain rounded bg-stone-50 shrink-0" />
                   <div className="flex-1 overflow-hidden">
-                    <p className="font-semibold text-stone-900 truncate">{item.product.name}</p>
-                    <p className="text-[11px] text-stone-500">Qty: {item.quantity} | {item.selectedSize} / {item.selectedColor}</p>
-                    <p className="font-bold text-stone-900 mt-0.5">₹{(price * item.quantity).toLocaleString('en-IN')}</p>
+                    <p className="font-normal text-stone-800 truncate">{item.product.name}</p>
+                    <p className="text-[10px] text-stone-400">Qty: {item.quantity} | {item.selectedSize} / {item.selectedColor}</p>
+                    <p className="font-extrabold text-stone-900 mt-0.5">₹{(price * item.quantity).toLocaleString('en-IN')}</p>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="pt-3 border-t border-stone-200 space-y-2 text-stone-600">
+          <div className="pt-2 border-t border-stone-200 space-y-2 text-stone-600">
             <div className="flex justify-between">
-              <span>Subtotal</span>
-              <span className="font-semibold text-stone-900">₹{subtotal.toLocaleString('en-IN')}</span>
+              <span>Price ({cart.length} items)</span>
+              <span className="font-semibold text-stone-900">₹{(subtotal + couponDiscount + 300).toLocaleString('en-IN')}</span>
             </div>
-            {couponDiscount > 0 && (
-              <div className="flex justify-between text-emerald-700 font-bold">
-                <span>Coupon ({appliedCoupon?.code})</span>
-                <span>-₹{couponDiscount.toLocaleString('en-IN')}</span>
-              </div>
-            )}
+            <div className="flex justify-between text-[#26A541]">
+              <span>Discount</span>
+              <span className="font-bold">-₹{(couponDiscount + 300).toLocaleString('en-IN')}</span>
+            </div>
             <div className="flex justify-between">
-              <span>Shipping Fee</span>
-              <span>{shippingFee === 0 ? <strong className="text-emerald-700">FREE</strong> : `₹${shippingFee}`}</span>
+              <span>Delivery Charges</span>
+              <span>{shippingFee === 0 ? <strong className="text-[#26A541]">FREE</strong> : `₹${shippingFee}`}</span>
             </div>
             {paymentMethod === 'cod' && (
               <div className="flex justify-between">
-                <span>COD Handling Charge</span>
+                <span>COD Charge</span>
                 <span>₹{settings.codFee}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-stone-900 text-sm pt-2 border-t border-stone-200">
+            <div className="flex justify-between font-extrabold text-stone-900 text-sm pt-2 border-t border-stone-200">
               <span>Total Amount</span>
-              <span className="text-[#C0654B]">₹{total.toLocaleString('en-IN')}</span>
+              <span className="text-stone-900">₹{total.toLocaleString('en-IN')}</span>
             </div>
+            <p className="text-[10px] text-[#26A541] font-bold pt-1">You will save ₹{(couponDiscount + 300).toLocaleString('en-IN')} on this order</p>
           </div>
         </div>
       </div>
