@@ -95,7 +95,11 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   let sectionBanner = currentCategory?.banner || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=80';
   let sectionBadge = 'DEPARTMENT EDIT';
 
-  if (tagParam === 'wishlist') {
+  if (searchParam) {
+    sectionTitle = `Search Results for "${searchParam}"`;
+    sectionSubtitle = `Showing products matching "${searchParam}" across all PGmart departments.`;
+    sectionBadge = 'SEARCH RESULTS';
+  } else if (tagParam === 'wishlist') {
     sectionTitle = 'My Saved Wishlist';
     sectionSubtitle = 'Your favorite bookmarked sarees, suits, dresses, and innerwear.';
     sectionBadge = `${wishlist.length} SAVED ITEMS`;
@@ -159,7 +163,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   // DRAFT FILTERED PRODUCTS (calculates preview count for Apply Filters button)
   const draftFilteredProducts = products.filter((p) => {
     if (tagParam === 'wishlist') return wishlist.includes(p.id);
-    if (rawSlug && !['all', 'sale', 'new-arrivals', 'bestsellers', 'curves', 'ethnic', 'western'].includes(rawSlug)) {
+    if (!searchParam && rawSlug && !['all', 'sale', 'new-arrivals', 'bestsellers', 'curves', 'ethnic', 'western'].includes(rawSlug)) {
       if (currentCategory?.id && p.categoryId !== currentCategory.id) return false;
     }
     if (rawSlug === 'sale' || tagParam === 'sale') {

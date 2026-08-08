@@ -37,7 +37,7 @@ export const SearchModal: React.FC<SearchModalProps> = ({ onNavigate }) => {
     e.preventDefault();
     if (query.trim()) {
       setSearchModalOpen(false);
-      onNavigate(`/category/women?search=${encodeURIComponent(query.trim())}`);
+      onNavigate(`/category/all?search=${encodeURIComponent(query.trim())}`);
     }
   };
 
@@ -133,7 +133,8 @@ export const SearchModal: React.FC<SearchModalProps> = ({ onNavigate }) => {
                     <button
                       key={tag}
                       onClick={() => {
-                        setQuery(tag);
+                        setSearchModalOpen(false);
+                        onNavigate(`/category/all?search=${encodeURIComponent(tag)}`);
                       }}
                       className="text-xs bg-stone-100 hover:bg-[#F3E9E4] hover:text-[#C0654B] text-stone-700 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
                     >

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { MegaMenu } from './MegaMenu';
 import { Search, Heart, ShoppingCart, User, ShieldCheck, Phone, MapPin, Settings, Menu, X, Sparkles, ChevronDown, MessageSquare } from 'lucide-react';
+import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 
 interface HeaderProps {
   onNavigate: (path: string) => void;
@@ -12,6 +13,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
   const {
     settings,
     categories,
+    products,
     cart,
     wishlist,
     user,
@@ -23,13 +25,41 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [expandedMobileCategory, setExpandedMobileCategory] = useState<string | null>(null);
+  const [headerQuery, setHeaderQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
-  // Extract User's Saved Address Pincode
-  const activeAddress = user?.addresses?.find(a => a.isDefault) || user?.addresses?.[0];
-  const userPincode = activeAddress?.pincode || '700091';
-  const userCity = activeAddress?.city || 'Kolkata';
+  // Keyboard shortcut listener (Cmd+K / Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleHeaderSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (headerQuery.trim()) {
+      setIsSearchFocused(false);
+      onNavigate(`/category/all?search=${encodeURIComponent(headerQuery.trim())}`);
+    }
+  };
+
+  const matchingSuggestions = headerQuery.trim()
+    ? products.filter(p =>
+        p.name.toLowerCase().includes(headerQuery.toLowerCase()) ||
+        p.description.toLowerCase().includes(headerQuery.toLowerCase()) ||
+        p.fabric.toLowerCase().includes(headerQuery.toLowerCase()) ||
+        p.occasion.toLowerCase().includes(headerQuery.toLowerCase()) ||
+        p.brandName.toLowerCase().includes(headerQuery.toLowerCase())
+      ).slice(0, 5)
+    : [];
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-stone-200">
@@ -74,29 +104,98 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               </div>
             </div>
 
-            {/* DOMINANT SEARCH BAR (Flipkart Center Search, ~45% width) */}
-            <div className="hidden md:flex flex-1 max-w-2xl mx-2 lg:mx-6">
-              <div
-                onClick={() => setSearchModalOpen(true)}
-                className="w-full flex items-center bg-stone-50 border border-stone-300 hover:border-[#C0654B] focus-within:border-[#C0654B] rounded-md overflow-hidden cursor-pointer transition-colors shadow-2xs group"
+            {/* DOMINANT INTERACTIVE SEARCH BAR (Flipkart Center Search, ~45% width) */}
+            <div className="relative hidden md:flex flex-1 max-w-2xl mx-2 lg:mx-6">
+              <form
+                onSubmit={handleHeaderSearchSubmit}
+                className="w-full flex items-center bg-stone-50 border border-stone-300 focus-within:border-[#C0654B] rounded-md overflow-hidden transition-colors shadow-2xs group"
               >
-                <div className="flex-1 px-3 py-2 text-xs text-stone-500 flex items-center justify-between">
-                  <span className="truncate">Search for sarees, kurtas, dresses and more...</span>
-                  <kbd className="bg-stone-200 text-stone-600 text-[10px] px-1.5 py-0.5 rounded font-mono ml-2">
-                    ⌘K
-                  </kbd>
+                <div className="flex-1 px-3 py-1.5 flex items-center gap-2">
+                  <Search className="w-4 h-4 text-stone-400 shrink-0" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={headerQuery}
+                    onChange={(e) => setHeaderQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                    placeholder="Search for sarees, kurtas, dresses, suits, innerwear..."
+                    className="w-full bg-transparent text-xs sm:text-sm text-stone-900 focus:outline-none placeholder-stone-400 font-medium"
+                  />
+                  {headerQuery ? (
+                    <button
+                      type="button"
+                      onClick={() => setHeaderQuery('')}
+                      className="text-stone-400 hover:text-stone-700 p-0.5 cursor-pointer shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  ) : (
+                    <kbd className="hidden lg:inline-block bg-stone-200 text-stone-600 text-[10px] px-1.5 py-0.5 rounded font-mono shrink-0">
+                      ⌘K
+                    </kbd>
+                  )}
                 </div>
                 <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    setSearchModalOpen(true);
-                  }}
-                  className="bg-[#C0654B] hover:bg-[#a85239] text-white px-4 py-2 flex items-center justify-center transition-colors cursor-pointer"
+                  type="submit"
+                  className="bg-[#C0654B] hover:bg-[#a85239] text-white px-4 py-2.5 flex items-center justify-center transition-colors cursor-pointer shrink-0 font-bold text-xs"
                   aria-label="Search"
                 >
                   <Search className="w-4 h-4 text-white" />
                 </button>
-              </div>
+              </form>
+
+              {/* LIVE AUTOCOMPLETE DROPDOWN */}
+              {isSearchFocused && headerQuery.trim().length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-stone-200 rounded-lg shadow-xl z-50 overflow-hidden text-left">
+                  <div className="p-2 border-b border-stone-100 bg-stone-50 text-[10px] font-bold text-stone-500 uppercase tracking-wider flex items-center justify-between">
+                    <span>Instant Product Results ({matchingSuggestions.length})</span>
+                    <span className="text-stone-400">Press Enter to view all</span>
+                  </div>
+                  {matchingSuggestions.length === 0 ? (
+                    <div className="p-4 text-xs text-stone-500 text-center">
+                      No exact match found for "{headerQuery}". Press Enter or click search to view all results.
+                    </div>
+                  ) : (
+                    <div className="max-h-64 overflow-y-auto divide-y divide-stone-100">
+                      {matchingSuggestions.map(p => {
+                        const img = getOptimizedImageUrl(
+                          p.colors[0]?.images[0] || 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=200&q=80',
+                          { width: 120, quality: 75 }
+                        );
+                        return (
+                          <div
+                            key={p.id}
+                            onMouseDown={() => {
+                              setHeaderQuery('');
+                              setIsSearchFocused(false);
+                              onNavigate(`/product/${p.id}`);
+                            }}
+                            className="flex items-center gap-3 p-2.5 hover:bg-[#F3E9E4]/60 cursor-pointer transition-colors"
+                          >
+                            <img
+                              src={img}
+                              alt={p.name}
+                              className="w-10 h-12 object-cover rounded bg-stone-100 shrink-0"
+                            />
+                            <div className="flex-1 overflow-hidden">
+                              <p className="text-xs font-bold text-stone-900 truncate">{p.name}</p>
+                              <p className="text-[10px] text-stone-500">{p.brandName} • {p.categoryName || 'Apparel'}</p>
+                              <p className="text-xs font-extrabold text-[#C0654B]">₹{(p.discountPrice || p.basePrice).toLocaleString('en-IN')}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <button
+                    onMouseDown={handleHeaderSearchSubmit}
+                    className="w-full p-2 bg-[#F3E9E4] hover:bg-[#e8d7cf] text-[#C0654B] text-xs font-extrabold text-center block cursor-pointer transition-colors"
+                  >
+                    View All Matching Results for "{headerQuery}" →
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* RIGHT ICON CLUSTER (Account, Wishlist, Cart) */}
