@@ -518,7 +518,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       {/* MAIN TWO COLUMN LAYOUT: INDEPENDENT SCROLLING SIDEBAR FILTERS + INDEPENDENT SCROLLING PRODUCTS GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* DESKTOP FILTER SIDEBAR (INDEPENDENT SCROLL COLUMN) */}
-        <aside className="hidden lg:flex flex-col space-y-3 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs sticky top-24 h-[calc(100vh-7rem)] overflow-hidden text-xs">
+        <aside className="hidden lg:flex flex-col space-y-3 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs sticky top-24 self-start text-xs">
           {/* HEADER SECTION (PINNED AT TOP WITH APPLY FILTERS BUTTON) */}
           <div className="shrink-0 space-y-2.5 pb-3 border-b border-stone-200 bg-white z-10">
             <div className="flex items-center justify-between">
@@ -554,7 +554,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           </div>
 
           {/* INDEPENDENTLY SCROLLABLE FILTER LIST BODY */}
-          <div className="flex-1 overflow-y-auto filter-scroll-container overscroll-contain pr-1.5 py-1 space-y-5">
+          <div className="flex-1 overflow-y-auto filter-scroll-container overscroll-contain pr-1.5 py-1 space-y-5 max-h-[calc(100vh-14rem)]">
             {/* CURVES / PLUS-SIZE TOGGLE */}
             <div className="bg-[#F3E9E4] p-3 rounded-xl border border-[#C0654B]/30 flex items-center justify-between">
               <div className="space-y-0.5">
@@ -765,7 +765,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
         </aside>
 
         {/* PRODUCTS LIST GRID (INDEPENDENT SCROLL COLUMN) */}
-        <main id="products-grid-container" className="lg:col-span-3 lg:h-[calc(100vh-7rem)] lg:overflow-y-auto filter-scroll-container overscroll-contain pr-2 py-1">
+        <main id="products-grid-container" className="lg:col-span-3 pr-2 py-1">
           {sortedProducts.length === 0 ? (
             <div className="bg-white p-12 rounded-2xl border border-stone-200 text-center space-y-4 shadow-xs">
               <Sparkles className="w-10 h-10 text-[#C0654B] mx-auto" />
