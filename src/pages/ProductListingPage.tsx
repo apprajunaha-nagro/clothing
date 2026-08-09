@@ -16,6 +16,8 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   const { categories, brands, products, filters, setFilters, resetFilters, wishlist, showToast, addToCart } = useStore();
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 24;
   const [comparedProductIds, setComparedProductIds] = useState<string[]>([]);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   // Local price state — debounced before applying to context so the grid
@@ -154,10 +156,11 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   const [draftFilters, setDraftFilters] = useState<FilterState>({ ...filters });
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({ ...filters });
 
-  // Sync draft and applied filters when route/query changes
+  // Sync draft and applied filters when route/query changes; reset page to 1
   useEffect(() => {
     setDraftFilters({ ...filters });
     setAppliedFilters({ ...filters });
+    setCurrentPage(1);
   }, [categorySlug, queryString, filters.maxPrice]);
 
   // DRAFT FILTERED PRODUCTS (calculates preview count for Apply Filters button)
@@ -329,8 +332,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   const handleApplyFilters = () => {
     setAppliedFilters({ ...draftFilters });
     setFilters({ ...draftFilters });
+    setCurrentPage(1);
     setMobileFilterOpen(false);
-    const el = document.getElementById('products-grid-container');
+    const el = document.getElementById('products-grid-top');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -786,44 +790,104 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {sortedProducts.map((product) => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    onNavigate={onNavigate} 
-                    onToggleCompare={handleToggleCompare}
-                    isCompared={comparedProductIds.includes(product.id)}
-                  />
-                ))}
-              </div>
+          ) : (() => {
+            const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
+            const pagedProducts = sortedProducts.slice(
+              (currentPage - 1) * ITEMS_PER_PAGE,
+              currentPage * ITEMS_PER_PAGE
+            );
 
-              {/* FLIPKART NUMBERED PAGINATION BAR */}
-              <div className="bg-white p-3 rounded border border-stone-200 flex items-center justify-between text-xs font-semibold shadow-2xs">
-                <span className="text-stone-500">Page 1 of 4</span>
-                <div className="flex items-center gap-1">
-                  <button className="w-8 h-8 rounded-full bg-[#C0654B] text-white font-bold flex items-center justify-center cursor-pointer shadow-xs">
-                    1
-                  </button>
-                  <button className="w-8 h-8 rounded-full hover:bg-stone-100 text-stone-700 font-bold flex items-center justify-center cursor-pointer">
-                    2
-                  </button>
-                  <button className="w-8 h-8 rounded-full hover:bg-stone-100 text-stone-700 font-bold flex items-center justify-center cursor-pointer">
-                    3
-                  </button>
-                  <button className="w-8 h-8 rounded-full hover:bg-stone-100 text-stone-700 font-bold flex items-center justify-center cursor-pointer">
-                    4
-                  </button>
-                  <button className="px-3 py-1.5 rounded hover:bg-stone-100 text-[#C0654B] font-bold flex items-center gap-1 cursor-pointer">
-                    <span>NEXT</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+            const handlePageChange = (page: number) => {
+              setCurrentPage(page);
+              const el = document.getElementById('products-grid-top');
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+
+            // Build page numbers with ellipsis
+            const getPageNumbers = () => {
+              const pages: (number | '...')[] = [];
+              if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+              } else {
+                pages.push(1);
+                if (currentPage > 3) pages.push('...');
+                const start = Math.max(2, currentPage - 1);
+                const end = Math.min(totalPages - 1, currentPage + 1);
+                for (let i = start; i <= end; i++) pages.push(i);
+                if (currentPage < totalPages - 2) pages.push('...');
+                pages.push(totalPages);
+              }
+              return pages;
+            };
+
+            return (
+              <div id="products-grid-top" className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {pagedProducts.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onNavigate={onNavigate}
+                      onToggleCompare={handleToggleCompare}
+                      isCompared={comparedProductIds.includes(product.id)}
+                    />
+                  ))}
                 </div>
+
+                {/* PAGINATION BAR */}
+                {totalPages > 1 && (
+                  <div className="bg-white p-3 rounded border border-stone-200 flex items-center justify-between text-xs font-semibold shadow-2xs">
+                    <span className="text-stone-500">
+                      Page {currentPage} of {totalPages}
+                      <span className="hidden sm:inline text-stone-400 font-normal ml-1">
+                        ({sortedProducts.length} items)
+                      </span>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {/* PREV button */}
+                      <button
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1.5 rounded hover:bg-stone-100 text-[#C0654B] font-bold flex items-center gap-1 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ChevronRight className="w-3.5 h-3.5 rotate-180" />
+                        <span className="hidden sm:inline">PREV</span>
+                      </button>
+
+                      {/* Page number buttons */}
+                      {getPageNumbers().map((p, idx) =>
+                        p === '...' ? (
+                          <span key={`ellipsis-${idx}`} className="w-8 h-8 flex items-center justify-center text-stone-400">…</span>
+                        ) : (
+                          <button
+                            key={p}
+                            onClick={() => handlePageChange(p as number)}
+                            className={`w-8 h-8 rounded-full font-bold flex items-center justify-center cursor-pointer transition-all ${
+                              currentPage === p
+                                ? 'bg-[#C0654B] text-white shadow-xs'
+                                : 'hover:bg-stone-100 text-stone-700'
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        )
+                      )}
+
+                      {/* NEXT button */}
+                      <button
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-1.5 rounded hover:bg-stone-100 text-[#C0654B] font-bold flex items-center gap-1 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <span className="hidden sm:inline">NEXT</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
         </main>
       </div>
 
