@@ -11,7 +11,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [visibleCount, setVisibleCount] = useState<number>(6);
 
-  const categories = ['All', 'Styling Tips', 'Behind the Brand', 'Fabric Guide', 'Seasonal Edit'];
+  const categories = ['All', 'Our Story', 'Styling Tips', 'Behind the Brand', 'Fabric Guide', 'Seasonal Edit'];
 
   const filteredPosts = selectedCategory === 'All'
     ? initialBlogPosts

@@ -4,7 +4,7 @@ export interface BlogPost {
   title: string;
   excerpt: string;
   content: string[];
-  category: 'Styling Tips' | 'Behind the Brand' | 'Fabric Guide' | 'Seasonal Edit';
+  category: 'Styling Tips' | 'Behind the Brand' | 'Fabric Guide' | 'Seasonal Edit' | 'Our Story';
   author: string;
   authorRole: string;
   authorAvatar: string;
@@ -16,6 +16,35 @@ export interface BlogPost {
 }
 
 export const initialBlogPosts: BlogPost[] = [
+  {
+    id: 'post-our-story',
+    slug: 'our-story',
+    title: 'Our Story: How PGmart Was Born From the Heart of Bengal\'s Handloom Heritage',
+    excerpt: 'From a small workshop in Shantipur to India\'s most trusted fashion destination — discover the people, purpose, and passion woven into every thread at PGmart.',
+    content: [
+      'Every great brand begins with a moment of conviction. For PGmart, that moment came on a rain-soaked afternoon in Shantipur, West Bengal — a town where handlooms sing before dawn and weavers\'s hands carry the memory of centuries. Our founder, Priyam Ghoshal, watched a master weaver fold an exquisite Tant saree, knowing it would sell for a fraction of its true worth through layers of middlemen. That injustice became our founding promise.',
+      '### The Beginning: A Loom, a Dream & a Delivery Van',
+      'In 2019, PGmart launched with just 12 SKUs, one delivery partner, and an unshakeable belief: that authentic Indian craftsmanship deserves fair prices — for weavers and for buyers. We started by sourcing directly from 18 weaver families across the Nadia district. Within eight months, we had served 3,000 customers across 22 Indian cities, entirely by word of mouth.',
+      '### Our Artisan Network: 1,200+ Weavers, One Mission',
+      'Today, PGmart is proud to work with over 1,200 artisans and master craftspeople spread across West Bengal, Varanasi, Jaipur, and Surat. Each weaver partner receives a guaranteed fair-trade price, year-round work orders, and access to our healthcare partnership program. When you buy from PGmart, over 70% of the garment\'s value flows directly to the hands that made it.',
+      '### Quality Is Our Non-Negotiable',
+      'Every product listed on PGmart undergoes a 7-point quality check — fabric GSM verification, colour fastness test, stitching stress test, wash-shrinkage assessment, fit calibration, packaging integrity check, and final dispatch audit. We reject nearly 12% of incoming stock that doesn\'t meet our bar. Because your trust is not a metric we\'re willing to compromise.',
+      '### The Rose Clay Philosophy',
+      'Our brand colour — Rose Clay (#C0654B) — is not a random design choice. It is the exact pigment of the iron-rich earth from the riverbanks of the Bhagirathi, where Bengal\'s most famous handloom villages sit. It symbolises warmth, rootedness, and the enduring dignity of handcraft. Every time you see that terracotta rose on our tags, packaging, and storefronts, it is a quiet reminder of where we come from.',
+      '### Where We Are Headed',
+      'Our vision is to make PGmart the largest direct-to-consumer artisan fashion marketplace in India by 2030 — not by cutting corners, but by deepening trust. We are building a traceability system so every product will carry a QR code linking you to the exact weaver cluster that made it. Fashion with a face. Commerce with a conscience. That is PGmart.',
+      'Thank you for being part of our story. Every order you place is not just a purchase — it is a vote for a more equitable, more beautiful world.'
+    ],
+    category: 'Our Story',
+    author: 'Priyam Ghoshal',
+    authorRole: 'Founder & CEO, PGmart',
+    authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+    publishedDate: 'August 9, 2026',
+    readTime: '6 min read',
+    featuredImage: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
+    relatedCategorySlug: 'women',
+    tags: ['Our Story', 'PGmart Origin', 'Artisan Fashion', 'Bengal Handloom', 'Ethical Fashion', 'Founder']
+  },
   {
     id: 'post-1',
     slug: 'how-to-style-a-saree-for-every-occasion',

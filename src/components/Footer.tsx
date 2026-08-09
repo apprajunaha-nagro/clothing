@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
-import { Truck, RotateCcw, ShieldCheck, CreditCard, Mail, Phone, MapPin, Send, Instagram, Facebook, Twitter, Youtube, Settings } from 'lucide-react';
+import { Truck, RotateCcw, ShieldCheck, CreditCard, Mail, Phone, MapPin, Send, Instagram, Facebook, Twitter, Youtube, Settings, ArrowRight, Sparkles } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (path: string) => void;
@@ -20,6 +20,80 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
   return (
     <footer className="bg-[#2B2620] text-stone-300 border-t border-stone-800 text-left">
+
+      {/* ── OUR STORY GLIMPSE ── */}
+      <div className="relative overflow-hidden bg-[#1A120C]">
+        {/* Background texture overlay */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=60)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1A120C]/80 via-[#1A120C]/60 to-[#1A120C]/95 pointer-events-none" />
+
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 text-center space-y-8">
+
+          {/* Big Logo + Name */}
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#C0654B]/30 rounded-3xl blur-xl scale-110" />
+              <img
+                src="/src/assets/images/pgmart_logo_1785764319471.jpg"
+                alt="PGmart Logo"
+                className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-[#C0654B]/40 shadow-2xl"
+              />
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-4xl sm:text-6xl font-extrabold font-serif text-white tracking-wide leading-none">
+                {settings.storeName}
+              </h2>
+              <p className="text-[#C0654B] font-bold text-xs sm:text-sm uppercase tracking-[0.3em]">
+                {settings.tagline}
+              </p>
+            </div>
+          </div>
+
+          {/* Story Excerpt */}
+          <div className="max-w-2xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-2 bg-[#C0654B]/20 border border-[#C0654B]/30 text-[#C0654B] text-[11px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest">
+              <Sparkles className="w-3.5 h-3.5" />
+              Our Story
+            </div>
+            <p className="text-stone-300 text-sm sm:text-base leading-relaxed font-light">
+              Born in a rain-soaked weaver's workshop in Shantipur, Bengal — PGmart was built on a single promise:
+              that <span className="text-white font-semibold">authentic Indian craftsmanship</span> deserves fair prices,
+              for the weavers who make it and the people who wear it.
+            </p>
+            <p className="text-stone-400 text-xs sm:text-sm leading-relaxed">
+              From 12 products in 2019 to India's most trusted fashion destination — every thread of our journey
+              is woven with purpose, people, and the colours of the Bhagirathi.
+            </p>
+          </div>
+
+          {/* Stats Row */}
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-12 py-4 border-y border-stone-800/60">
+            {[
+              { value: '1,200+', label: 'Artisan Partners' },
+              { value: '400+', label: 'Curated Products' },
+              { value: '50K+', label: 'Happy Customers' },
+              { value: '2019', label: 'Founded' },
+            ].map(stat => (
+              <div key={stat.label} className="text-center">
+                <p className="text-2xl sm:text-3xl font-extrabold text-white font-serif">{stat.value}</p>
+                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-0.5">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA Button */}
+          <button
+            onClick={() => onNavigate('/blog/our-story')}
+            className="inline-flex items-center gap-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-sm px-8 py-3.5 rounded-full transition-all shadow-lg hover:shadow-[#C0654B]/30 hover:shadow-xl group cursor-pointer"
+          >
+            <span>Read Our Full Story</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </button>
+
+        </div>
+      </div>
+
       {/* 1. BENEFIT ICONS STRIP (Pantaloons / Max Fashion Style) */}
       <div className="bg-[#1F1B17] py-8 border-b border-stone-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
