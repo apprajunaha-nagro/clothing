@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { 
   Sparkles, LayoutDashboard, FolderTree, Shirt, ShoppingCart, Megaphone, 
   BarChart3, MessageSquare, Settings as SettingsIcon, Bell, Search, 
-  Sun, Moon, LogOut, ExternalLink, ShieldCheck, AlertCircle 
+  Sun, Moon, LogOut, ExternalLink, ShieldCheck, AlertCircle, BookOpen
 } from 'lucide-react';
 
 // Import Admin Sub-Views
@@ -15,6 +15,7 @@ import { AdminMarketingView } from '../components/admin/AdminMarketingView';
 import { AdminAnalyticsView } from '../components/admin/AdminAnalyticsView';
 import { AdminReviewsView } from '../components/admin/AdminReviewsView';
 import { AdminSettingsView } from '../components/admin/AdminSettingsView';
+import { AdminBlogView } from '../components/admin/AdminBlogView';
 
 interface AdminPageProps {
   onNavigate: (path: string) => void;
@@ -33,7 +34,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   // Active module view
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'products' | 'orders' | 'marketing' | 'analytics' | 'reviews' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'products' | 'orders' | 'marketing' | 'analytics' | 'reviews' | 'blog' | 'settings'>('dashboard');
 
   // Dark mode simulation
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -153,6 +154,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         return <AdminAnalyticsView />;
       case 'reviews':
         return <AdminReviewsView />;
+      case 'blog':
+        return <AdminBlogView />;
       case 'settings':
         return <AdminSettingsView />;
       default:
@@ -168,6 +171,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     { id: 'marketing', label: 'Marketing Suite', icon: Megaphone },
     { id: 'analytics', label: 'Sales Intelligence', icon: BarChart3 },
     { id: 'reviews', label: 'Review Moderation', icon: MessageSquare },
+    { id: 'blog', label: 'Blog Manager', icon: BookOpen },
     { id: 'settings', label: 'Global Settings', icon: SettingsIcon },
   ] as const;
 
