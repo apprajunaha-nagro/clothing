@@ -17,7 +17,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 24;
+  const ITEMS_PER_PAGE = 50;
   const [comparedProductIds, setComparedProductIds] = useState<string[]>([]);
   const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   // Local price state — debounced before applying to context so the grid
