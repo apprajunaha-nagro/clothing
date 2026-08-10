@@ -90,5 +90,27 @@ pgmart-store/
 
 ---
 
+## ⚡ Vercel Deployment & Persistent Database Setup
+
+### Serverless Architecture (`api/index.ts`)
+- **Serverless Entrypoint**: Vercel routes all `/api/*` requests to `api/index.ts`, which exports the main Express `app` defined in `server.ts`.
+- **Client-Side Routing**: Non-API routes fall back to `/index.html` via `vercel.json` for SPA client-side routing.
+- **Static Assets**: Assets in `/src/assets` are copied to `public/src/assets` during `npm run build` so Vercel serves them directly via CDN.
+
+### Database Setup (Prisma + PostgreSQL / Neon)
+1. **Configure Database Connection**:
+   In Vercel Project Settings > Environment Variables, add:
+   - `DATABASE_URL`: Pooled connection string (e.g. Neon Serverless Postgres `-pooler` connection string).
+   - `DATABASE_URL_UNPOOLED`: Direct connection string for Prisma migrations.
+
+2. **Generate Client & Seed Database**:
+   ```bash
+   node node_modules/prisma/build/index.js generate
+   npm run db:seed
+   ```
+
+---
+
 ## 📄 License
 [MIT](LICENSE)
+

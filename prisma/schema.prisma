@@ -1,0 +1,225 @@
+// Prisma schema for PGmart E-commerce Database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SiteSettings {
+  id                    String  @id @default("default")
+  storeName             String  @default("PGmart — Trusted Fashion & Quality Store")
+  tagline               String  @default("Premium Sarees, Kurtas, Western Dresses & Soft Undergarments")
+  logoUrl               String  @default("https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=300&q=80")
+  faviconUrl            String  @default("/favicon.ico")
+  primaryColor          String  @default("#C0654B")
+  primaryDarkColor      String  @default("#8B4A38")
+  bgMutedColor          String  @default("#F3E9E4")
+  secondaryDarkColor    String  @default("#2B2620")
+  fontFamily            String  @default("Inter")
+  contactEmail          String  @default("support@pgmart.com")
+  contactPhone          String  @default("+91 98765 43210")
+  supportEmail          String? @default("care@pgmart.com")
+  supportPhone          String? @default("1800-123-4567")
+  whatsappNumber        String? @default("+91 98765 43210")
+  address               String  @default("12 Fashion Street, Park Street Area, Kolkata, West Bengal 700016")
+  currencySymbol        String  @default("₹")
+  currencyCode          String  @default("INR")
+  freeShippingThreshold Float   @default(999)
+  standardShippingFee   Float   @default(79)
+  codFee                Float   @default(49)
+  codEnabled            Boolean @default(true)
+  stripeEnabled         Boolean @default(false)
+  razorpayEnabled       Boolean @default(true)
+  razorpayKeyId         String  @default("rzp_test_1234567890")
+  stripePublicKey       String  @default("pk_test_1234567890")
+  gstNumber             String  @default("19AAAAA0000A1Z5")
+  dealsEnabled          Boolean @default(true)
+  dealsTitle            String  @default("DEALS OF THE DAY")
+  dealsTimerHours       Int     @default(14)
+  dealsTimerMinutes     Int     @default(45)
+  dealsMinDiscount      Int     @default(30)
+  adBannerEnabled       Boolean @default(true)
+}
+
+model Brand {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  logo        String
+  description String
+  isFeatured  Boolean   @default(false)
+  products    Product[]
+}
+
+model Category {
+  id            String        @id @default(cuid())
+  name          String
+  slug          String        @unique
+  image         String
+  banner        String?
+  status        String        @default("active")
+  sortOrder     Int           @default(1)
+  metaTitle     String?
+  metaDesc      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  subcategories Subcategory[]
+  products      Product[]
+}
+
+model Subcategory {
+  id               String         @id @default(cuid())
+  categoryId       String
+  category         Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name             String
+  slug             String
+  status           String         @default("active")
+  image            String?
+  banner_image     String?
+  description      String?
+  sort_order       Int            @default(1)
+  meta_title       String?
+  meta_description String?
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
+  types            CategoryType[]
+  products         Product[]
+
+  @@unique([categoryId, slug])
+}
+
+model CategoryType {
+  id               String      @id @default(cuid())
+  subcategoryId    String
+  subcategory      Subcategory @relation(fields: [subcategoryId], references: [id], onDelete: Cascade)
+  name             String
+  slug             String
+  status           String      @default("active")
+  image            String?
+  banner_image     String?
+  description      String?
+  sort_order       Int         @default(1)
+  meta_title       String?
+  meta_description String?
+  created_at       DateTime    @default(now())
+  updated_at       DateTime    @updatedAt
+  products         Product[]
+
+  @@unique([subcategoryId, slug])
+}
+
+model Product {
+  id              String        @id @default(cuid())
+  name            String
+  slug            String        @unique
+  categoryId      String
+  category        Category      @relation(fields: [categoryId], references: [id])
+  subcategoryId   String
+  subcategory     Subcategory   @relation(fields: [subcategoryId], references: [id])
+  typeId          String?
+  categoryType    CategoryType? @relation(fields: [typeId], references: [id])
+  brandId         String?
+  brand           Brand?        @relation(fields: [brandId], references: [id])
+  brandName       String?
+  description     String
+  fabric          String        @default("Cotton Blend")
+  fit             String        @default("Regular Fit")
+  sleeve          String?
+  neck            String?
+  pattern         String?
+  occasion        String        @default("Casual")
+  hsnCode         String        @default("6204")
+  gstPercent      Float         @default(5)
+  basePrice       Float
+  discountPrice   Float?
+  discountPercent Float?
+  tags            String        @default("[]") // JSON string of ProductTag[]
+  isDealOfTheDay  Boolean       @default(false)
+  status          String        @default("published")
+  variants        String        @default("[]") // JSON string of ProductVariant[]
+  colors          String        @default("[]") // JSON string of ColorVariant[]
+  availableSizes  String        @default("[]") // JSON string of string[]
+  rating          Float         @default(4.5)
+  reviewCount     Int           @default(0)
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+  metaTitle       String?
+  metaDesc        String?
+  aiImagePrompt   String?
+}
+
+model Banner {
+  id          String   @id @default(cuid())
+  title       String
+  subtitle    String?
+  image       String
+  mobileImage String?
+  link        String
+  buttonText  String   @default("Shop Now")
+  position    String   @default("hero")
+  sortOrder   Int      @default(1)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Coupon {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  discountType  String   @default("percentage")
+  value         Float
+  minOrderValue Float    @default(0)
+  maxDiscount   Float?
+  usageLimit    Int      @default(100)
+  usedCount     Int      @default(0)
+  expiryDate    String
+  categoryScope String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model Review {
+  id                 String   @id @default(cuid())
+  productId          String
+  customerName       String
+  rating             Float
+  title              String
+  comment            String
+  photos             String   @default("[]") // JSON string of string[]
+  isVerifiedPurchase Boolean  @default(true)
+  status             String   @default("approved")
+  createdAt          DateTime @default(now())
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  orderNumber     String   @unique
+  customerId      String
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  shippingAddress String   // JSON string of Address
+  items           String   // JSON string of OrderItem[]
+  subtotal        Float
+  discount        Float    @default(0)
+  shippingFee     Float    @default(0)
+  tax             Float    @default(0)
+  total           Float
+  status          String   @default("pending")
+  paymentStatus   String   @default("pending")
+  paymentMethod   String   @default("upi")
+  trackingNumber  String?
+  courierPartner  String?
+  couponCode      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  returnStatus    String?  @default("none")
+  returnType      String?
+  returnReason    String?
+  returnComments  String?
+  exchangeSize    String?
+  exchangeColor   String?
+}
