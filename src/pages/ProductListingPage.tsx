@@ -995,45 +995,90 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
 
             {/* INDEPENDENT SCROLL CONTAINER FOR MOBILE FILTERS BODY */}
             <div className="flex-1 overflow-y-auto filter-scroll-container overscroll-contain py-4 space-y-5 pr-1">
-              {/* Mobile Subcategory */}
+              {/* Mobile Subcategory — draft-only, same as desktop sidebar */}
               {currentCategory?.subcategories && currentCategory.subcategories.length > 0 && (
-                <div className="space-y-2 border-b border-stone-100 pb-4">
-                  <p className="font-bold text-xs uppercase text-stone-900">Subcategory</p>
-                  <div className="space-y-1">
-                    <button
-                      onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
-                      className={`block w-full text-left py-1.5 px-2 rounded-md text-xs ${
-                        !subParam ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
-                      }`}
-                    >
-                      All {currentCategory.name}
-                    </button>
-                    {currentCategory.subcategories.map(sub => {
-                      const isSubActive = subParam === sub.id || subParam === sub.slug;
-                      return (
+                <div className="space-y-1.5 border-b border-stone-100 pb-4">
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold text-xs uppercase text-stone-900">Subcategory</p>
+                    {sidebarSubId && (
+                      <button
+                        onClick={() => {
+                          setSidebarSubId(null);
+                          setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
+                        }}
+                        className="text-[10px] text-[#C0654B] font-bold hover:underline cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSidebarSubId(null);
+                      setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
+                    }}
+                    className={`block w-full text-left py-1.5 px-2 rounded-md text-xs ${
+                      !sidebarSubId ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
+                    }`}
+                  >
+                    All {currentCategory.name}
+                  </button>
+                  {currentCategory.subcategories.map(sub => {
+                    const isActive = sidebarSubId === sub.id;
+                    const subTypes = sub.types || [];
+                    return (
+                      <div key={sub.id}>
                         <button
-                          key={sub.id}
                           onClick={() => {
-                            if (isSubActive) {
-                              onNavigate(`/category/${currentCategory.slug}`);
+                            if (isActive) {
+                              setSidebarSubId(null);
+                              setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
                             } else {
-                              onNavigate(`/category/${currentCategory.slug}?sub=${sub.id}`);
+                              setSidebarSubId(sub.id);
+                              setDraftFilters(prev => ({ ...prev, subcategoryId: sub.id, types: [] }));
                             }
                           }}
-                          className={`block w-full text-left py-1.5 px-2 rounded-md text-xs ${
-                            isSubActive ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
+                          className={`block w-full text-left py-1.5 px-2 rounded-md text-xs flex items-center justify-between ${
+                            isActive
+                              ? 'bg-[#F3E9E4] text-[#C0654B] font-bold border border-[#C0654B]/30'
+                              : 'text-stone-700 hover:bg-stone-50'
                           }`}
                         >
-                          {sub.name}
+                          <span>{sub.name}</span>
+                          <ChevronRight className={`w-3 h-3 shrink-0 transition-transform duration-200 ${
+                            isActive ? 'rotate-90 text-[#C0654B]' : 'text-stone-400'
+                          }`} />
                         </button>
-                      );
-                    })}
-                  </div>
+                        {isActive && subTypes.length > 0 && (
+                          <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-[#C0654B]/30 pl-2">
+                            <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-1 pb-0.5">Styles</p>
+                            {subTypes.map(t => {
+                              const isTypeSelected = draftFilters.types.includes(t.id);
+                              return (
+                                <button
+                                  key={t.id}
+                                  onClick={() => toggleDraftType(t.id)}
+                                  className={`w-full text-left py-1 px-2 rounded-md text-xs flex items-center justify-between gap-1 cursor-pointer transition-colors min-h-[36px] ${
+                                    isTypeSelected
+                                      ? 'bg-[#C0654B] text-white font-bold'
+                                      : 'text-stone-700 hover:bg-stone-100'
+                                  }`}
+                                >
+                                  <span className="truncate">{t.name}</span>
+                                  {isTypeSelected && <Check className="w-3 h-3 shrink-0" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
-              {/* Mobile Product Type / Style Section */}
-              {(() => {
+              {/* Mobile Product Type — only shown when no subcategory expanded (types shown inline above) */}
+              {!sidebarSubId && (() => {
                 const displayTypes = currentSubcategory
                   ? (currentSubcategory.types || [])
                   : (currentCategory?.subcategories ? currentCategory.subcategories.flatMap(s => s.types || []) : allTypes);
