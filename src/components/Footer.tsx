@@ -4,11 +4,13 @@ import { Truck, RotateCcw, ShieldCheck, CreditCard, Mail, Phone, MapPin, Send, I
 
 interface FooterProps {
   onNavigate: (path: string) => void;
+  currentPath?: string;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' }) => {
   const { settings, isAdminLoggedIn, showToast } = useStore();
   const [newsletterEmail, setNewsletterEmail] = useState('');
+  const isHomePage = currentPath === '/' || currentPath === '';
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,8 +23,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   return (
     <footer className="bg-[#2B2620] text-stone-300 border-t border-stone-800 text-left">
 
-      {/* ── OUR STORY GLIMPSE ── */}
-      <div className="relative overflow-hidden bg-[#1A120C]">
+      {/* ── OUR STORY GLIMPSE (HOMEPAGE ONLY) ── */}
+      {isHomePage && (
+        <div className="relative overflow-hidden bg-[#1A120C]">
         {/* Background texture overlay */}
         <div className="absolute inset-0 opacity-10 pointer-events-none"
           style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=60)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
@@ -93,6 +96,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
         </div>
       </div>
+      )}
 
       {/* 1. BENEFIT ICONS STRIP (Pantaloons / Max Fashion Style) */}
       <div className="bg-[#1F1B17] py-8 border-b border-stone-800/80">

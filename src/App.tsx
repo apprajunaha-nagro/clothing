@@ -171,7 +171,7 @@ function AppContent() {
         </AnimatePresence>
       </main>
 
-      {!isAdminRoute && <Footer onNavigate={navigateTo} />}
+      {!isAdminRoute && <Footer onNavigate={navigateTo} currentPath={currentPath} />}
 
       {/* OVERLAYS & MODALS */}
       <Toast />

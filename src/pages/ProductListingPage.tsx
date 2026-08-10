@@ -517,11 +517,10 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
         </div>
       </div>
 
-      {/* MAIN TWO COLUMN LAYOUT: TRULY INDEPENDENT SCROLL — sidebar and product grid each have their own scrollbar */}
-      {/* The outer wrapper is fixed to viewport height so both columns scroll inside themselves */}
-      <div className="flex gap-8 items-start" style={{ height: 'calc(100vh - 14rem)' }}>
-        {/* DESKTOP FILTER SIDEBAR — independently scrollable, fixed height, never moves with page */}
-        <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-white rounded-2xl border border-stone-200 shadow-xs text-xs overflow-hidden" style={{ height: '100%' }}>
+      {/* MAIN TWO COLUMN LAYOUT: Sticky Sidebar & Native Smooth Product Grid Scroll */}
+      <div className="flex gap-8 items-start">
+        {/* DESKTOP FILTER SIDEBAR — sticky top position, stays visible as you scroll products */}
+        <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-white rounded-2xl border border-stone-200 shadow-xs text-xs overflow-hidden sticky top-24 max-h-[calc(100vh-7rem)]">
           {/* HEADER — pinned at top of sidebar, never scrolls away */}
           <div className="shrink-0 space-y-2.5 p-5 pb-3 border-b border-stone-200 bg-white z-10">
             <div className="flex items-center justify-between">
@@ -872,8 +871,8 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           </div>
         </aside>
 
-        {/* PRODUCTS LIST GRID — independently scrollable, fills remaining width */}
-        <main id="products-grid-container" className="flex-1 overflow-y-auto pr-2 py-1 overscroll-contain">
+        {/* PRODUCTS LIST GRID — flows naturally with native smooth page scrolling */}
+        <main id="products-grid-container" className="flex-1 py-1">
           {sortedProducts.length === 0 ? (
             <div className="bg-white p-12 rounded-2xl border border-stone-200 text-center space-y-4 shadow-xs">
               {(rawSlug === 'wishlist' || tagParam === 'wishlist') ? (
