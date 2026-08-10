@@ -4,7 +4,6 @@ import { ProductCard } from '../components/ProductCard';
 import { Filter, SlidersHorizontal, X, ChevronRight, Check, Grid, List, Sparkles, ArrowLeftRight, Scale, ShoppingBag, Star } from 'lucide-react';
 import { Product, FilterState } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
-import { useDebounce } from '../utils/useDebounce';
 
 interface ProductListingPageProps {
   onNavigate: (path: string) => void;
@@ -23,12 +22,6 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   // Local price state — debounced before applying to context so the grid
   // doesn't re-render on every pixel of slider movement.
   const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice);
-  const debouncedMaxPrice = useDebounce(localMaxPrice, 300);
-
-  // Sync debounced value to global filter state
-  useEffect(() => {
-    setFilters(prev => ({ ...prev, maxPrice: debouncedMaxPrice }));
-  }, [debouncedMaxPrice, setFilters]);
 
   // Keep local slider in sync if filters are reset externally
   useEffect(() => {
@@ -157,11 +150,13 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({ ...filters });
 
   // Sync draft and applied filters when route/query changes; reset page to 1
+  // NOTE: filters.maxPrice intentionally excluded — price slider is draft-only
+  // until the user explicitly clicks "Apply Filters"
   useEffect(() => {
     setDraftFilters({ ...filters });
     setAppliedFilters({ ...filters });
     setCurrentPage(1);
-  }, [categorySlug, queryString, filters.maxPrice]);
+  }, [categorySlug, queryString]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // DRAFT FILTERED PRODUCTS (calculates preview count for Apply Filters button)
   const draftFilteredProducts = products.filter((p) => {
@@ -334,10 +329,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     setFilters({ ...draftFilters });
     setCurrentPage(1);
     setMobileFilterOpen(false);
-    const el = document.getElementById('products-grid-top');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    // Scroll the independently-scrollable products panel back to the top
+    const container = document.getElementById('products-grid-container');
+    if (container) container.scrollTop = 0;
     showToast(`Filters Applied (${draftFilteredProducts.length} items found)`);
   };
 
@@ -519,12 +513,13 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
         </div>
       </div>
 
-      {/* MAIN TWO COLUMN LAYOUT: INDEPENDENT SCROLLING SIDEBAR FILTERS + INDEPENDENT SCROLLING PRODUCTS GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* DESKTOP FILTER SIDEBAR (INDEPENDENT SCROLL COLUMN) */}
-        <aside className="hidden lg:flex flex-col space-y-3 bg-white p-5 rounded-2xl border border-stone-200 shadow-xs sticky top-24 self-start text-xs">
-          {/* HEADER SECTION (PINNED AT TOP WITH APPLY FILTERS BUTTON) */}
-          <div className="shrink-0 space-y-2.5 pb-3 border-b border-stone-200 bg-white z-10">
+      {/* MAIN TWO COLUMN LAYOUT: TRULY INDEPENDENT SCROLL — sidebar and product grid each have their own scrollbar */}
+      {/* The outer wrapper is fixed to viewport height so both columns scroll inside themselves */}
+      <div className="flex gap-8 items-start" style={{ height: 'calc(100vh - 14rem)' }}>
+        {/* DESKTOP FILTER SIDEBAR — independently scrollable, fixed height, never moves with page */}
+        <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-white rounded-2xl border border-stone-200 shadow-xs text-xs overflow-hidden" style={{ height: '100%' }}>
+          {/* HEADER — pinned at top of sidebar, never scrolls away */}
+          <div className="shrink-0 space-y-2.5 p-5 pb-3 border-b border-stone-200 bg-white z-10">
             <div className="flex items-center justify-between">
               <span className="font-bold text-stone-900 text-sm flex items-center gap-2 font-serif">
                 <Filter className="w-4 h-4 text-[#C0654B]" />
@@ -557,8 +552,8 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             </button>
           </div>
 
-          {/* INDEPENDENTLY SCROLLABLE FILTER LIST BODY */}
-          <div className="flex-1 overflow-y-auto filter-scroll-container overscroll-contain pr-1.5 py-1 space-y-5 max-h-[calc(100vh-14rem)]">
+          {/* INDEPENDENTLY SCROLLABLE FILTER LIST BODY — scrolls within the sidebar without moving the page */}
+          <div className="flex-1 overflow-y-auto overscroll-contain pr-1.5 p-5 pt-3 space-y-5">
             {/* CURVES / PLUS-SIZE TOGGLE */}
             <div className="bg-[#F3E9E4] p-3 rounded-xl border border-[#C0654B]/30 flex items-center justify-between">
               <div className="space-y-0.5">
@@ -768,8 +763,8 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           </div>
         </aside>
 
-        {/* PRODUCTS LIST GRID (INDEPENDENT SCROLL COLUMN) */}
-        <main id="products-grid-container" className="lg:col-span-3 pr-2 py-1">
+        {/* PRODUCTS LIST GRID — independently scrollable, fills remaining width */}
+        <main id="products-grid-container" className="flex-1 overflow-y-auto pr-2 py-1 overscroll-contain">
           {sortedProducts.length === 0 ? (
             <div className="bg-white p-12 rounded-2xl border border-stone-200 text-center space-y-4 shadow-xs">
               <Sparkles className="w-10 h-10 text-[#C0654B] mx-auto" />
@@ -799,8 +794,8 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
 
             const handlePageChange = (page: number) => {
               setCurrentPage(page);
-              const el = document.getElementById('products-grid-top');
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              const container = document.getElementById('products-grid-container');
+              if (container) container.scrollTop = 0;
             };
 
             // Build page numbers with ellipsis
