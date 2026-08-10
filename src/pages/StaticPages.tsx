@@ -12,7 +12,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
   const [storeSearch, setStoreSearch] = useState('');
 
   const stores = [
-    { name: 'PGmart Flagship Store', city: 'Kolkata', address: '4th Floor, Park Mansions, Park Street', phone: '+91 94711 55434', hours: '10:30 AM - 9:00 PM' },
+    { name: 'PGmart Flagship Store', city: 'Jharia, Dhanbad', address: 'Kapda Patti, Jharia, Dhanbad, Jharkhand 828111', phone: '+91 94711 55434', hours: '10:30 AM - 9:00 PM' },
     { name: 'PGmart Galleria', city: 'Mumbai', address: 'Linking Road, Bandra West', phone: '+91 94711 55435', hours: '11:00 AM - 9:30 PM' },
     { name: 'PGmart Boutique', city: 'New Delhi', address: 'Khan Market, High Street', phone: '+91 94711 55436', hours: '10:00 AM - 9:00 PM' },
     { name: 'PGmart Style Hub', city: 'Bengaluru', address: '100 Feet Road, Indiranagar', phone: '+91 94711 55437', hours: '10:30 AM - 9:30 PM' },
@@ -183,7 +183,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
                 <p className="font-bold text-stone-900">PGmart Customer Care</p>
                 <p><strong>Email:</strong> support@pgmart.in</p>
                 <p><strong>Phone:</strong> +91 94711 55434</p>
-                <p><strong>Address:</strong> Main Road, Near Bank More, Dhanbad, Jharkhand 826001, India</p>
+                <p><strong>Address:</strong> Kapda Patti, Jharia, Dhanbad, Jharkhand 828111</p>
               </div>
             </div>
           </div>

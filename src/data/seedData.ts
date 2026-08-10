@@ -20,7 +20,7 @@ export const initialSiteSettings: SiteSettings = {
   supportEmail: "support@pgmart.com",
   supportPhone: "+91 94711 55434",
   whatsappNumber: "9471155434",
-  address: "Fashion Hub 4th Floor, Park Street, Kolkata - 700016, India",
+  address: "Kapda Patti, Jharia, Dhanbad, Jharkhand 828111",
   currencySymbol: "₹",
   currencyCode: "INR",
   freeShippingThreshold: 999,

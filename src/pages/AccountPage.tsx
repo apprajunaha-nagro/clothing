@@ -51,10 +51,10 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
       id: 'addr-2',
       fullName: user?.name || 'Priya Sharma',
       phone: user?.phone || '+91 98765 43210',
-      street: '4th Floor, Park Mansions, Park Street',
-      city: 'Kolkata',
-      state: 'West Bengal',
-      pincode: '700016',
+      street: 'Kapda Patti, Jharia',
+      city: 'Dhanbad',
+      state: 'Jharkhand',
+      pincode: '828111',
       type: 'work',
       isDefault: false
     }
