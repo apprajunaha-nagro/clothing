@@ -149,6 +149,11 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   const [draftFilters, setDraftFilters] = useState<FilterState>({ ...filters });
   const [appliedFilters, setAppliedFilters] = useState<FilterState>({ ...filters });
 
+  // Sidebar-local selected subcategory (controls which types are shown, without navigating)
+  const [sidebarSubId, setSidebarSubId] = useState<string | null>(
+    currentSubcategory?.id || null
+  );
+
   // Sync draft and applied filters when route/query changes; reset page to 1
   // NOTE: filters.maxPrice intentionally excluded — price slider is draft-only
   // until the user explicitly clicks "Apply Filters"
@@ -156,6 +161,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     setDraftFilters({ ...filters });
     setAppliedFilters({ ...filters });
     setCurrentPage(1);
+    setSidebarSubId(currentSubcategory?.id || null);
   }, [categorySlug, queryString]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // DRAFT FILTERED PRODUCTS (calculates preview count for Apply Filters button)
@@ -176,7 +182,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     if (rawSlug === 'curves' || tagParam === 'curves_plus_size' || draftFilters.plusSizeOnly) {
       if (!p.tags.includes('curves_plus_size') && !p.availableSizes.some(s => ['XL', 'XXL', '3XL', 'Free Size'].includes(s))) return false;
     }
-    if (subParam) {
+    if (draftFilters.subcategoryId) {
+      if (p.subcategoryId !== draftFilters.subcategoryId) return false;
+    } else if (subParam) {
       const matchSubId = currentSubcategory?.id || subParam;
       if (p.subcategoryId !== matchSubId && !p.subcategoryId.toLowerCase().includes(subParam.toLowerCase())) return false;
     }
@@ -242,7 +250,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     if (rawSlug === 'curves' || tagParam === 'curves_plus_size' || appliedFilters.plusSizeOnly) {
       if (!p.tags.includes('curves_plus_size') && !p.availableSizes.some(s => ['XL', 'XXL', '3XL', 'Free Size'].includes(s))) return false;
     }
-    if (subParam) {
+    if (appliedFilters.subcategoryId) {
+      if (p.subcategoryId !== appliedFilters.subcategoryId) return false;
+    } else if (subParam) {
       const matchSubId = currentSubcategory?.id || subParam;
       if (p.subcategoryId !== matchSubId && !p.subcategoryId.toLowerCase().includes(subParam.toLowerCase())) return false;
     }
@@ -351,11 +361,13 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       minDiscount: 0,
       rating: 0,
       plusSizeOnly: false,
-      sortBy: 'popularity'
+      sortBy: 'popularity',
+      subcategoryId: undefined,
     };
     setDraftFilters(emptyFilters);
     setAppliedFilters(emptyFilters);
     setLocalMaxPrice(10000);
+    setSidebarSubId(null);
     resetFilters();
     showToast("Filters Reset");
   };
@@ -568,55 +580,98 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
               />
             </div>
 
-            {/* Subcategories Filter */}
+            {/* Subcategories Filter — clicking one auto-expands its product types */}
             {currentCategory?.subcategories && currentCategory.subcategories.length > 0 && (
-              <div className="space-y-2 border-b border-stone-100 pb-4">
-                <div className="flex items-center justify-between">
+              <div className="space-y-1.5 border-b border-stone-100 pb-4">
+                <div className="flex items-center justify-between mb-1">
                   <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Subcategory</p>
-                  {subParam && (
+                  {sidebarSubId && (
                     <button
-                      onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
+                      onClick={() => {
+                        setSidebarSubId(null);
+                        setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
+                      }}
                       className="text-[10px] text-[#C0654B] font-bold hover:underline cursor-pointer"
                     >
                       Clear
                     </button>
                   )}
                 </div>
-                <div className="space-y-1">
-                  <button
-                    onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
-                    className={`block w-full text-left py-1 px-2 rounded-md transition-colors cursor-pointer text-xs ${
-                      !subParam ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
-                    }`}
-                  >
-                    All {currentCategory.name}
-                  </button>
-                  {currentCategory.subcategories.map(sub => {
-                    const isSubActive = subParam === sub.id || subParam === sub.slug;
-                    return (
+
+                {/* All button */}
+                <button
+                  onClick={() => {
+                    setSidebarSubId(null);
+                    setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
+                  }}
+                  className={`block w-full text-left py-1.5 px-2 rounded-md transition-colors cursor-pointer text-xs ${
+                    !sidebarSubId ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
+                  }`}
+                >
+                  All {currentCategory.name}
+                </button>
+
+                {currentCategory.subcategories.map(sub => {
+                  const isActive = sidebarSubId === sub.id;
+                  const subTypes = sub.types || [];
+                  return (
+                    <div key={sub.id}>
+                      {/* Subcategory button */}
                       <button
-                        key={sub.id}
                         onClick={() => {
-                          if (isSubActive) {
-                            onNavigate(`/category/${currentCategory.slug}`);
+                          if (isActive) {
+                            // Collapse: deselect
+                            setSidebarSubId(null);
+                            setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
                           } else {
-                            onNavigate(`/category/${currentCategory.slug}?sub=${sub.id}`);
+                            // Expand: select this subcategory, clear types
+                            setSidebarSubId(sub.id);
+                            setDraftFilters(prev => ({ ...prev, subcategoryId: sub.id, types: [] }));
                           }
                         }}
-                        className={`block w-full text-left py-1 px-2 rounded-md transition-colors cursor-pointer text-xs ${
-                          isSubActive ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
+                        className={`block w-full text-left py-1.5 px-2 rounded-md transition-colors cursor-pointer text-xs flex items-center justify-between ${
+                          isActive
+                            ? 'bg-[#F3E9E4] text-[#C0654B] font-bold border border-[#C0654B]/30'
+                            : 'text-stone-700 hover:bg-stone-50'
                         }`}
                       >
-                        {sub.name}
+                        <span>{sub.name}</span>
+                        <ChevronRight className={`w-3 h-3 shrink-0 transition-transform duration-200 ${
+                          isActive ? 'rotate-90 text-[#C0654B]' : 'text-stone-400'
+                        }`} />
                       </button>
-                    );
-                  })}
-                </div>
+
+                      {/* Types revealed inline when subcategory is active */}
+                      {isActive && subTypes.length > 0 && (
+                        <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-[#C0654B]/30 pl-2">
+                          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-1 pb-0.5">Styles</p>
+                          {subTypes.map(t => {
+                            const isTypeSelected = draftFilters.types.includes(t.id);
+                            return (
+                              <button
+                                key={t.id}
+                                onClick={() => toggleDraftType(t.id)}
+                                className={`w-full text-left py-1 px-2 rounded-md text-xs flex items-center justify-between gap-1 cursor-pointer transition-colors ${
+                                  isTypeSelected
+                                    ? 'bg-[#C0654B] text-white font-bold'
+                                    : 'text-stone-700 hover:bg-stone-100'
+                                }`}
+                              >
+                                <span className="truncate">{t.name}</span>
+                                {isTypeSelected && <Check className="w-3 h-3 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
-            {/* Product Type / Style Section Filter */}
-            {(() => {
+            {/* Product Type / Style Section Filter — only shown when NO subcategory is expanded in sidebar (to avoid duplication) */}
+            {!sidebarSubId && (() => {
               const displayTypes = currentSubcategory
                 ? (currentSubcategory.types || [])
                 : (currentCategory?.subcategories ? currentCategory.subcategories.flatMap(s => s.types || []) : allTypes);
