@@ -47,7 +47,7 @@ export function adminAuth(req: express.Request, res: express.Response, next: exp
     token = String(req.headers['x-admin-token']).trim();
   }
 
-  const expectedToken = process.env.ADMIN_TOKEN || 'change_me_to_a_long_random_string';
+  const expectedToken = process.env.ADMIN_TOKEN || 'pgmart123';
 
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -103,7 +103,7 @@ app.get('/api/health', (req, res) => {
 // Admin Auth Login Endpoint
 app.post('/api/admin/login', (req, res) => {
   const { password } = req.body || {};
-  const expectedToken = process.env.ADMIN_TOKEN || 'change_me_to_a_long_random_string';
+  const expectedToken = process.env.ADMIN_TOKEN || 'pgmart123';
 
   if (!password) {
     return res.status(400).json({ error: 'Password is required' });

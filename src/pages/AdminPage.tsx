@@ -93,7 +93,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   setPasswordInput(e.target.value);
                   setLoginError(null);
                 }}
-                placeholder="Enter password (e.g. admin123)"
+                placeholder="Enter password (e.g. pgmart123)"
                 className="w-full px-4 py-3 rounded-xl border border-stone-300 focus:border-[#C0654B] focus:ring-2 focus:ring-[#C0654B]/20 outline-none text-sm font-mono transition-all"
                 autoFocus
               />
@@ -117,14 +117,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               type="button"
               onClick={async () => {
-                const pass = 'change_me_to_a_long_random_string';
+                const pass = 'pgmart123';
                 setPasswordInput(pass);
                 await adminLogin(pass);
               }}
               className="w-full bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold py-2.5 px-4 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4 text-[#C0654B]" />
-              <span>One-Click Auto Login (Default Token)</span>
+              <span>One-Click Auto Login (Pass: pgmart123)</span>
             </button>
 
             <button
