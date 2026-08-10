@@ -144,6 +144,12 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
 
   const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
   const availableOccasions = ['Casual Wear', 'Festive Wear', 'Work Wear', 'Party Wear', 'Wedding Wear', 'Active & Loungewear'];
+  const availableFabrics = ['Pure Silk', 'Cotton Blend', 'Chiffon', 'Georgette', 'Velvet', 'Organza', 'Linen Blend', 'Art Silk'];
+  const availableRatings = [
+    { label: '4.5★ & Above', value: 4.5 },
+    { label: '4.0★ & Above', value: 4.0 },
+    { label: '3.5★ & Above', value: 3.5 },
+  ];
 
   // Compute initial filter state synchronously from route and query params
   const initSubId = currentSubcategory?.id || (subParam ? subParam : undefined);
@@ -263,12 +269,17 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       if (!p.colors.some(c => filterState.colors.includes(c.name))) return false;
     }
 
-    // 12. Fabrics Filter
+    // 12. Fabrics Filter (OR-match)
     if (filterState.fabrics && filterState.fabrics.length > 0) {
-      if (!filterState.fabrics.includes(p.fabric)) return false;
+      if (!filterState.fabrics.some(f => p.fabric.toLowerCase().includes(f.toLowerCase()))) return false;
     }
 
-    // 13. Price Range Filter
+    // 13. Minimum Rating Filter
+    if (filterState.rating && filterState.rating > 0) {
+      if (p.rating < filterState.rating) return false;
+    }
+
+    // 14. Price Range Filter
     const price = p.discountPrice || p.basePrice;
     if (price < filterState.minPrice || price > filterState.maxPrice) return false;
 
@@ -773,6 +784,68 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                     title={col.name}
                   />
                 ))}
+              </div>
+            </div>
+
+            {/* Fabric Filter (MULTIPLE SELECTABLE) */}
+            <div className="space-y-2 border-b border-stone-100 pb-4">
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Fabric Material</p>
+                {draftFilters.fabrics.length > 0 && (
+                  <span className="text-[10px] text-[#C0654B] font-bold">
+                    {draftFilters.fabrics.length} selected
+                  </span>
+                )}
+              </div>
+              <div className="space-y-1.5 max-h-36 overflow-y-auto filter-scroll-container pr-1">
+                {availableFabrics.map(fab => (
+                  <label key={fab} className="flex items-center gap-2 cursor-pointer text-stone-700 hover:text-stone-900 transition-colors text-xs">
+                    <input
+                      type="checkbox"
+                      checked={draftFilters.fabrics.includes(fab)}
+                      onChange={() => toggleDraftFilterItem('fabrics', fab)}
+                      className="w-3.5 h-3.5 accent-[#C0654B] cursor-pointer"
+                    />
+                    <span>{fab}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Minimum Rating Filter */}
+            <div className="space-y-2 border-b border-stone-100 pb-4">
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Minimum Rating</p>
+                {draftFilters.rating > 0 && (
+                  <button
+                    onClick={() => setDraftFilters(prev => ({ ...prev, rating: 0 }))}
+                    className="text-[10px] text-[#C0654B] font-bold hover:underline cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="space-y-1">
+                {availableRatings.map(r => {
+                  const isSelected = draftFilters.rating === r.value;
+                  return (
+                    <button
+                      key={r.value}
+                      onClick={() => setDraftFilters(prev => ({ ...prev, rating: isSelected ? 0 : r.value }))}
+                      className={`w-full text-left py-1.5 px-2 rounded-md text-xs font-semibold cursor-pointer transition-colors flex items-center justify-between ${
+                        isSelected
+                          ? 'bg-[#F3E9E4] text-[#C0654B] border border-[#C0654B]/30 font-bold'
+                          : 'text-stone-700 hover:bg-stone-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        {r.label}
+                      </span>
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[#C0654B]" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

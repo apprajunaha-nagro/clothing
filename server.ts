@@ -730,18 +730,58 @@ app.post('/api/brands', async (req, res) => {
   }
 });
 
+// Helper to safely parse single, comma-separated, or array query parameters
+function parseArrayQuery(param: any): string[] {
+  if (!param) return [];
+  if (Array.isArray(param)) return param.map(String).flatMap(s => s.split(',')).map(s => s.trim()).filter(Boolean);
+  return String(param).split(',').map(s => s.trim()).filter(Boolean);
+}
+
 // Products with full filtering & search
 app.get('/api/products', async (req, res) => {
   try {
-    const { category, subcategory, type, brand, tag, search, sort, minPrice, maxPrice, occasion } = req.query;
+    const { category, subcategory, type, brand, tag, fabric, search, sort, minPrice, maxPrice, occasion, minRating, rating, status } = req.query;
 
     const where: any = {};
-    if (category) where.categoryId = String(category);
-    if (subcategory) where.subcategoryId = String(subcategory);
-    if (type) where.typeId = String(type);
-    if (brand) where.brandId = String(brand);
+
+    // 1. Status Filter (Default to 'published' for public visitors to prevent draft leakage)
+    if (status) {
+      if (status !== 'all') {
+        where.status = String(status);
+      }
+    } else {
+      where.status = 'published';
+    }
+
+    // 2. Multi-select filters (category, subcategory, type, brand)
+    const categoryList = parseArrayQuery(category);
+    if (categoryList.length > 0) {
+      where.categoryId = categoryList.length === 1 ? categoryList[0] : { in: categoryList };
+    }
+
+    const subcategoryList = parseArrayQuery(subcategory);
+    if (subcategoryList.length > 0) {
+      where.subcategoryId = subcategoryList.length === 1 ? subcategoryList[0] : { in: subcategoryList };
+    }
+
+    const typeList = parseArrayQuery(type);
+    if (typeList.length > 0) {
+      where.typeId = typeList.length === 1 ? typeList[0] : { in: typeList };
+    }
+
+    const brandList = parseArrayQuery(brand);
+    if (brandList.length > 0) {
+      where.brandId = brandList.length === 1 ? brandList[0] : { in: brandList };
+    }
+
     if (occasion) {
       where.occasion = { contains: String(occasion), mode: 'insensitive' };
+    }
+
+    // 3. Rating Filter
+    const targetRating = Number(minRating || rating);
+    if (!isNaN(targetRating) && targetRating > 0) {
+      where.rating = { gte: targetRating };
     }
 
     const dbProducts = await prisma.product.findMany({
@@ -751,10 +791,19 @@ app.get('/api/products', async (req, res) => {
 
     let result = dbProducts.map(formatProduct);
 
-    if (tag) {
-      result = result.filter(p => p.tags.includes(tag as any));
+    // 4. Tag Multi-Select Filter (OR-match)
+    const tagList = parseArrayQuery(tag);
+    if (tagList.length > 0) {
+      result = result.filter(p => tagList.some(t => p.tags.includes(t as any)));
     }
 
+    // 5. Fabric Multi-Select Filter (OR-match)
+    const fabricList = parseArrayQuery(fabric);
+    if (fabricList.length > 0) {
+      result = result.filter(p => fabricList.some(f => p.fabric.toLowerCase().includes(f.toLowerCase())));
+    }
+
+    // 6. Search Query
     if (search) {
       const q = String(search).toLowerCase();
       result = result.filter(p =>
@@ -765,6 +814,7 @@ app.get('/api/products', async (req, res) => {
       );
     }
 
+    // 7. Price Range Filter
     if (minPrice) {
       result = result.filter(p => (p.discountPrice || p.basePrice) >= Number(minPrice));
     }
@@ -772,10 +822,15 @@ app.get('/api/products', async (req, res) => {
       result = result.filter(p => (p.discountPrice || p.basePrice) <= Number(maxPrice));
     }
 
+    // 8. Sorting Logic
     if (sort === 'price_asc') {
       result.sort((a, b) => (a.discountPrice || a.basePrice) - (b.discountPrice || b.basePrice));
     } else if (sort === 'price_desc') {
       result.sort((a, b) => (b.discountPrice || b.basePrice) - (a.discountPrice || a.basePrice));
+    } else if (sort === 'rating') {
+      result.sort((a, b) => b.rating - a.rating);
+    } else if (sort === 'newest') {
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     }
 
     res.json(result);
