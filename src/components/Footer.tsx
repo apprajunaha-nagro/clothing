@@ -213,7 +213,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
           <ul className="space-y-2 text-stone-400">
             <li><button onClick={() => onNavigate('/blog')} className="hover:text-[#C0654B] font-bold text-[#C0654B] cursor-pointer flex items-center gap-1.5"><span>📖 PGmart Journal (Blog)</span></button></li>
             <li><button onClick={() => onNavigate('/account')} className="hover:text-[#C0654B] cursor-pointer">My Account & Orders</button></li>
-            <li><button onClick={() => onNavigate('/track-order')} className="hover:text-[#C0654B] cursor-pointer">Track Your Package</button></li>
             <li><button onClick={() => onNavigate('/store-locator')} className="hover:text-[#C0654B] cursor-pointer">Find Nearest Store</button></li>
             <li><button onClick={() => onNavigate('/size-guide')} className="hover:text-[#C0654B] cursor-pointer">Size Guide & Chart</button></li>
             <li><button onClick={() => onNavigate('/faqs')} className="hover:text-[#C0654B] cursor-pointer">FAQs & Help Center</button></li>
