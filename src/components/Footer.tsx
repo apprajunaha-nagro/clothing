@@ -42,7 +42,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </div>
             <div className="space-y-1">
               <h2 className="text-4xl sm:text-6xl font-extrabold font-serif text-white tracking-wide leading-none">
-                {settings.storeName}
+                PGmart ( Pratap Garments )
               </h2>
               <p className="text-[#C0654B] font-bold text-xs sm:text-sm uppercase tracking-[0.3em]">
                 {settings.tagline}
