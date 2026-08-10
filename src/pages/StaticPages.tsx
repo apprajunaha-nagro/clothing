@@ -73,7 +73,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
               <h2 className="text-base font-bold text-stone-900 font-serif">4. Orders & Payment</h2>
               <ul className="list-disc pl-5 space-y-1 text-stone-600">
                 <li>Placing an order constitutes an offer to purchase; a contract is formed only upon our confirmation of the order (e.g., order confirmation email/SMS).</li>
-                <li>We accept payment via the methods listed at checkout (UPI, cards, net banking, wallets, and Cash on Delivery where available). Payments are processed through secure, PCI-DSS compliant third-party gateways; PGmart does not store your card or banking credentials.</li>
+                <li>We accept payment via the methods listed at checkout (UPI, cards, net banking, wallets, and Cash on Delivery where available). Payments are processed through secure, PCI-DSS compliant third-party gateways; We do not store your card or banking credentials.</li>
                 <li>Orders may be cancelled by us due to non-availability of stock, inability to verify payment/delivery details, or suspected fraudulent activity, in which case any amount paid will be refunded.</li>
               </ul>
             </div>
@@ -84,7 +84,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
               <ul className="list-disc pl-5 space-y-1 text-stone-600">
                 <li>Estimated delivery timelines are provided at checkout based on your delivery pincode and are indicative, not guaranteed.</li>
                 <li>Risk of loss and title for products pass to you upon delivery to the shipping address provided.</li>
-                <li>Delays caused by courier partners, weather, regulatory restrictions, or other events beyond our reasonable control are not the responsibility of PGmart, though we will make reasonable efforts to keep you informed.</li>
+                <li>Delays caused by courier partners, weather, regulatory restrictions, or other events beyond our reasonable control are not our responsibility, though we will make reasonable efforts to keep you informed.</li>
                 <li>Please inspect your package upon delivery and report any visible damage or tampering to our customer support within 24–48 hours.</li>
               </ul>
             </div>
@@ -105,7 +105,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
               <h2 className="text-base font-bold text-stone-900 font-serif">7. Coupons, Discounts & Promotions</h2>
               <ul className="list-disc pl-5 space-y-1 text-stone-600">
                 <li>Coupon codes and promotional offers are valid only for the period and conditions specified and cannot be combined unless explicitly stated.</li>
-                <li>PGmart reserves the right to modify, suspend, or withdraw any promotional offer at any time without prior notice.</li>
+                <li>We reserve the right to modify, suspend, or withdraw any promotional offer at any time without prior notice.</li>
                 <li>Any misuse of coupon codes (e.g., unauthorised sharing, bulk redemption) may result in order cancellation and/or account suspension.</li>
               </ul>
             </div>
@@ -136,7 +136,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
             <div className="pt-4 space-y-2">
               <h2 className="text-base font-bold text-stone-900 font-serif">10. Intellectual Property</h2>
               <p className="text-stone-600">
-                All content on the Platform, including logos, product images, text, graphics, and the PGmart brand name, is the property of PGmart or its licensors and is protected under applicable intellectual property laws. You may not reproduce, distribute, or create derivative works from this content without our prior written consent.
+                All content on the Platform, including logos, product images, text, graphics, and our brand name, is the property of us or our licensors and is protected under applicable intellectual property laws. You may not reproduce, distribute, or create derivative works from this content without our prior written consent.
               </p>
             </div>
 
@@ -144,7 +144,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
             <div className="pt-4 space-y-2">
               <h2 className="text-base font-bold text-stone-900 font-serif">11. Limitation of Liability</h2>
               <p className="text-stone-600">
-                To the maximum extent permitted by law, PGmart shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Platform, including but not limited to loss of data, loss of profits, or delays in delivery caused by third-party logistics partners. Our total liability for any claim arising from your use of the Platform shall not exceed the amount paid by you for the relevant order.
+                To the maximum extent permitted by law, We shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Platform, including but not limited to loss of data, loss of profits, or delays in delivery caused by third-party logistics partners. Our total liability for any claim arising from your use of the Platform shall not exceed the amount paid by you for the relevant order.
               </p>
             </div>
 
@@ -152,7 +152,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
             <div className="pt-4 space-y-2">
               <h2 className="text-base font-bold text-stone-900 font-serif">12. Indemnification</h2>
               <p className="text-stone-600">
-                You agree to indemnify and hold PGmart, its officers, employees, and partners harmless from any claims, damages, or expenses arising from your violation of these Terms or misuse of the Platform.
+                You agree to indemnify and hold us, our officers, employees, and partners harmless from any claims, damages, or expenses arising from your violation of these Terms or misuse of the Platform.
               </p>
             </div>
 
