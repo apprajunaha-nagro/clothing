@@ -18,7 +18,10 @@ type TabType = 'overview' | 'orders' | 'returns' | 'wishlist' | 'addresses' | 'p
 
 export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   const { user, setUser, orders, wishlist, products, showToast, addToCart, toggleWishlist, logoutUser, loginUser, requestOrderReturn } = useStore();
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  
+  // Read tab from query string if available (e.g. /account?tab=wishlist)
+  const queryTab = new URLSearchParams(window.location.search).get('tab') as TabType | null;
+  const [activeTab, setActiveTab] = useState<TabType>(queryTab || 'overview');
 
   // Auth form state for logged-out state
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');

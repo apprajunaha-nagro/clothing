@@ -326,6 +326,19 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
             </button>
 
             <button
+              onClick={() => { onNavigate('/wishlist'); setMobileMenuOpen(false); }}
+              className="w-full text-left p-3 bg-rose-50/70 hover:bg-rose-100/70 text-stone-900 rounded-lg font-bold flex items-center justify-between border border-rose-200/80 shadow-2xs mt-2 min-h-[44px]"
+            >
+              <span className="flex items-center gap-2">
+                <Heart className="w-4 h-4 text-[#C0654B] fill-[#C0654B]/20" />
+                <span>My Saved Wishlist</span>
+              </span>
+              <span className="text-xs bg-[#C0654B] text-white font-extrabold px-2 py-0.5 rounded-full">
+                {wishlist.length}
+              </span>
+            </button>
+
+            <button
               onClick={() => { onNavigate('/blog'); setMobileMenuOpen(false); }}
               className="w-full text-left p-3 bg-stone-100 hover:bg-stone-200 text-stone-900 rounded-lg font-bold flex items-center justify-between border border-stone-200 shadow-2xs mt-2 min-h-[44px]"
             >

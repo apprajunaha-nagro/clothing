@@ -98,7 +98,10 @@ function AppContent() {
     if (currentPath.startsWith('/order-confirmation')) {
       return <OrderConfirmationPage onNavigate={navigateTo} order={placedOrder} />;
     }
-    if (currentPath === '/account') {
+    if (currentPath === '/wishlist' || currentPath.startsWith('/wishlist')) {
+      return <ProductListingPage onNavigate={navigateTo} categorySlug="wishlist" />;
+    }
+    if (currentPath === '/account' || currentPath.startsWith('/account')) {
       return <AccountPage onNavigate={navigateTo} />;
     }
     if (currentPath === '/ai-stylist') {

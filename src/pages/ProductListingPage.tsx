@@ -94,9 +94,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     sectionTitle = `Search Results for "${searchParam}"`;
     sectionSubtitle = `Showing products matching "${searchParam}" across all PGmart departments.`;
     sectionBadge = 'SEARCH RESULTS';
-  } else if (tagParam === 'wishlist') {
+  } else if (tagParam === 'wishlist' || rawSlug === 'wishlist') {
     sectionTitle = 'My Saved Wishlist';
-    sectionSubtitle = 'Your favorite bookmarked sarees, suits, dresses, and innerwear.';
+    sectionSubtitle = 'Your favorite bookmarked sarees, suits, dresses, and innerwear saved for later.';
     sectionBadge = `${wishlist.length} SAVED ITEMS`;
   } else if (currentType) {
     sectionTitle = currentType.name;
@@ -166,7 +166,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
 
   // DRAFT FILTERED PRODUCTS (calculates preview count for Apply Filters button)
   const draftFilteredProducts = products.filter((p) => {
-    if (tagParam === 'wishlist') return wishlist.includes(p.id);
+    if (tagParam === 'wishlist' || rawSlug === 'wishlist') return wishlist.includes(p.id);
     if (!searchParam && rawSlug && !['all', 'sale', 'new-arrivals', 'bestsellers', 'curves', 'ethnic', 'western'].includes(rawSlug)) {
       if (currentCategory?.id && p.categoryId !== currentCategory.id) return false;
     }
@@ -234,7 +234,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
 
   // APPLIED FILTERED PRODUCTS (for product grid display — only updates on Apply Filters click)
   const filteredProducts = products.filter((p) => {
-    if (tagParam === 'wishlist') return wishlist.includes(p.id);
+    if (tagParam === 'wishlist' || rawSlug === 'wishlist') return wishlist.includes(p.id);
     if (rawSlug && !['all', 'sale', 'new-arrivals', 'bestsellers', 'curves', 'ethnic', 'western'].includes(rawSlug)) {
       if (currentCategory?.id && p.categoryId !== currentCategory.id) return false;
     }
@@ -822,23 +822,41 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
         <main id="products-grid-container" className="flex-1 overflow-y-auto pr-2 py-1 overscroll-contain">
           {sortedProducts.length === 0 ? (
             <div className="bg-white p-12 rounded-2xl border border-stone-200 text-center space-y-4 shadow-xs">
-              <Sparkles className="w-10 h-10 text-[#C0654B] mx-auto" />
-              <h3 className="text-lg font-bold text-stone-900">No Clothing Items Found in "{sectionTitle}"</h3>
-              <p className="text-xs text-stone-500">Try adjusting your selected filters or clearing active section criteria.</p>
-              <div className="flex justify-center gap-3 pt-2">
-                <button
-                  onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
-                  className="bg-[#C0654B] text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md cursor-pointer hover:bg-[#8B4A38]"
-                >
-                  View All {currentCategory.name}
-                </button>
-                <button
-                  onClick={handleResetFilters}
-                  className="bg-stone-100 text-stone-800 text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer hover:bg-stone-200"
-                >
-                  Reset All Filters
-                </button>
-              </div>
+              {(rawSlug === 'wishlist' || tagParam === 'wishlist') ? (
+                <>
+                  <Heart className="w-12 h-12 text-[#C0654B] mx-auto fill-[#C0654B]/20 animate-pulse" />
+                  <h3 className="text-xl font-bold font-serif text-stone-900">Your Wishlist is Empty</h3>
+                  <p className="text-xs text-stone-500 max-w-sm mx-auto">Explore our collections and tap the heart ❤️ icon on any item to save your favorite outfits for later!</p>
+                  <div className="pt-2">
+                    <button
+                      onClick={() => onNavigate('/category/all')}
+                      className="bg-[#C0654B] text-white text-xs font-bold px-6 py-3 rounded-xl shadow-md cursor-pointer hover:bg-[#8B4A38] transition-colors"
+                    >
+                      Explore Fashion Catalog →
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-10 h-10 text-[#C0654B] mx-auto" />
+                  <h3 className="text-lg font-bold text-stone-900">No Clothing Items Found in "{sectionTitle}"</h3>
+                  <p className="text-xs text-stone-500">Try adjusting your selected filters or clearing active section criteria.</p>
+                  <div className="flex justify-center gap-3 pt-2">
+                    <button
+                      onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
+                      className="bg-[#C0654B] text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md cursor-pointer hover:bg-[#8B4A38]"
+                    >
+                      View All {currentCategory.name}
+                    </button>
+                    <button
+                      onClick={handleResetFilters}
+                      className="bg-stone-100 text-stone-800 text-xs font-bold px-5 py-2.5 rounded-xl cursor-pointer hover:bg-stone-200"
+                    >
+                      Reset All Filters
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ) : (() => {
             const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
