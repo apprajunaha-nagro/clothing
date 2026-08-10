@@ -135,6 +135,9 @@ function AppContent() {
     if (currentPath === '/faqs') {
       return <StaticPages pageType="faqs" onNavigate={navigateTo} />;
     }
+    if (currentPath === '/size-guide' || currentPath === '/size-chart') {
+      return <StaticPages pageType="size-guide" onNavigate={navigateTo} />;
+    }
     return <HomePage onNavigate={navigateTo} />;
   };
 

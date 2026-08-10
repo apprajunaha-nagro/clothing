@@ -278,6 +278,145 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
           </div>
         </div>
       )}
+
+      {pageType === 'size-guide' && (
+        <div className="space-y-8">
+          <div>
+            <span className="text-xs font-bold text-[#C0654B] uppercase tracking-widest">PGMART FITTING & SIZING</span>
+            <h1 className="text-2xl sm:text-4xl font-bold font-serif text-stone-900 mt-1">Apparel Size Guide & Measurement Chart</h1>
+            <p className="text-xs sm:text-sm text-stone-600 mt-2 max-w-2xl">
+              Find your perfect fit across ethnic wear, western apparel, men's shirts, and plus-size curves with our standard Indian sizing chart.
+            </p>
+          </div>
+
+          <div className="space-y-6 text-xs">
+            {/* Women's Ethnic & Western */}
+            <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                <h3 className="font-bold text-stone-900 text-base font-serif">Women's Sizing Chart (Kurtis, Sarees, Dresses & Tops)</h3>
+                <span className="bg-[#F3E9E4] text-[#C0654B] font-bold text-[10px] px-2.5 py-1 rounded-full uppercase">Women</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-stone-200 text-stone-700 text-center">
+                  <thead>
+                    <tr className="bg-[#F3E9E4] text-[#2B2620] font-bold">
+                      <th className="border border-stone-200 p-2.5">Brand Size</th>
+                      <th className="border border-stone-200 p-2.5">Bust / Chest (in)</th>
+                      <th className="border border-stone-200 p-2.5">Waist (in)</th>
+                      <th className="border border-stone-200 p-2.5">Hip (in)</th>
+                      <th className="border border-stone-200 p-2.5">Kurti Length (in)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="hover:bg-stone-50">
+                      <td className="border border-stone-200 p-2 font-bold text-[#C0654B]">XS</td>
+                      <td className="border border-stone-200 p-2">32 - 34</td>
+                      <td className="border border-stone-200 p-2">26 - 28</td>
+                      <td className="border border-stone-200 p-2">34 - 36</td>
+                      <td className="border border-stone-200 p-2">38</td>
+                    </tr>
+                    <tr className="hover:bg-stone-50">
+                      <td className="border border-stone-200 p-2 font-bold text-[#C0654B]">S</td>
+                      <td className="border border-stone-200 p-2">34 - 36</td>
+                      <td className="border border-stone-200 p-2">28 - 30</td>
+                      <td className="border border-stone-200 p-2">36 - 38</td>
+                      <td className="border border-stone-200 p-2">39</td>
+                    </tr>
+                    <tr className="hover:bg-stone-50">
+                      <td className="border border-stone-200 p-2 font-bold text-[#C0654B]">M</td>
+                      <td className="border border-stone-200 p-2">36 - 38</td>
+                      <td className="border border-stone-200 p-2">30 - 32</td>
+                      <td className="border border-stone-200 p-2">38 - 40</td>
+                      <td className="border border-stone-200 p-2">40</td>
+                    </tr>
+                    <tr className="hover:bg-stone-50">
+                      <td className="border border-stone-200 p-2 font-bold text-[#C0654B]">L</td>
+                      <td className="border border-stone-200 p-2">38 - 40</td>
+                      <td className="border border-stone-200 p-2">32 - 34</td>
+                      <td className="border border-stone-200 p-2">40 - 42</td>
+                      <td className="border border-stone-200 p-2">41</td>
+                    </tr>
+                    <tr className="hover:bg-stone-50">
+                      <td className="border border-stone-200 p-2 font-bold text-[#C0654B]">XL</td>
+                      <td className="border border-stone-200 p-2">40 - 42</td>
+                      <td className="border border-stone-200 p-2">34 - 36</td>
+                      <td className="border border-stone-200 p-2">42 - 44</td>
+                      <td className="border border-stone-200 p-2">42</td>
+                    </tr>
+                    <tr className="hover:bg-stone-50">
+                      <td className="border border-stone-200 p-2 font-bold text-[#C0654B]">XXL / Curves</td>
+                      <td className="border border-stone-200 p-2">44 - 46</td>
+                      <td className="border border-stone-200 p-2">38 - 40</td>
+                      <td className="border border-stone-200 p-2">46 - 48</td>
+                      <td className="border border-stone-200 p-2">43</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Men's Apparel */}
+            <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                <h3 className="font-bold text-stone-900 text-base font-serif">Men's Sizing Chart (Kurtas, Formal & Casual Shirts)</h3>
+                <span className="bg-[#F3E9E4] text-[#C0654B] font-bold text-[10px] px-2.5 py-1 rounded-full uppercase">Men</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse border border-stone-200 text-stone-700 text-center">
+                  <thead>
+                    <tr className="bg-[#F3E9E4] text-[#2B2620] font-bold">
+                      <th className="border border-stone-200 p-2.5">Collar Size</th>
+                      <th className="border border-stone-200 p-2.5">Chest Size (in)</th>
+                      <th className="border border-stone-200 p-2.5">Waist (in)</th>
+                      <th className="border border-stone-200 p-2.5">Shoulder (in)</th>
+                      <th className="border border-stone-200 p-2.5">Shirt Length (in)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="hover:bg-stone-50">
+                      <td className="border border-stone-200 p-2 font-bold text-[#C0654B]">38 / S</td>
+                      <td className="border border-stone-200 p-2">38</td>
+                      <td className="border border-stone-200 p-2">32 - 34</td>
+                      <td className="border border-stone-200 p-2">17.5</td>
+                      <td className="border border-stone-200 p-2">28.5</td>
+                    </tr>
+                    <tr className="hover:bg-stone-50">
+                      <td className="border border-stone-200 p-2 font-bold text-[#C0654B]">40 / M</td>
+                      <td className="border border-stone-200 p-2">40</td>
+                      <td className="border border-stone-200 p-2">34 - 36</td>
+                      <td className="border border-stone-200 p-2">18.0</td>
+                      <td className="border border-stone-200 p-2">29.0</td>
+                    </tr>
+                    <tr className="hover:bg-stone-50">
+                      <td className="border border-stone-200 p-2 font-bold text-[#C0654B]">42 / L</td>
+                      <td className="border border-stone-200 p-2">42</td>
+                      <td className="border border-stone-200 p-2">36 - 38</td>
+                      <td className="border border-stone-200 p-2">18.5</td>
+                      <td className="border border-stone-200 p-2">30.0</td>
+                    </tr>
+                    <tr className="hover:bg-stone-50">
+                      <td className="border border-stone-200 p-2 font-bold text-[#C0654B]">44 / XL</td>
+                      <td className="border border-stone-200 p-2">44</td>
+                      <td className="border border-stone-200 p-2">38 - 40</td>
+                      <td className="border border-stone-200 p-2">19.0</td>
+                      <td className="border border-stone-200 p-2">31.0</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Measurement Tips */}
+            <div className="bg-[#F3E9E4] p-6 rounded-2xl border border-[#C0654B]/30 space-y-2 text-stone-800">
+              <h4 className="font-bold text-sm font-serif text-[#C0654B]">How to Measure Your Body:</h4>
+              <p>• <strong>Bust / Chest:</strong> Measure around the fullest part of your chest keeping tape horizontal.</p>
+              <p>• <strong>Waist:</strong> Measure around the narrowest part of your waistline.</p>
+              <p>• <strong>Hips:</strong> Stand with feet together and measure around the fullest part of hips.</p>
+              <p>• <strong>Need Personal Help?</strong> Contact our Customer Care team at +91 94711 55434 for personalized fitting guidance.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
