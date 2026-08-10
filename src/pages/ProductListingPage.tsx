@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from '../components/ProductCard';
-import { Filter, SlidersHorizontal, X, ChevronRight, Check, Grid, List, Sparkles, ArrowLeftRight, Scale, ShoppingBag, Star } from 'lucide-react';
+import { Filter, SlidersHorizontal, X, ChevronRight, Check, Grid, List, Sparkles, ArrowLeftRight, Scale, ShoppingBag, Star, Heart } from 'lucide-react';
 import { Product, FilterState } from '../types';
 import { AnimatePresence, motion } from 'motion/react';
 
