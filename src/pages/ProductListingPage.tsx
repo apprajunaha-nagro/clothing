@@ -155,13 +155,20 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   );
 
   // Sync draft and applied filters when route/query changes; reset page to 1
-  // NOTE: filters.maxPrice intentionally excluded — price slider is draft-only
-  // until the user explicitly clicks "Apply Filters"
   useEffect(() => {
-    setDraftFilters({ ...filters });
-    setAppliedFilters({ ...filters });
+    const initSubId = currentSubcategory?.id || (subParam ? subParam : undefined);
+    const initTypeId = currentType?.id || (typeParam ? typeParam : undefined);
+    const initialDraft: FilterState = {
+      ...filters,
+      subcategoryId: initSubId,
+      types: initTypeId ? [initTypeId] : (filters.types || []),
+      occasions: occasionParam ? [occasionParam] : (filters.occasions || []),
+      searchQuery: searchParam || filters.searchQuery || '',
+    };
+    setDraftFilters(initialDraft);
+    setAppliedFilters(initialDraft);
     setCurrentPage(1);
-    setSidebarSubId(currentSubcategory?.id || null);
+    setSidebarSubId(initSubId || null);
   }, [categorySlug, queryString]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // DRAFT FILTERED PRODUCTS (calculates preview count for Apply Filters button)
@@ -183,23 +190,16 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       if (!p.tags.includes('curves_plus_size') && !p.availableSizes.some(s => ['XL', 'XXL', '3XL', 'Free Size'].includes(s))) return false;
     }
     if (draftFilters.subcategoryId) {
-      if (p.subcategoryId !== draftFilters.subcategoryId) return false;
-    } else if (subParam) {
-      const matchSubId = currentSubcategory?.id || subParam;
-      if (p.subcategoryId !== matchSubId && !p.subcategoryId.toLowerCase().includes(subParam.toLowerCase())) return false;
-    }
-    if (currentType) {
-      if (p.typeId !== currentType.id) return false;
-    } else if (typeParam) {
-      const matchTypeId = currentType?.id || typeParam;
-      if (p.typeId !== matchTypeId && !p.typeId.toLowerCase().includes(typeParam.toLowerCase())) return false;
+      const subId = draftFilters.subcategoryId.toLowerCase();
+      if (p.subcategoryId.toLowerCase() !== subId && !p.subcategoryId.toLowerCase().includes(subId)) return false;
     }
     if (draftFilters.types && draftFilters.types.length > 0) {
-      if (!p.typeId || !draftFilters.types.some(tId => p.typeId === tId || p.typeId.toLowerCase().includes(tId.toLowerCase()))) return false;
+      if (!p.typeId || !draftFilters.types.some(tId => p.typeId.toLowerCase() === tId.toLowerCase() || p.typeId.toLowerCase().includes(tId.toLowerCase()))) return false;
     }
-    if (brandParam) {
-      const matchBrandId = currentBrand?.id || brandParam;
-      if (p.brandId !== matchBrandId && !p.brandName.toLowerCase().includes(brandParam.toLowerCase())) return false;
+    const activeBrandId = draftFilters.brandId || brandParam;
+    if (activeBrandId) {
+      const bId = activeBrandId.toLowerCase();
+      if (p.brandId?.toLowerCase() !== bId && (!p.brandName || !p.brandName.toLowerCase().includes(bId))) return false;
     }
     if (occasionParam) {
       const occLower = occasionParam.toLowerCase();
@@ -211,20 +211,28 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
         if (ageLower === 'toddler' && !p.availableSizes.some(s => ['1-2Y', '2-3Y', 'S'].includes(s))) return false;
       }
     }
-    const activeSearch = searchParam || draftFilters.searchQuery;
+    const activeSearch = draftFilters.searchQuery || searchParam;
     if (activeSearch) {
       const q = activeSearch.toLowerCase();
       const matchesSearch = p.name.toLowerCase().includes(q) ||
                             p.description.toLowerCase().includes(q) ||
                             p.fabric.toLowerCase().includes(q) ||
                             p.occasion.toLowerCase().includes(q) ||
-                            p.brandName.toLowerCase().includes(q);
+                            (p.brandName && p.brandName.toLowerCase().includes(q));
       if (!matchesSearch) return false;
     }
-    if (draftFilters.occasions.length > 0 && !draftFilters.occasions.some(o => p.occasion.toLowerCase().includes(o.toLowerCase()))) return false;
-    if (draftFilters.sizes.length > 0 && !p.availableSizes.some(s => draftFilters.sizes.includes(s))) return false;
-    if (draftFilters.colors.length > 0 && !p.colors.some(c => draftFilters.colors.includes(c.name))) return false;
-    if (draftFilters.fabrics.length > 0 && !draftFilters.fabrics.includes(p.fabric)) return false;
+    if (draftFilters.occasions && draftFilters.occasions.length > 0) {
+      if (!draftFilters.occasions.some(o => p.occasion.toLowerCase().includes(o.toLowerCase()))) return false;
+    }
+    if (draftFilters.sizes && draftFilters.sizes.length > 0) {
+      if (!p.availableSizes.some(s => draftFilters.sizes.includes(s))) return false;
+    }
+    if (draftFilters.colors && draftFilters.colors.length > 0) {
+      if (!p.colors.some(c => draftFilters.colors.includes(c.name))) return false;
+    }
+    if (draftFilters.fabrics && draftFilters.fabrics.length > 0) {
+      if (!draftFilters.fabrics.includes(p.fabric)) return false;
+    }
 
     const price = p.discountPrice || p.basePrice;
     if (price < draftFilters.minPrice || price > draftFilters.maxPrice) return false;
@@ -251,23 +259,16 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       if (!p.tags.includes('curves_plus_size') && !p.availableSizes.some(s => ['XL', 'XXL', '3XL', 'Free Size'].includes(s))) return false;
     }
     if (appliedFilters.subcategoryId) {
-      if (p.subcategoryId !== appliedFilters.subcategoryId) return false;
-    } else if (subParam) {
-      const matchSubId = currentSubcategory?.id || subParam;
-      if (p.subcategoryId !== matchSubId && !p.subcategoryId.toLowerCase().includes(subParam.toLowerCase())) return false;
-    }
-    if (currentType) {
-      if (p.typeId !== currentType.id) return false;
-    } else if (typeParam) {
-      const matchTypeId = currentType?.id || typeParam;
-      if (p.typeId !== matchTypeId && !p.typeId.toLowerCase().includes(typeParam.toLowerCase())) return false;
+      const subId = appliedFilters.subcategoryId.toLowerCase();
+      if (p.subcategoryId.toLowerCase() !== subId && !p.subcategoryId.toLowerCase().includes(subId)) return false;
     }
     if (appliedFilters.types && appliedFilters.types.length > 0) {
-      if (!p.typeId || !appliedFilters.types.some(tId => p.typeId === tId || p.typeId.toLowerCase().includes(tId.toLowerCase()))) return false;
+      if (!p.typeId || !appliedFilters.types.some(tId => p.typeId.toLowerCase() === tId.toLowerCase() || p.typeId.toLowerCase().includes(tId.toLowerCase()))) return false;
     }
-    if (brandParam) {
-      const matchBrandId = currentBrand?.id || brandParam;
-      if (p.brandId !== matchBrandId && !p.brandName.toLowerCase().includes(brandParam.toLowerCase())) return false;
+    const activeBrandId = appliedFilters.brandId || brandParam;
+    if (activeBrandId) {
+      const bId = activeBrandId.toLowerCase();
+      if (p.brandId?.toLowerCase() !== bId && (!p.brandName || !p.brandName.toLowerCase().includes(bId))) return false;
     }
     if (occasionParam) {
       const occLower = occasionParam.toLowerCase();
@@ -279,20 +280,28 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
         if (ageLower === 'toddler' && !p.availableSizes.some(s => ['1-2Y', '2-3Y', 'S'].includes(s))) return false;
       }
     }
-    const activeSearch = searchParam || appliedFilters.searchQuery;
+    const activeSearch = appliedFilters.searchQuery || searchParam;
     if (activeSearch) {
       const q = activeSearch.toLowerCase();
       const matchesSearch = p.name.toLowerCase().includes(q) ||
                             p.description.toLowerCase().includes(q) ||
                             p.fabric.toLowerCase().includes(q) ||
                             p.occasion.toLowerCase().includes(q) ||
-                            p.brandName.toLowerCase().includes(q);
+                            (p.brandName && p.brandName.toLowerCase().includes(q));
       if (!matchesSearch) return false;
     }
-    if (appliedFilters.occasions.length > 0 && !appliedFilters.occasions.some(o => p.occasion.toLowerCase().includes(o.toLowerCase()))) return false;
-    if (appliedFilters.sizes.length > 0 && !p.availableSizes.some(s => appliedFilters.sizes.includes(s))) return false;
-    if (appliedFilters.colors.length > 0 && !p.colors.some(c => appliedFilters.colors.includes(c.name))) return false;
-    if (appliedFilters.fabrics.length > 0 && !appliedFilters.fabrics.includes(p.fabric)) return false;
+    if (appliedFilters.occasions && appliedFilters.occasions.length > 0) {
+      if (!appliedFilters.occasions.some(o => p.occasion.toLowerCase().includes(o.toLowerCase()))) return false;
+    }
+    if (appliedFilters.sizes && appliedFilters.sizes.length > 0) {
+      if (!p.availableSizes.some(s => appliedFilters.sizes.includes(s))) return false;
+    }
+    if (appliedFilters.colors && appliedFilters.colors.length > 0) {
+      if (!p.colors.some(c => appliedFilters.colors.includes(c.name))) return false;
+    }
+    if (appliedFilters.fabrics && appliedFilters.fabrics.length > 0) {
+      if (!appliedFilters.fabrics.includes(p.fabric)) return false;
+    }
 
     const price = p.discountPrice || p.basePrice;
     if (price < appliedFilters.minPrice || price > appliedFilters.maxPrice) return false;
