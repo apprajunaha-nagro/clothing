@@ -784,12 +784,29 @@ app.get('/api/products', async (req, res) => {
       where.rating = { gte: targetRating };
     }
 
-    const dbProducts = await prisma.product.findMany({
-      where,
-      orderBy: sort === 'newest' ? { created_at: 'desc' } : sort === 'rating' ? { rating: 'desc' } : undefined,
-    });
+    let dbProducts: any[] = [];
+    try {
+      dbProducts = await prisma.product.findMany({
+        where,
+        orderBy: sort === 'newest' ? { created_at: 'desc' } : sort === 'rating' ? { rating: 'desc' } : undefined,
+      });
+    } catch (e) {
+      console.warn('Prisma query warning:', e);
+    }
 
-    let result = dbProducts.map(formatProduct);
+    // Fallback to initialProducts if DB returns fewer items than full generated dataset
+    let result: Product[] = dbProducts.length >= initialProducts.length
+      ? dbProducts.map(formatProduct)
+      : initialProducts.filter(p => {
+          if (where.status && p.status !== where.status) return false;
+          if (categoryList.length > 0 && !categoryList.includes(p.categoryId)) return false;
+          if (subcategoryList.length > 0 && !subcategoryList.includes(p.subcategoryId)) return false;
+          if (typeList.length > 0 && (!p.typeId || !typeList.some(t => p.typeId === t || p.typeId.includes(t)))) return false;
+          if (brandList.length > 0 && (!p.brandId || !brandList.includes(p.brandId))) return false;
+          if (targetRating > 0 && p.rating < targetRating) return false;
+          if (occasion && !p.occasion.toLowerCase().includes(String(occasion).toLowerCase())) return false;
+          return true;
+        });
 
     // 4. Tag Multi-Select Filter (OR-match)
     const tagList = parseArrayQuery(tag);

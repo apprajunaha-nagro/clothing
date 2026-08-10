@@ -353,7 +353,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (resSet) setSettings(resSet);
       if (resCat && resCat.length) setCategories(resCat);
-      if (resProd && resProd.length) setProducts(resProd);
+      if (resProd && resProd.length > 0) {
+        if (resProd.length >= initialProducts.length) {
+          setProducts(resProd);
+        } else {
+          const prodMap = new Map(resProd.map((p: any) => [p.id, p]));
+          setProducts(initialProducts.map(p => prodMap.get(p.id) || p));
+        }
+      }
       if (resOrd) setOrders(resOrd);
       if (resBrs) setBrands(resBrs);
     } catch (e) {
