@@ -35,7 +35,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
           </div>
 
           <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 text-xs leading-relaxed text-stone-700">
-            These Terms of Service ("Terms") govern your access to and use of the PGmart website (<strong>pgmart.in</strong>), mobile experience, and related services (collectively, the "Platform"), operated by We ("we," "us," or "our"). By accessing or using the Platform, you agree to be bound by these Terms. If you do not agree, please do not use the Platform.
+            These Terms of Service govern your access to and use of the PGmart website (<strong>pgmart.in</strong>), mobile experience, and related services, operated by We. By accessing or using the Platform, you agree to be bound by these Terms. If you do not agree, please do not use the Platform.
           </div>
 
           <div className="space-y-6 divide-y divide-stone-100 text-xs sm:text-sm">
