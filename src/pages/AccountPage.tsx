@@ -599,7 +599,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     >
                       <p className="text-stone-500 text-xs font-bold">Saved Addresses</p>
                       <p className="text-2xl font-extrabold text-stone-900 group-hover:text-[#C0654B]">{addresses.length}</p>
-                      <p className="text-[10px] text-stone-400">Primary: Kolkata</p>
+                      <p className="text-[10px] text-stone-400">Primary: Dhanbad</p>
                     </div>
 
                     <div
