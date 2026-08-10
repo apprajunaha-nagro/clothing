@@ -2262,9 +2262,7 @@ export function generateFullCatalogProducts(categories: Category[]): Product[] {
         else if (cat.id === 'undergarments') brandId = 'b3';
         else if (sub.id.includes('western')) brandId = 'b2';
 
-        const isBoysTShirt = typeItem.id === 'kt-b-tshirts';
-        const isBras = typeItem.id === 'ut-bras' || typeItem.id === 'wt-bras';
-        const itemCount = (isAnarkali || isKurti || isPalazzo || isWesternType || isMenKurta || isMenTShirt || isMenFormalShirt || isMenBriefs || isBoysTShirt || isBras) ? 5 : 10;
+        const itemCount = 12;
         for (let i = 0; i < itemCount; i++) {
           count++;
           const prodId = `prod_${typeItem.id}_${i + 1}`;
