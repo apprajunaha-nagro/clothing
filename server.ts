@@ -75,9 +75,11 @@ app.get('/api/health', (req, res) => {
 app.get('/api/settings', async (req, res) => {
   try {
     let settings = await prisma.siteSettings.findFirst({ where: { id: 'default' } });
-    if (!settings) {
-      settings = await prisma.siteSettings.create({
-        data: { id: 'default', ...initialSiteSettings },
+    if (!settings || !settings.address || settings.address.includes('Kolkata')) {
+      settings = await prisma.siteSettings.upsert({
+        where: { id: 'default' },
+        update: { address: initialSiteSettings.address },
+        create: { id: 'default', ...initialSiteSettings },
       });
     }
     res.json(settings);

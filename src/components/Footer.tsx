@@ -166,7 +166,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
           <div className="space-y-1.5 text-stone-300">
             <p className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-[#C0654B] shrink-0" />
-              <span>{settings.address}</span>
+              <span>{settings.address || 'Kapda Patti, Jharia, Dhanbad, Jharkhand 828111'}</span>
             </p>
             <p className="flex items-center gap-2">
               <Phone className="w-4 h-4 text-[#C0654B] shrink-0" />
