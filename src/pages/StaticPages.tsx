@@ -13,9 +13,6 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
 
   const stores = [
     { name: 'PGmart Flagship Store', city: 'Jharia, Dhanbad', address: 'Kapda Patti, Jharia, Dhanbad, Jharkhand 828111', phone: '+91 94711 55434', hours: '10:30 AM - 9:00 PM' },
-    { name: 'PGmart Galleria', city: 'Mumbai', address: 'Linking Road, Bandra West', phone: '+91 94711 55435', hours: '11:00 AM - 9:30 PM' },
-    { name: 'PGmart Boutique', city: 'New Delhi', address: 'Khan Market, High Street', phone: '+91 94711 55436', hours: '10:00 AM - 9:00 PM' },
-    { name: 'PGmart Style Hub', city: 'Bengaluru', address: '100 Feet Road, Indiranagar', phone: '+91 94711 55437', hours: '10:30 AM - 9:30 PM' },
   ];
 
   const filteredStores = stores.filter(s =>
@@ -237,7 +234,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
             type="text"
             value={storeSearch}
             onChange={(e) => setStoreSearch(e.target.value)}
-            placeholder="Search by city (Kolkata, Mumbai, Delhi, Bengaluru)..."
+            placeholder="Search by city (Dhanbad, Jharia)..."
             className="w-full max-w-md bg-white border border-stone-300 rounded-xl p-3 text-xs focus:outline-none focus:border-[#C0654B]"
           />
 
