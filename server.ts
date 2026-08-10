@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+import crypto from 'crypto';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -33,6 +36,32 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve the /src/assets folder statically
 app.use('/src/assets', express.static(path.join(process.cwd(), 'src/assets')));
+
+// Admin Authentication Middleware using timing-safe token check
+export function adminAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const authHeader = req.headers['authorization'];
+  let token = '';
+  if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7).trim();
+  } else if (req.headers['x-admin-token']) {
+    token = String(req.headers['x-admin-token']).trim();
+  }
+
+  const expectedToken = process.env.ADMIN_TOKEN || 'change_me_to_a_long_random_string';
+
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const tokenBuf = Buffer.from(token);
+  const expectedBuf = Buffer.from(expectedToken);
+
+  if (tokenBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(tokenBuf, expectedBuf)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  next();
+}
 
 // Helper functions for formatting Prisma DB records to TypeScript interfaces
 function formatProduct(p: any): Product {
@@ -71,25 +100,57 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', serverTime: new Date().toISOString() });
 });
 
+// Admin Auth Login Endpoint
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body || {};
+  const expectedToken = process.env.ADMIN_TOKEN || 'change_me_to_a_long_random_string';
+
+  if (!password) {
+    return res.status(400).json({ error: 'Password is required' });
+  }
+
+  const passBuf = Buffer.from(String(password));
+  const expectedBuf = Buffer.from(expectedToken);
+
+  if (passBuf.length === expectedBuf.length && crypto.timingSafeEqual(passBuf, expectedBuf)) {
+    return res.json({ success: true, token: expectedToken });
+  }
+
+  return res.status(401).json({ error: 'Invalid admin credentials' });
+});
+
+// Protect all /api/admin/* endpoints except /api/admin/login
+app.use('/api/admin', (req, res, next) => {
+  if (req.path === '/login') {
+    return next();
+  }
+  adminAuth(req, res, next);
+});
+
 // Settings
 app.get('/api/settings', async (req, res) => {
   try {
     let settings = await prisma.siteSettings.findFirst({ where: { id: 'default' } });
-    if (!settings || !settings.address || settings.address.includes('Kolkata')) {
-      settings = await prisma.siteSettings.upsert({
+    if (!settings) {
+      settings = await prisma.siteSettings.create({
+        data: { id: 'default', ...initialSiteSettings },
+      });
+    } else if (settings.address !== initialSiteSettings.address) {
+      settings = await prisma.siteSettings.update({
         where: { id: 'default' },
-        update: { address: initialSiteSettings.address },
-        create: { id: 'default', ...initialSiteSettings },
+        data: { address: initialSiteSettings.address }
       });
     }
-    res.json(settings);
+    const settingsObj = JSON.parse(JSON.stringify(settings));
+    settingsObj.address = initialSiteSettings.address;
+    res.json(settingsObj);
   } catch (err: any) {
     console.error('Error fetching settings:', err);
     res.json(initialSiteSettings);
   }
 });
 
-app.post('/api/settings', async (req, res) => {
+app.post('/api/settings', adminAuth, async (req, res) => {
   try {
     const updated = await prisma.siteSettings.upsert({
       where: { id: 'default' },
@@ -125,7 +186,7 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-app.post('/api/categories', async (req, res) => {
+app.post('/api/categories', adminAuth, async (req, res) => {
   try {
     const totalCount = await prisma.category.count();
     const newCategory = await prisma.category.create({
@@ -152,7 +213,7 @@ app.post('/api/categories', async (req, res) => {
   }
 });
 
-app.put('/api/categories/:id', async (req, res) => {
+app.put('/api/categories/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const updated = await prisma.category.update({
@@ -170,7 +231,7 @@ app.put('/api/categories/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/categories/:id', async (req, res) => {
+app.delete('/api/categories/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.category.delete({ where: { id } });
@@ -180,7 +241,7 @@ app.delete('/api/categories/:id', async (req, res) => {
   }
 });
 
-app.post('/api/categories/reorder', async (req, res) => {
+app.post('/api/categories/reorder', adminAuth, async (req, res) => {
   try {
     const { reorderedIds } = req.body;
     if (Array.isArray(reorderedIds)) {
@@ -714,7 +775,7 @@ app.get('/api/brands', async (req, res) => {
   }
 });
 
-app.post('/api/brands', async (req, res) => {
+app.post('/api/brands', adminAuth, async (req, res) => {
   try {
     const newBrand = await prisma.brand.create({
       data: {
@@ -876,7 +937,7 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', adminAuth, async (req, res) => {
   try {
     let brandName = req.body.brandName;
     if (!brandName && req.body.brandId) {
@@ -922,7 +983,7 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const data: any = { ...req.body };
@@ -942,7 +1003,7 @@ app.put('/api/products/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.product.delete({ where: { id } });
@@ -1002,7 +1063,7 @@ app.post('/api/orders', async (req, res) => {
   }
 });
 
-app.put('/api/orders/:id/status', async (req, res) => {
+app.put('/api/orders/:id/status', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, trackingNumber, courierPartner } = req.body;
@@ -1082,7 +1143,7 @@ app.get('/api/banners', async (req, res) => {
   }
 });
 
-app.post('/api/banners', async (req, res) => {
+app.post('/api/banners', adminAuth, async (req, res) => {
   try {
     const bannerCount = await prisma.banner.count();
     const newBanner = await prisma.banner.create({

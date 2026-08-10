@@ -13,6 +13,7 @@ import {
   Banner
 } from '../types';
 import { initialSiteSettings, initialCategories, initialBrands, initialProducts, initialBanners, initialCoupons } from '../data/seedData';
+import { adminFetch } from '../utils/apiClient';
 
 interface StoreContextType {
   settings: SiteSettings;
@@ -41,7 +42,7 @@ interface StoreContextType {
   logoutUser: () => void;
   loginUser: (name: string, email: string, phone?: string) => void;
   isAdminLoggedIn: boolean;
-  adminLogin: (password: string) => boolean;
+  adminLogin: (password: string) => Promise<boolean>;
   adminLogout: () => void;
   saveSettings: (newSettings: Partial<SiteSettings>) => Promise<void>;
   createProduct: (productData: Partial<Product>) => Promise<void>;
@@ -300,8 +301,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setUser(newUser);
     localStorage.setItem('terra_user', JSON.stringify(newUser));
   };
+  const [adminToken, setAdminToken] = useState<string | null>(() => {
+    return sessionStorage.getItem('pgmart_admin_token');
+  });
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
-    return localStorage.getItem('terra_admin_auth') === 'true';
+    return Boolean(sessionStorage.getItem('pgmart_admin_token'));
   });
 
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
@@ -351,7 +355,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         fetch('/api/brands').then(r => r.ok ? r.json() : null)
       ]);
 
-      if (resSet) setSettings(resSet);
+      if (resSet) {
+        setSettings({
+          ...resSet,
+          address: initialSiteSettings.address
+        });
+      }
       if (resCat && resCat.length) setCategories(resCat);
       if (resProd && resProd.length > 0) {
         if (resProd.length >= initialProducts.length) {
@@ -381,7 +390,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
     try {
-      await fetch('/api/settings', {
+      await adminFetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updated)
@@ -473,19 +482,33 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   };
 
-  const adminLogin = (password: string) => {
-    if (password === 'admin123' || password === 'admin') {
-      setIsAdminLoggedIn(true);
-      localStorage.setItem('terra_admin_auth', 'true');
-      showToast('Logged in as Store Administrator');
-      return true;
+  const adminLogin = async (password: string): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        setAdminToken(data.token);
+        setIsAdminLoggedIn(true);
+        sessionStorage.setItem('pgmart_admin_token', data.token);
+        showToast('Logged in as Store Administrator');
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      console.error('Admin login error:', e);
+      return false;
     }
-    return false;
   };
 
   const adminLogout = () => {
+    setAdminToken(null);
     setIsAdminLoggedIn(false);
-    localStorage.removeItem('terra_admin_auth');
+    sessionStorage.removeItem('pgmart_admin_token');
     showToast('Admin logged out');
   };
 
@@ -530,7 +553,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast(`Product "${newProduct.name}" created successfully`);
 
     try {
-      await fetch('/api/products', {
+      await adminFetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProduct)
@@ -544,7 +567,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setProducts(prev => prev.map(p => p.id === id ? { ...p, ...productData } : p));
     showToast('Product updated successfully');
     try {
-      await fetch(`/api/products/${id}`, {
+      await adminFetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData)
@@ -558,7 +581,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setProducts(prev => prev.filter(p => p.id !== id));
     showToast('Product deleted');
     try {
-      await fetch(`/api/products/${id}`, {
+      await adminFetch(`/api/products/${id}`, {
         method: 'DELETE'
       });
     } catch (e) {
@@ -587,7 +610,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateOrderStatus = async (orderId: string, status: Order['status'], trackingNum?: string) => {
     try {
-      const res = await fetch(`/api/orders/${orderId}/status`, {
+      const res = await adminFetch(`/api/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, trackingNumber: trackingNum })

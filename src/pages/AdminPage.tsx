@@ -57,13 +57,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     showToast('All notifications marked as read.');
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminLogin(passwordInput)) {
+    if (!passwordInput) return;
+    const success = await adminLogin(passwordInput);
+    if (success) {
       setLoginError(null);
       setPasswordInput('');
     } else {
-      setLoginError('Invalid administrator password. Try: admin123');
+      setLoginError('Invalid administrator password.');
     }
   };
 
@@ -114,14 +116,15 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="pt-4 border-t border-stone-100 flex flex-col gap-2">
             <button
               type="button"
-              onClick={() => {
-                setPasswordInput('admin123');
-                adminLogin('admin123');
+              onClick={async () => {
+                const pass = 'change_me_to_a_long_random_string';
+                setPasswordInput(pass);
+                await adminLogin(pass);
               }}
               className="w-full bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-bold py-2.5 px-4 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
               <Sparkles className="w-4 h-4 text-[#C0654B]" />
-              <span>One-Click Auto Login (Demo Pass: admin123)</span>
+              <span>One-Click Auto Login (Default Token)</span>
             </button>
 
             <button
