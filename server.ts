@@ -143,10 +143,10 @@ app.get('/api/settings', async (req, res) => {
     }
     const settingsObj = JSON.parse(JSON.stringify(settings));
     settingsObj.address = initialSiteSettings.address;
-    res.json(settingsObj);
+    return res.json(settingsObj);
   } catch (err: any) {
-    console.error('Error fetching settings:', err);
-    res.json(initialSiteSettings);
+    console.warn('Prisma settings query fallback:', err?.message);
+    return res.json(initialSiteSettings);
   }
 });
 
@@ -179,10 +179,75 @@ app.get('/api/categories', async (req, res) => {
       },
       orderBy: { sortOrder: 'asc' },
     });
-    res.json(categories);
+    if (categories && categories.length > 0) {
+      return res.json(categories);
+    }
+    return res.json(initialCategories);
   } catch (err: any) {
-    console.error('Error fetching categories:', err);
-    res.status(500).json({ error: err.message });
+    console.warn('Prisma categories query fallback:', err?.message);
+    return res.json(initialCategories);
+  }
+});
+
+// Brands
+app.get('/api/brands', async (req, res) => {
+  try {
+    const brands = await prisma.brand.findMany();
+    if (brands && brands.length > 0) {
+      return res.json(brands);
+    }
+    return res.json(initialBrands);
+  } catch (err: any) {
+    console.warn('Prisma brands query fallback:', err?.message);
+    return res.json(initialBrands);
+  }
+});
+
+// Products
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await prisma.product.findMany({
+      orderBy: { created_at: 'desc' }
+    });
+    if (products && products.length > 0) {
+      const formatted = products.map(formatProduct);
+      return res.json(formatted);
+    }
+    return res.json(initialProducts);
+  } catch (err: any) {
+    console.warn('Prisma products query fallback:', err?.message);
+    return res.json(initialProducts);
+  }
+});
+
+// Orders
+app.get('/api/orders', async (req, res) => {
+  try {
+    const orders = await prisma.order.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    if (orders && orders.length > 0) {
+      const formatted = orders.map(formatOrder);
+      return res.json(formatted);
+    }
+    return res.json([]);
+  } catch (err: any) {
+    console.warn('Prisma orders query fallback:', err?.message);
+    return res.json([]);
+  }
+});
+
+// Banners
+app.get('/api/banners', async (req, res) => {
+  try {
+    const banners = await prisma.banner.findMany();
+    if (banners && banners.length > 0) {
+      return res.json(banners);
+    }
+    return res.json(initialBanners);
+  } catch (err: any) {
+    console.warn('Prisma banners query fallback:', err?.message);
+    return res.json(initialBanners);
   }
 });
 
