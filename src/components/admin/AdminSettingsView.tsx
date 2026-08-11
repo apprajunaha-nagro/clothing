@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { 
-  Settings, Palette, Shield, Truck, Download, Save, RefreshCw, Eye, 
+  Settings, Palette, Shield, ShieldCheck, Truck, Download, Save, RefreshCw, Eye, 
   MapPin, CheckCircle, Database, History, UserCheck, AlertCircle 
 } from 'lucide-react';
 import { SiteSettings } from '../../types';
@@ -9,7 +9,7 @@ import { SiteSettings } from '../../types';
 export const AdminSettingsView: React.FC = () => {
   const { settings, updateSettings, showToast, products, orders } = useStore();
 
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'store' | 'theme' | 'shipping' | 'roles' | 'backup'>('store');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'store' | 'theme' | 'policies' | 'shipping' | 'roles' | 'backup'>('store');
 
   // Form states initialized from settings context
   const [sName, setSName] = useState(settings.storeName || 'PGmart');
@@ -18,6 +18,12 @@ export const AdminSettingsView: React.FC = () => {
   const [sAddress, setSAddress] = useState(settings.address || '');
   const [sGst, setSGst] = useState(settings.gstNumber || '');
   const [sCurrency, setSCurrency] = useState('INR (₹)');
+
+  // Policy & Terms states
+  const [termsText, setTermsText] = useState(settings.termsOfService || '');
+  const [privacyText, setPrivacyText] = useState(settings.privacyPolicy || '');
+  const [refundText, setRefundText] = useState(settings.refundPolicy || '');
+  const [shippingText, setShippingText] = useState(settings.shippingPolicy || '');
 
   // Customizable Theme palette state
   const [primaryColor, setPrimaryColor] = useState(settings.primaryColor || '#C0654B');
@@ -63,11 +69,21 @@ export const AdminSettingsView: React.FC = () => {
 
   const handleSaveThemeSettings = () => {
     updateSettings({
-      ...settings,
       primaryColor,
-      secondaryColor
+      secondaryDarkColor: secondaryColor
     });
     showToast('Brand color accents and display typographies loaded successfully.');
+  };
+
+  const handleSavePolicies = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings({
+      termsOfService: termsText,
+      privacyPolicy: privacyText,
+      refundPolicy: refundText,
+      shippingPolicy: shippingText
+    });
+    showToast('📜 Store Terms of Service & Privacy Policy updated live!');
   };
 
   const handleUpdateShippingZone = (id: string, charge: number, minOrder: number, active: boolean) => {
@@ -122,6 +138,12 @@ export const AdminSettingsView: React.FC = () => {
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${activeSettingsTab === 'theme' ? 'bg-[#C0654B] text-white' : 'text-stone-400 hover:text-stone-200'}`}
           >
             UI Customization
+          </button>
+          <button
+            onClick={() => setActiveSettingsTab('policies')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${activeSettingsTab === 'policies' ? 'bg-[#C0654B] text-white' : 'text-stone-400 hover:text-stone-200'}`}
+          >
+            Legal & Policies
           </button>
           <button
             onClick={() => setActiveSettingsTab('shipping')}
@@ -326,6 +348,129 @@ export const AdminSettingsView: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* 2.5 LEGAL TERMS & POLICIES CUSTOMIZATION */}
+      {activeSettingsTab === 'policies' && (
+        <form onSubmit={handleSavePolicies} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-6 text-left text-xs font-semibold text-stone-700">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
+            <div>
+              <h3 className="text-base font-bold font-serif text-stone-900">Legal Policies & Terms of Service Customizer</h3>
+              <p className="text-xs text-stone-500">
+                Customize store policy documents published live on customer checkout and footer legal pages.
+              </p>
+            </div>
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 shrink-0"
+            >
+              <Save className="w-4 h-4" /> Save & Publish All Policies
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {/* 1. Terms of Service */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-[#C0654B]" />
+                  <span>Terms of Service</span>
+                </label>
+                <span className="text-[10px] text-stone-400 font-mono">
+                  {termsText.length} characters
+                </span>
+              </div>
+              <p className="text-stone-500 text-[11px]">
+                Governs customer eligibility, order processing, pricing policies, and platform rules.
+              </p>
+              <textarea
+                rows={8}
+                value={termsText}
+                onChange={(e) => setTermsText(e.target.value)}
+                placeholder="Enter Terms of Service content..."
+                className="w-full p-3 border border-stone-300 rounded-xl focus:outline-none focus:border-[#C0654B] font-mono text-xs leading-relaxed"
+              />
+            </div>
+
+            {/* 2. Privacy Policy */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Privacy Policy</span>
+                </label>
+                <span className="text-[10px] text-stone-400 font-mono">
+                  {privacyText.length} characters
+                </span>
+              </div>
+              <p className="text-stone-500 text-[11px]">
+                Explains data collection, storage, cookie usage, and customer personal information protection.
+              </p>
+              <textarea
+                rows={8}
+                value={privacyText}
+                onChange={(e) => setPrivacyText(e.target.value)}
+                placeholder="Enter Privacy Policy content..."
+                className="w-full p-3 border border-stone-300 rounded-xl focus:outline-none focus:border-[#C0654B] font-mono text-xs leading-relaxed"
+              />
+            </div>
+
+            {/* 3. Returns & Refund Policy */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
+                  <History className="w-4 h-4 text-indigo-600" />
+                  <span>Return & Refund Policy</span>
+                </label>
+                <span className="text-[10px] text-stone-400 font-mono">
+                  {refundText.length} characters
+                </span>
+              </div>
+              <p className="text-stone-500 text-[11px]">
+                Details return windows (e.g., 7-15 days), non-returnable categories (innerwear), and refund SLA.
+              </p>
+              <textarea
+                rows={6}
+                value={refundText}
+                onChange={(e) => setRefundText(e.target.value)}
+                placeholder="Enter Return & Refund policy guidelines..."
+                className="w-full p-3 border border-stone-300 rounded-xl focus:outline-none focus:border-[#C0654B] font-mono text-xs leading-relaxed"
+              />
+            </div>
+
+            {/* 4. Shipping & Delivery Policy */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-amber-600" />
+                  <span>Shipping & Delivery Policy</span>
+                </label>
+                <span className="text-[10px] text-stone-400 font-mono">
+                  {shippingText.length} characters
+                </span>
+              </div>
+              <p className="text-stone-500 text-[11px]">
+                Describes dispatch SLA, courier partners (Delhivery, BlueDart), and delivery timelines.
+              </p>
+              <textarea
+                rows={6}
+                value={shippingText}
+                onChange={(e) => setShippingText(e.target.value)}
+                placeholder="Enter Shipping & Delivery policy details..."
+                className="w-full p-3 border border-stone-300 rounded-xl focus:outline-none focus:border-[#C0654B] font-mono text-xs leading-relaxed"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-4 border-t border-stone-100">
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
+            >
+              <Save className="w-4 h-4" /> Save & Publish All Policies
+            </button>
+          </div>
+        </form>
       )}
 
       {/* 3. LOGISTICS SHIPPING ZONES */}

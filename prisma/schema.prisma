@@ -43,6 +43,10 @@ model SiteSettings {
   dealsTimerMinutes     Int     @default(45)
   dealsMinDiscount      Int     @default(30)
   adBannerEnabled       Boolean @default(true)
+  termsOfService        String?
+  privacyPolicy         String?
+  refundPolicy          String?
+  shippingPolicy        String?
 }
 
 model Brand {

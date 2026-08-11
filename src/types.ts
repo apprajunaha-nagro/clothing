@@ -271,6 +271,10 @@ export interface SiteSettings {
   newArrivalsSubtitle?: string;
   newArrivalsBadge?: string;
   newArrivalsMaxItems?: number;
+  termsOfService?: string;
+  privacyPolicy?: string;
+  refundPolicy?: string;
+  shippingPolicy?: string;
 }
 
 export interface FilterState {
