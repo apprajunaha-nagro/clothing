@@ -93,6 +93,34 @@ export const AdminProductsView: React.FC = () => {
   const [csvText, setCsvText] = useState('');
   const [showCsvImport, setShowCsvImport] = useState(false);
 
+  // Photo Upload & Product Images State
+  const photoFileInputRef = useRef<HTMLInputElement>(null);
+  const [productImages, setProductImages] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState('');
+
+  const handleDevicePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach(file => {
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select valid image files.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const dataUrl = event.target.result as string;
+          setProductImages(prev => [...prev, dataUrl]);
+          showToast(`Uploaded "${file.name}" from device.`);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+  };
+
   // Auto generate variants matrix when sizes or colors change
   useEffect(() => {
     if (!isFormOpen) return;
@@ -346,6 +374,9 @@ export const AdminProductsView: React.FC = () => {
       { name: 'Teal Green', hex: '#005F54' },
       { name: 'Rose Clay', hex: '#C0654B' }
     ]);
+    setProductImages([
+      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80'
+    ]);
     setVariantsMatrix([]);
     setIsFormOpen(true);
   };
@@ -373,6 +404,10 @@ export const AdminProductsView: React.FC = () => {
       { name: 'Teal Green', hex: '#005F54' },
       { name: 'Rose Clay', hex: '#C0654B' }
     ]);
+    const existingImgs = (prod.colors || []).flatMap(c => c.images).filter(Boolean);
+    setProductImages(existingImgs.length > 0 ? existingImgs : [
+      'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80'
+    ]);
     setVariantsMatrix(prod.variants);
     setIsFormOpen(true);
   };
@@ -384,10 +419,8 @@ export const AdminProductsView: React.FC = () => {
     const savedColors: ColorVariant[] = selectedColors.map(c => ({
       name: c.name,
       hex: c.hex,
-      images: [
-        c.hex === '#C0654B' 
-          ? 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80'
-          : 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80'
+      images: productImages.length > 0 ? productImages : [
+        'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80'
       ]
     }));
 
@@ -1372,27 +1405,107 @@ export const AdminProductsView: React.FC = () => {
             {/* STEP 4: IMAGES & PRICE SCHEDULERS */}
             {formStep === 4 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Images simulation */}
-                  <div className="space-y-2">
-                    <span className="font-bold text-stone-700 block">Product Gallery Imagery (Simulation)</span>
-                    <p className="text-[10px] text-stone-400">Provide link addresses or upload files. Drag or click settings to set primary thumbnail.</p>
-                    
-                    <div className="grid grid-cols-3 gap-2 border border-dashed border-stone-300 p-3 rounded-xl bg-stone-50">
-                      <div className="relative border border-stone-200 rounded-lg aspect-square bg-white flex flex-col items-center justify-center text-stone-400 cursor-pointer hover:border-[#C0654B] hover:text-[#C0654B] transition-colors">
-                        <Plus className="w-5 h-5 mb-0.5" />
-                        <span className="text-[9px] font-bold uppercase">Add Photo</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Photo Upload Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-stone-800 text-xs block">Product Gallery Imagery ({productImages.length} Photos)</span>
+                        <p className="text-[10px] text-stone-400">Upload photos from device or paste image URLs</p>
                       </div>
-                      
-                      <div className="relative border border-stone-200 rounded-lg aspect-square overflow-hidden bg-white shadow-sm group">
-                        <img src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=300&q=80" alt="" className="w-full h-full object-cover" />
-                        <span className="absolute bottom-1 left-1 text-[8px] bg-emerald-600 text-white font-bold px-1 rounded">Primary</span>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => photoFileInputRef.current?.click()}
+                        className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload from Device</span>
+                      </button>
+                    </div>
 
-                      <div className="relative border border-stone-200 rounded-lg aspect-square overflow-hidden bg-white shadow-sm group">
-                        <img src="https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=300&q=80" alt="" className="w-full h-full object-cover" />
-                        <button type="button" className="absolute top-1 right-1 bg-black/60 p-0.5 text-white rounded hover:bg-red-600">✕</button>
+                    <input
+                      ref={photoFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleDevicePhotoUpload}
+                      className="hidden"
+                    />
+
+                    {/* Drag & Drop / Click Zone */}
+                    <div
+                      onClick={() => photoFileInputRef.current?.click()}
+                      className="border-2 border-dashed border-stone-300 hover:border-[#C0654B] bg-stone-50 hover:bg-[#C0654B]/5 p-5 rounded-2xl text-center cursor-pointer transition-colors space-y-1.5"
+                    >
+                      <div className="w-10 h-10 bg-[#C0654B]/10 text-[#C0654B] rounded-full flex items-center justify-center mx-auto">
+                        <ImageIcon className="w-5 h-5" />
                       </div>
+                      <p className="text-xs font-bold text-stone-800">
+                        Click here to add photos from your device
+                      </p>
+                      <p className="text-[10px] text-stone-400">
+                        Select JPG, PNG, WEBP, or SVG files from computer or smartphone
+                      </p>
+                    </div>
+
+                    {/* Image URL Adder */}
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        placeholder="Or paste direct image URL (https://...)"
+                        value={imageUrlInput}
+                        onChange={(e) => setImageUrlInput(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-stone-300 rounded-xl text-xs outline-none focus:border-[#C0654B]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (imageUrlInput.trim()) {
+                            setProductImages(prev => [...prev, imageUrlInput.trim()]);
+                            setImageUrlInput('');
+                            showToast('Image URL added to gallery.');
+                          }
+                        }}
+                        className="px-3 py-2 bg-stone-800 text-white font-bold rounded-xl text-xs hover:bg-stone-900 cursor-pointer"
+                      >
+                        + Add URL
+                      </button>
+                    </div>
+
+                    {/* Live Gallery Thumbnail Grid */}
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 pt-1">
+                      {productImages.map((img, idx) => (
+                        <div key={idx} className="relative group aspect-square rounded-xl overflow-hidden border border-stone-200 bg-white shadow-2xs">
+                          <img src={img} alt={`Product thumbnail ${idx + 1}`} className="w-full h-full object-cover object-center" />
+                          {idx === 0 ? (
+                            <span className="absolute top-1 left-1 bg-emerald-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                              PRIMARY
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setProductImages(prev => [img, ...prev.filter((_, i) => i !== idx)]);
+                                showToast('Set as primary thumbnail.');
+                              }}
+                              className="absolute top-1 left-1 bg-black/70 hover:bg-black text-white text-[8px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            >
+                              Make Primary
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProductImages(prev => prev.filter((_, i) => i !== idx));
+                              showToast('Photo removed.');
+                            }}
+                            className="absolute top-1 right-1 w-5 h-5 bg-red-600 hover:bg-red-700 text-white rounded-full flex items-center justify-center text-[10px] font-bold shadow-xs cursor-pointer"
+                            title="Remove Photo"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
