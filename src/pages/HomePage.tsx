@@ -104,10 +104,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
   return (
     <div className="bg-stone-100 min-h-screen pb-12 space-y-4 text-left">
-      {/* 1. HERO CAROUSEL (Flipkart Flat Rectangular Banner ~350px height) */}
+      {/* 1. SABHYATA CLOTHING STYLE HERO CAROUSEL */}
       {currentHero && (
         <section
-          className="relative bg-stone-900 overflow-hidden w-full h-[220px] sm:h-[320px] md:h-[360px] lg:h-[390px] group cursor-pointer shadow-2xs"
+          className="relative bg-stone-900 overflow-hidden w-full h-[240px] xs:h-[320px] sm:h-[420px] md:h-[480px] lg:h-[540px] group cursor-pointer shadow-sm select-none"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onClick={() => onNavigate(currentHero.link || '/category/women')}
@@ -119,36 +119,67 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               initial={(dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0.9 })}
               animate={{ x: '0%', opacity: 1 }}
               exit={(dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0.9 })}
-              transition={{ duration: 0.35, ease: 'easeInOut' }}
-              className="absolute inset-0 w-full h-full bg-stone-950 flex items-center justify-center overflow-hidden"
+              transition={{ duration: 0.5, ease: [0.25, 1, 0.5, 1] }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -40) handleNextSlide();
+                else if (info.offset.x > 40) handlePrevSlide();
+              }}
+              className="absolute inset-0 w-full h-full bg-stone-950 flex items-center justify-center overflow-hidden touch-pan-y"
             >
               <img
-                src={getOptimizedImageUrl(currentHero.image, { width: 1400, quality: 90 })}
-                alt={currentHero.title || "PGmart Banner"}
-                className="w-full h-full object-cover object-center select-none"
+                src={getOptimizedImageUrl(currentHero.image, { width: 1600, quality: 90 })}
+                alt={currentHero.title || "PGmart Sabhyata Collection Banner"}
+                className="w-full h-full object-cover object-center pointer-events-none"
                 loading="eager"
               />
+
+              {/* Sabhyata Elegant Dark Overlay Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-950/15 to-transparent pointer-events-none" />
+
+              {/* Optional Text Overlay */}
+              {(currentHero.title || currentHero.subtitle) && (
+                <div className="absolute bottom-10 left-6 sm:left-12 max-w-xl text-white space-y-2 pointer-events-none z-10 text-left">
+                  {currentHero.subtitle && (
+                    <span className="text-[10px] sm:text-xs font-black tracking-widest uppercase bg-[#C0654B] text-white px-2.5 py-1 rounded-sm shadow-sm inline-block">
+                      {currentHero.subtitle}
+                    </span>
+                  )}
+                  {currentHero.title && (
+                    <h2 className="text-xl sm:text-4xl lg:text-5xl font-black font-serif tracking-tight drop-shadow-md text-white">
+                      {currentHero.title}
+                    </h2>
+                  )}
+                  <button className="hidden sm:inline-flex items-center gap-2 bg-white text-stone-900 font-extrabold text-xs px-5 py-2.5 rounded-full shadow-lg mt-2 uppercase tracking-wider">
+                    <span>{currentHero.buttonText || 'Shop Collection'}</span>
+                    <ArrowRight className="w-4 h-4 text-[#C0654B]" />
+                  </button>
+                </div>
+              )}
             </motion.div>
           </AnimatePresence>
 
-          {/* Left / Right Navigation Arrows */}
+          {/* Left / Right Circular Navigation Arrows */}
           <button
             onClick={(e) => { e.stopPropagation(); handlePrevSlide(); }}
-            className="absolute top-1/2 left-2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-stone-800 min-w-[44px] min-h-[44px] p-2.5 rounded-r shadow-md cursor-pointer flex items-center justify-center transition-transform hover:scale-110"
+            className="absolute top-1/2 left-3 -translate-y-1/2 z-20 bg-white/75 hover:bg-white text-stone-900 w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-xl border border-white/60 cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 backdrop-blur-md"
             aria-label="Previous Banner"
           >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); handleNextSlide(); }}
-            className="absolute top-1/2 right-2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-stone-800 min-w-[44px] min-h-[44px] p-2.5 rounded-l shadow-md cursor-pointer flex items-center justify-center transition-transform hover:scale-110"
-            aria-label="Next Banner"
-          >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-stone-900" />
           </button>
 
-          {/* Dot Indicators */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-black/40 px-3 py-1 rounded-full backdrop-blur-xs">
+          <button
+            onClick={(e) => { e.stopPropagation(); handleNextSlide(); }}
+            className="absolute top-1/2 right-3 -translate-y-1/2 z-20 bg-white/75 hover:bg-white text-stone-900 w-10 h-10 sm:w-12 sm:h-12 rounded-full shadow-xl border border-white/60 cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 backdrop-blur-md"
+            aria-label="Next Banner"
+          >
+            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-stone-900" />
+          </button>
+
+          {/* Sabhyata Style Elongated Indicator Bar */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 bg-stone-950/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20">
             {activeBanners.map((_, idx) => (
               <button
                 key={idx}
@@ -158,7 +189,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                   setActiveBannerIndex(idx);
                 }}
                 className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                  activeBannerIndex === idx ? 'bg-[#C0654B] w-5' : 'bg-white/60 hover:bg-white w-2'
+                  activeBannerIndex === idx ? 'bg-[#C0654B] w-8' : 'bg-white/60 hover:bg-white w-2.5'
                 }`}
               />
             ))}
