@@ -900,10 +900,10 @@ app.get('/api/products', async (req, res) => {
       const q = String(search).trim();
       if (q) {
         where.OR = [
-          { name: { contains: q, mode: 'insensitive' } },
-          { description: { contains: q, mode: 'insensitive' } },
-          { fabric: { contains: q, mode: 'insensitive' } },
-          { brandName: { contains: q, mode: 'insensitive' } },
+          { name: { contains: q } },
+          { description: { contains: q } },
+          { fabric: { contains: q } },
+          { brandName: { contains: q } },
         ];
       }
     }

@@ -108,12 +108,19 @@ async function main() {
 
   // 5. Products
   let productCount = 0;
+  const usedSlugs = new Set<string>();
   for (const p of initialProducts) {
+    let slug = p.slug || p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (usedSlugs.has(slug)) {
+      slug = `${slug}-${p.id}`;
+    }
+    usedSlugs.add(slug);
+
     await prisma.product.create({
       data: {
         id: p.id,
         name: p.name,
-        slug: p.slug,
+        slug: slug,
         categoryId: p.categoryId,
         subcategoryId: p.subcategoryId,
         typeId: p.typeId || null,

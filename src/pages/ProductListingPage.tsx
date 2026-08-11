@@ -76,9 +76,13 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     ? allSubcategories.find(s => s.id === subParam || s.slug === subParam || s.id.toLowerCase().includes(subParam.toLowerCase()) || s.name.toLowerCase().includes(subParam.toLowerCase()))
     : (currentType ? allSubcategories.find(s => s.id === currentType.subcategoryId) : allSubcategories.find(s => s.slug === rawSlug || s.id === rawSlug));
 
-  const currentCategory = categories.find(c => c.slug === rawSlug || c.id === rawSlug) ||
-    categories.find(c => c.id === currentSubcategory?.categoryId) ||
-    categories[0];
+  const isGlobalCatalog = !!searchParam || ['all', 'search', 'sale', 'new-arrivals', 'bestsellers', 'curves'].includes(rawSlug.toLowerCase());
+
+  const matchedCategory = categories.find(c => c.slug === rawSlug || c.id === rawSlug) ||
+    categories.find(c => c.id === currentSubcategory?.categoryId);
+
+  const currentCategory = matchedCategory || (isGlobalCatalog ? null : categories[0]);
+  const categoryBaseUrl = currentCategory ? `/category/${currentCategory.slug}` : '/category/all';
 
   const currentBrand = brandParam
     ? brands.find(b => b.id === brandParam || b.slug === brandParam || b.name.toLowerCase().includes(brandParam.toLowerCase()))
@@ -371,15 +375,26 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       {/* BREADCRUMBS */}
       <nav className="flex items-center gap-2 text-xs text-stone-500 font-medium flex-wrap">
         <button onClick={() => onNavigate('/')} className="hover:text-[#C0654B] cursor-pointer">Home</button>
-        <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-        <button onClick={() => onNavigate(`/category/${currentCategory.slug}`)} className="hover:text-[#C0654B] cursor-pointer">
-          {currentCategory.name}
-        </button>
+        {currentCategory ? (
+          <>
+            <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+            <button onClick={() => onNavigate(`/category/${currentCategory.slug}`)} className="hover:text-[#C0654B] cursor-pointer">
+              {currentCategory.name}
+            </button>
+          </>
+        ) : (
+          <>
+            <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+            <button onClick={() => onNavigate('/category/all')} className="hover:text-[#C0654B] cursor-pointer">
+              Catalog
+            </button>
+          </>
+        )}
 
         {currentSubcategory && (
           <>
             <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-            <button onClick={() => onNavigate(`/category/${currentCategory.slug}?sub=${currentSubcategory.id}`)} className="hover:text-[#C0654B] cursor-pointer">
+            <button onClick={() => onNavigate(`${categoryBaseUrl}?sub=${currentSubcategory.id}`)} className="hover:text-[#C0654B] cursor-pointer">
               {currentSubcategory.name}
             </button>
           </>
@@ -392,7 +407,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           </>
         )}
 
-        {!currentSubcategory && !currentType && sectionTitle !== currentCategory.name && (
+        {!currentSubcategory && !currentType && currentCategory && sectionTitle !== currentCategory.name && (
           <>
             <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
             <span className="text-stone-900 font-bold">{sectionTitle}</span>
@@ -422,7 +437,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           {currentSubcategory && (
             <span className="inline-flex items-center gap-1.5 bg-white text-[#C0654B] font-bold px-2.5 py-1 rounded-full border border-[#C0654B]/30 shadow-2xs">
               <span>Subcategory: {currentSubcategory.name}</span>
-              <button onClick={() => onNavigate(`/category/${currentCategory.slug}`)} className="hover:text-stone-900 cursor-pointer">
+              <button onClick={() => onNavigate(categoryBaseUrl)} className="hover:text-stone-900 cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
             </span>
@@ -430,7 +445,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           {currentType && (
             <span className="inline-flex items-center gap-1.5 bg-white text-[#C0654B] font-bold px-2.5 py-1 rounded-full border border-[#C0654B]/30 shadow-2xs">
               <span>Type: {currentType.name}</span>
-              <button onClick={() => onNavigate(`/category/${currentCategory.slug}${subParam ? '?sub=' + subParam : ''}`)} className="hover:text-stone-900 cursor-pointer">
+              <button onClick={() => onNavigate(`${categoryBaseUrl}${subParam ? '?sub=' + subParam : ''}`)} className="hover:text-stone-900 cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
             </span>
@@ -438,7 +453,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           {occasionParam && (
             <span className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 font-bold px-2.5 py-1 rounded-full border border-amber-300 shadow-2xs">
               <span>Occasion: {occasionParam}</span>
-              <button onClick={() => onNavigate(`/category/${currentCategory.slug}`)} className="hover:text-stone-900 cursor-pointer">
+              <button onClick={() => onNavigate(categoryBaseUrl)} className="hover:text-stone-900 cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
             </span>
@@ -446,7 +461,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           {tagParam && (
             <span className="inline-flex items-center gap-1.5 bg-stone-900 text-white font-bold px-2.5 py-1 rounded-full shadow-2xs">
               <span>Filter: {tagParam}</span>
-              <button onClick={() => onNavigate(`/category/${currentCategory.slug}`)} className="hover:text-stone-300 cursor-pointer">
+              <button onClick={() => onNavigate(categoryBaseUrl)} className="hover:text-stone-300 cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
             </span>
@@ -454,13 +469,13 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           {currentBrand && (
             <span className="inline-flex items-center gap-1.5 bg-stone-800 text-white font-bold px-2.5 py-1 rounded-full shadow-2xs">
               <span>Brand: {currentBrand.name}</span>
-              <button onClick={() => onNavigate(`/category/${currentCategory.slug}`)} className="hover:text-stone-300 cursor-pointer">
+              <button onClick={() => onNavigate(categoryBaseUrl)} className="hover:text-stone-300 cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
             </span>
           )}
           <button
-            onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
+            onClick={() => onNavigate(categoryBaseUrl)}
             className="text-xs font-bold text-[#C0654B] hover:underline cursor-pointer ml-auto"
           >
             Clear Section Filter
@@ -572,7 +587,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             </div>
 
             {/* Subcategories Filter — clicking one auto-expands its product types */}
-            {currentCategory?.subcategories && currentCategory.subcategories.length > 0 && (
+            {(currentCategory?.subcategories || allSubcategories).length > 0 && (
               <div className="space-y-1.5 border-b border-stone-100 pb-4">
                 <div className="flex items-center justify-between mb-1">
                   <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Subcategory</p>
@@ -599,10 +614,10 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                     !sidebarSubId ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
                   }`}
                 >
-                  All {currentCategory.name}
+                  All {currentCategory ? currentCategory.name : 'Categories'}
                 </button>
 
-                {currentCategory.subcategories.map(sub => {
+                {(currentCategory?.subcategories || allSubcategories).map(sub => {
                   const isActive = sidebarSubId === sub.id;
                   const subTypes = sub.types || [];
                   return (
@@ -896,10 +911,10 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                   <p className="text-xs text-stone-500">Try adjusting your selected filters or clearing active section criteria.</p>
                   <div className="flex justify-center gap-3 pt-2">
                     <button
-                      onClick={() => onNavigate(`/category/${currentCategory.slug}`)}
+                      onClick={() => onNavigate(categoryBaseUrl)}
                       className="bg-[#C0654B] text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md cursor-pointer hover:bg-[#8B4A38]"
                     >
-                      View All {currentCategory.name}
+                      View All {currentCategory ? currentCategory.name : 'Products'}
                     </button>
                     <button
                       onClick={handleResetFilters}
@@ -1067,7 +1082,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             {/* INDEPENDENT SCROLL CONTAINER FOR MOBILE FILTERS BODY */}
             <div className="flex-1 overflow-y-auto filter-scroll-container overscroll-contain py-4 space-y-5 pr-1">
               {/* Mobile Subcategory — draft-only, same as desktop sidebar */}
-              {currentCategory?.subcategories && currentCategory.subcategories.length > 0 && (
+              {(currentCategory?.subcategories || allSubcategories).length > 0 && (
                 <div className="space-y-1.5 border-b border-stone-100 pb-4">
                   <div className="flex items-center justify-between">
                     <p className="font-bold text-xs uppercase text-stone-900">Subcategory</p>
@@ -1092,9 +1107,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                       !sidebarSubId ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
                     }`}
                   >
-                    All {currentCategory.name}
+                    All {currentCategory ? currentCategory.name : 'Categories'}
                   </button>
-                  {currentCategory.subcategories.map(sub => {
+                  {(currentCategory?.subcategories || allSubcategories).map(sub => {
                     const isActive = sidebarSubId === sub.id;
                     const subTypes = sub.types || [];
                     return (
