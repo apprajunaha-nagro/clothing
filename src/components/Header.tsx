@@ -70,12 +70,12 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
     <header className="sticky top-0 z-40 bg-white border-b border-stone-200">
       {/* 2. MAIN HEADER BAR (Flipkart Two-Tier Pattern) */}
       <div className="bg-white border-b border-stone-200 shadow-xs">
-        <div className="max-w-7xl mx-auto px-2 sm:px-3 lg:px-4">
-          <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
+        <div className="max-w-7xl mx-auto px-1.5 sm:px-3 lg:px-4">
+          <div className="flex items-center justify-between h-15 sm:h-20 gap-1.5 sm:gap-4">
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden min-w-[40px] min-h-[40px] flex items-center justify-center text-stone-700 hover:text-[#C0654B] cursor-pointer"
+              className="md:hidden min-w-[36px] min-h-[36px] flex items-center justify-center text-stone-700 hover:text-[#C0654B] cursor-pointer shrink-0"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -84,17 +84,17 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
             {/* BRAND LOGO & TITLE */}
             <div
               onClick={() => onNavigate('/')}
-              className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer group shrink-0 min-w-0"
+              className="flex items-center gap-1 sm:gap-2.5 cursor-pointer group shrink-0 min-w-0"
             >
               <img
                 src="/src/assets/images/pgmart_logo_new.png"
                 alt="PGmart Logo"
                 referrerPolicy="no-referrer"
-                className="w-9 h-9 sm:w-[52px] sm:h-[52px] rounded-xl object-contain border border-stone-200/80 group-hover:scale-105 transition-all bg-white p-1 shadow-2xs shrink-0"
+                className="w-8 h-8 sm:w-[52px] sm:h-[52px] rounded-xl object-contain border border-stone-200/80 group-hover:scale-105 transition-all bg-white p-0.5 shadow-2xs shrink-0"
               />
               <div className="shrink-0">
                 <h1
-                  className="text-xl sm:text-3xl font-black tracking-tight leading-tight flex items-center gap-1"
+                  className="text-lg sm:text-3xl font-black tracking-tight leading-tight flex items-center gap-1"
                   style={{
                     fontFamily: "'Playfair Display', Georgia, serif",
                     fontStyle: 'italic',
@@ -204,20 +204,20 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
             </div>
 
             {/* RIGHT ICON CLUSTER (Account, Wishlist, Cart) */}
-            <div className="flex items-center space-x-1 sm:space-x-3 shrink-0">
+            <div className="flex items-center space-x-0.5 sm:space-x-3 shrink-0">
               {/* Mobile Search Button */}
               <button
                 onClick={() => setSearchModalOpen(true)}
-                className="md:hidden p-1.5 text-stone-700 hover:text-[#C0654B] cursor-pointer"
+                className="md:hidden p-1 text-stone-700 hover:text-[#C0654B] cursor-pointer"
                 aria-label="Search"
               >
                 <Search className="w-5 h-5" />
               </button>
 
-              {/* User Account Dropdown Trigger */}
+              {/* User Account / Login Button */}
               <button
                 onClick={() => onNavigate('/account')}
-                className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded hover:bg-stone-100 transition-colors cursor-pointer text-stone-800"
+                className="flex items-center gap-1 p-1 sm:px-2 sm:py-1 rounded hover:bg-stone-100 transition-colors cursor-pointer text-stone-800"
                 aria-label="Account"
               >
                 <User className="w-5 h-5 text-stone-700" />
@@ -228,7 +228,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               {/* Wishlist */}
               <button
                 onClick={() => onNavigate('/wishlist')}
-                className="relative p-1.5 text-stone-700 hover:text-[#C0654B] transition-colors cursor-pointer group flex items-center gap-1"
+                className="relative p-1 text-stone-700 hover:text-[#C0654B] transition-colors cursor-pointer group flex items-center gap-1"
                 aria-label="Wishlist"
               >
                 <Heart className="w-5 h-5 group-hover:scale-105 transition-transform" />
@@ -243,7 +243,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               {/* Cart Drawer Button */}
               <button
                 onClick={() => setCartDrawerOpen(true)}
-                className="relative p-1.5 text-stone-700 hover:text-[#C0654B] transition-colors cursor-pointer group flex items-center gap-1"
+                className="relative p-1 text-stone-700 hover:text-[#C0654B] transition-colors cursor-pointer group flex items-center gap-1"
                 aria-label="Cart"
               >
                 <ShoppingCart className="w-5 h-5 group-hover:scale-105 transition-transform text-stone-800" />
@@ -266,8 +266,31 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
 
       {/* MOBILE MENU OVERLAY */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-stone-200 py-4 px-4 space-y-3 text-sm animate-fade-in shadow-xl max-h-[85vh] overflow-y-auto pb-safe">
-          <p className="font-bold text-xs uppercase text-stone-400 tracking-wider px-1">Browse Categories & Types</p>
+        <div className="md:hidden bg-white border-t border-stone-200 py-4 px-4 space-y-4 text-sm animate-fade-in shadow-xl max-h-[85vh] overflow-y-auto pb-safe">
+          {/* PROMINENT USER ACCOUNT / LOGIN CARD AT TOP OF MOBILE MENU */}
+          <div className="bg-gradient-to-r from-[#F3E9E4] to-stone-100 p-3.5 rounded-xl border border-stone-200 shadow-2xs flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#C0654B] text-white flex items-center justify-center font-bold text-base shadow-2xs">
+                {user ? user.name.charAt(0).toUpperCase() : <User className="w-5 h-5 text-white" />}
+              </div>
+              <div className="text-left">
+                <p className="font-extrabold text-stone-900 text-sm">
+                  {user ? user.name : 'Welcome, Guest'}
+                </p>
+                <p className="text-[11px] text-stone-500 font-medium">
+                  {user ? user.email : 'Log in to track orders & saved items'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => { onNavigate('/account'); setMobileMenuOpen(false); }}
+              className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-extrabold text-xs px-3.5 py-2 rounded-lg shadow-2xs cursor-pointer uppercase shrink-0"
+            >
+              {user ? 'Account' : 'Login'}
+            </button>
+          </div>
+
+          <p className="font-bold text-xs uppercase text-stone-400 tracking-wider px-1 text-left">Browse Categories & Types</p>
           <div className="space-y-2">
             {categories.map((cat) => {
               const isExpanded = expandedMobileCategory === cat.id;
