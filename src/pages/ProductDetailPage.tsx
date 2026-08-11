@@ -19,10 +19,7 @@ import {
   MapPin,
   Sparkles,
   MessageSquare,
-  ZoomIn,
-  X,
-  ChevronLeft,
-  ChevronRight
+  ZoomIn
 } from 'lucide-react';
 
 interface ProductDetailPageProps {
@@ -61,9 +58,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  // Image Zoom / Lightbox state
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState(0);
+  // Image hover zoom state
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const [isHovering, setIsHovering] = useState(false);
   const imgContainerRef = useRef<HTMLDivElement>(null);
@@ -75,32 +70,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setZoomPos({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
   }, []);
-
-  const openLightbox = (index: number) => {
-    setLightboxIndex(index);
-    setLightboxOpen(true);
-  };
-
-  const closeLightbox = useCallback(() => setLightboxOpen(false), []);
-
-  const lightboxNext = useCallback(() => {
-    setLightboxIndex(prev => (prev + 1) % galleryImages.length);
-  }, []);
-
-  const lightboxPrev = useCallback(() => {
-    setLightboxIndex(prev => (prev - 1 + galleryImages.length) % galleryImages.length);
-  }, []);
-
-  useEffect(() => {
-    if (!lightboxOpen) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeLightbox();
-      if (e.key === 'ArrowRight') lightboxNext();
-      if (e.key === 'ArrowLeft') lightboxPrev();
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [lightboxOpen, closeLightbox, lightboxNext, lightboxPrev]);
 
   if (!product) return null;
 
@@ -190,14 +159,14 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             ))}
           </div>
 
-          {/* Main Large Image — Hover Zoom + Click Lightbox */}
+          {/* Main Large Image — Inline Hover Zoom (no click/lightbox) */}
           <div
             ref={imgContainerRef}
-            className="flex-1 aspect-3/4 bg-stone-100 rounded-2xl overflow-hidden relative shadow-sm border border-stone-200 cursor-zoom-in select-none group/zoom"
+            className="flex-1 aspect-3/4 bg-stone-100 rounded-2xl overflow-hidden relative shadow-sm border border-stone-200 select-none"
+            style={{ cursor: isHovering ? 'crosshair' : 'zoom-in' }}
             onMouseMove={handleMouseMove}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
-            onClick={() => openLightbox(activeImageIndex)}
           >
             {/* Zoomable image — scale driven by hover + cursor position via transform-origin */}
             <img
@@ -576,79 +545,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
           <span>BUY NOW</span>
         </button>
       </div>
-
-      {/* IMAGE LIGHTBOX MODAL */}
-      {lightboxOpen && (
-        <div
-          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
-          onClick={closeLightbox}
-        >
-          {/* Close button */}
-          <button
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 z-10 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer transition-colors"
-            aria-label="Close"
-          >
-            <X className="w-6 h-6" />
-          </button>
-
-          {/* Counter */}
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/70 text-sm font-medium">
-            {lightboxIndex + 1} / {galleryImages.length}
-          </div>
-
-          {/* Prev */}
-          {galleryImages.length > 1 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); lightboxPrev(); }}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer transition-colors"
-              aria-label="Previous"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-          )}
-
-          {/* Full image */}
-          <img
-            src={getOptimizedImageUrl(galleryImages[lightboxIndex], { width: 2000, quality: 95 })}
-            alt={`${product.name} - image ${lightboxIndex + 1}`}
-            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          />
-
-          {/* Next */}
-          {galleryImages.length > 1 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); lightboxNext(); }}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer transition-colors"
-              aria-label="Next"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          )}
-
-          {/* Thumbnail strip */}
-          {galleryImages.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-              {galleryImages.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={(e) => { e.stopPropagation(); setLightboxIndex(idx); }}
-                  className={`w-12 h-14 rounded overflow-hidden border-2 cursor-pointer transition-all ${
-                    idx === lightboxIndex ? 'border-white scale-110' : 'border-white/30 opacity-60 hover:opacity-100'
-                  }`}
-                >
-                  <img
-                    src={getOptimizedImageUrl(img, { width: 120, quality: 70 })}
-                    alt={`thumb ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 };
