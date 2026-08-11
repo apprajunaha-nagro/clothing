@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from '../components/ProductCard';
 import { HeroSlider } from '../components/HeroSlider';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
-import { Sparkles, Flame, Award, Crown, ArrowRight, Star, Heart, CheckCircle2, Instagram, Camera, MessageSquare, MapPin, Truck, RotateCcw, ShieldCheck, Lock } from 'lucide-react';
+import { Sparkles, Flame, Award, Crown, ArrowRight, Star, Heart, CheckCircle2, Instagram, Camera, MessageSquare, MapPin, Truck, RotateCcw, ShieldCheck, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
 
 interface HomePageProps {
@@ -52,24 +52,52 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     { name: "Innerwear & Lingerie", slug: 'undergarments', img: '/images/innerwear_department_new.png' },
   ];
 
-  // Specific Product Rails (Admin Controlled)
+  // Scroll refs for horizontal product rails
+  const dealsScrollRef = useRef<HTMLDivElement>(null);
+  const trendingScrollRef = useRef<HTMLDivElement>(null);
+  const newArrivalsScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollRail = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
+    if (ref.current) {
+      const scrollAmount = direction === 'left' ? -420 : 420;
+      ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  // Specific Product Rails (Guaranteed Minimum 20 Products Each)
   const dealsOfTheDay = React.useMemo(() => {
-    const adminDeals = products.filter(p => p.isDealOfTheDay || p.tags?.includes('deal_of_the_day'));
-    if (adminDeals.length > 0) return adminDeals;
-    const minDisc = settings.dealsMinDiscount ?? 20;
-    return products.filter(p => p.discountPercent && p.discountPercent >= minDisc).slice(0, 10);
+    const tagged = products.filter(p => p.isDealOfTheDay || (Array.isArray(p.tags) && p.tags.includes('deal_of_the_day')));
+    if (tagged.length >= 20) return tagged.slice(0, 30);
+    
+    const taggedIds = new Set(tagged.map(p => p.id));
+    const minDisc = settings.dealsMinDiscount ?? 10;
+    const fallback = products
+      .filter(p => !taggedIds.has(p.id) && (p.discountPercent ? p.discountPercent >= minDisc : true))
+      .sort((a, b) => (b.discountPercent || 0) - (a.discountPercent || 0));
+    
+    return [...tagged, ...fallback].slice(0, 30);
   }, [products, settings.dealsMinDiscount]);
 
   const trendingSarees = React.useMemo(() => {
-    return products.filter(p => p.categoryId === 'women' || p.subcategoryId.includes('saree')).slice(0, 8);
+    const primary = products.filter(p => p.categoryId === 'women' || (p.subcategoryId && p.subcategoryId.includes('saree')));
+    if (primary.length >= 20) return primary.slice(0, 30);
+
+    const primaryIds = new Set(primary.map(p => p.id));
+    const secondary = products.filter(p => !primaryIds.has(p.id));
+    return [...primary, ...secondary].slice(0, 30);
   }, [products]);
 
   const newArrivals = React.useMemo(() => {
-    const maxItems = settings.newArrivalsMaxItems || 10;
-    const tagged = products.filter(p => p.tags?.includes('new_arrival'));
-    if (tagged.length >= 4) return tagged.slice(0, maxItems);
-    // Fallback to newest products
-    return [...products].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, maxItems);
+    const targetCount = Math.max(20, settings.newArrivalsMaxItems || 20);
+    const tagged = products.filter(p => Array.isArray(p.tags) && p.tags.includes('new_arrival'));
+    if (tagged.length >= targetCount) return tagged.slice(0, targetCount);
+
+    const taggedIds = new Set(tagged.map(p => p.id));
+    const sortedNewest = [...products]
+      .filter(p => !taggedIds.has(p.id))
+      .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+    return [...tagged, ...sortedNewest].slice(0, targetCount);
   }, [products, settings.newArrivalsMaxItems]);
 
   const activeAdBanners = React.useMemo(() => {
@@ -147,14 +175,33 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 </h2>
                 <DealCountdownTimer initialHours={settings.dealsTimerHours} initialMinutes={settings.dealsTimerMinutes} />
               </div>
-              <button
-                onClick={() => onNavigate('/category/all?tag=deal_of_the_day')}
-                className="text-xs font-bold text-amber-300 hover:underline cursor-pointer"
-              >
-                View All Deals →
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Scroll Navigation Buttons */}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => scrollRail(dealsScrollRef, 'left')}
+                    aria-label="Scroll left"
+                    className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollRail(dealsScrollRef, 'right')}
+                    aria-label="Scroll right"
+                    className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+                <button
+                  onClick={() => onNavigate('/category/all?tag=deal_of_the_day')}
+                  className="text-xs font-bold text-amber-300 hover:underline cursor-pointer ml-1"
+                >
+                  View All Deals →
+                </button>
+              </div>
             </div>
-            <div className="p-3 sm:p-4 overflow-x-auto no-scrollbar">
+            <div ref={dealsScrollRef} className="p-3 sm:p-4 overflow-x-auto no-scrollbar scroll-smooth">
               <div className="flex gap-3 sm:gap-4 w-max">
                 {dealsOfTheDay.map((prod) => (
                   <div key={prod.id} className="w-[170px] sm:w-[210px] shrink-0">
@@ -172,14 +219,33 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         <div className="bg-white border border-stone-200 rounded-md overflow-hidden shadow-2xs">
           <div className="bg-stone-900 text-white p-3 sm:p-4 flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-bold uppercase tracking-tight">Trending in Sarees & Ethnic</h2>
-            <button
-              onClick={() => onNavigate('/category/women')}
-              className="text-xs font-bold text-[#C0654B] hover:underline cursor-pointer"
-            >
-              View All →
-            </button>
+            <div className="flex items-center gap-3">
+              {/* Scroll Navigation Buttons */}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => scrollRail(trendingScrollRef, 'left')}
+                  aria-label="Scroll left"
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => scrollRail(trendingScrollRef, 'right')}
+                  aria-label="Scroll right"
+                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+              <button
+                onClick={() => onNavigate('/category/women')}
+                className="text-xs font-bold text-[#C0654B] hover:underline cursor-pointer ml-1"
+              >
+                View All →
+              </button>
+            </div>
           </div>
-          <div className="p-3 sm:p-4 overflow-x-auto no-scrollbar">
+          <div ref={trendingScrollRef} className="p-3 sm:p-4 overflow-x-auto no-scrollbar scroll-smooth">
             <div className="flex gap-3 sm:gap-4 w-max">
               {trendingSarees.map((prod) => (
                 <div key={prod.id} className="w-[170px] sm:w-[210px] shrink-0">
@@ -191,7 +257,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* 5.5 NEW ARRIVALS & FRESH DROPS (JUST BELOW TRENDING IN SAREES & ETHNIC) */}
+      {/* 5.5 NEW ARRIVALS */}
       {settings.newArrivalsEnabled !== false && newArrivals.length > 0 && (
         <section className="max-w-7xl mx-auto px-2 sm:px-6">
           <div className="bg-white border border-stone-200 rounded-md overflow-hidden shadow-2xs">
@@ -211,15 +277,34 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                   </p>
                 )}
               </div>
-              <button
-                onClick={() => onNavigate('/category/all?tag=new_arrival')}
-                className="text-xs font-bold text-[#C0654B] hover:underline cursor-pointer shrink-0 ml-2"
-              >
-                View All New Arrivals →
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Scroll Navigation Buttons */}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => scrollRail(newArrivalsScrollRef, 'left')}
+                    aria-label="Scroll left"
+                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => scrollRail(newArrivalsScrollRef, 'right')}
+                    aria-label="Scroll right"
+                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+                <button
+                  onClick={() => onNavigate('/category/all?tag=new_arrival')}
+                  className="text-xs font-bold text-[#C0654B] hover:underline cursor-pointer shrink-0 ml-1"
+                >
+                  View All New Arrivals →
+                </button>
+              </div>
             </div>
 
-            <div className="p-3 sm:p-4 overflow-x-auto no-scrollbar">
+            <div ref={newArrivalsScrollRef} className="p-3 sm:p-4 overflow-x-auto no-scrollbar scroll-smooth">
               <div className="flex gap-3 sm:gap-4 w-max">
                 {newArrivals.map((prod) => (
                   <div key={prod.id} className="w-[170px] sm:w-[210px] shrink-0">
