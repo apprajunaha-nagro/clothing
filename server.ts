@@ -11,7 +11,6 @@ import {
   initialBrands,
   initialCategories,
   initialBanners,
-  initialProducts,
   initialCoupons,
   initialReviews
 } from './src/data/seedData';
@@ -203,22 +202,6 @@ app.get('/api/brands', async (req, res) => {
   }
 });
 
-// Products
-app.get('/api/products', async (req, res) => {
-  try {
-    const products = await prisma.product.findMany({
-      orderBy: { created_at: 'desc' }
-    });
-    if (products && products.length > 0) {
-      const formatted = products.map(formatProduct);
-      return res.json(formatted);
-    }
-    return res.json(initialProducts);
-  } catch (err: any) {
-    console.warn('Prisma products query fallback:', err?.message);
-    return res.json(initialProducts);
-  }
-});
 
 // Orders
 app.get('/api/orders', async (req, res) => {
@@ -912,6 +895,20 @@ app.get('/api/products', async (req, res) => {
       where.rating = { gte: targetRating };
     }
 
+    // 4. Search Filter (Prisma DB query level)
+    if (search) {
+      const q = String(search).trim();
+      if (q) {
+        where.OR = [
+          { name: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+          { fabric: { contains: q, mode: 'insensitive' } },
+          { brandName: { contains: q, mode: 'insensitive' } },
+        ];
+      }
+    }
+
+    // Always query database as single source of truth
     let dbProducts: any[] = [];
     try {
       dbProducts = await prisma.product.findMany({
@@ -919,44 +916,22 @@ app.get('/api/products', async (req, res) => {
         orderBy: sort === 'newest' ? { created_at: 'desc' } : sort === 'rating' ? { rating: 'desc' } : undefined,
       });
     } catch (e) {
-      console.warn('Prisma query warning:', e);
+      console.warn('Prisma products query error:', e);
+      return res.json([]);
     }
 
-    // Fallback to initialProducts if DB returns fewer items than full generated dataset
-    let result: Product[] = dbProducts.length >= initialProducts.length
-      ? dbProducts.map(formatProduct)
-      : initialProducts.filter(p => {
-          if (where.status && p.status !== where.status) return false;
-          if (categoryList.length > 0 && !categoryList.includes(p.categoryId)) return false;
-          if (subcategoryList.length > 0 && !subcategoryList.includes(p.subcategoryId)) return false;
-          if (typeList.length > 0 && (!p.typeId || !typeList.some(t => p.typeId === t || p.typeId.includes(t)))) return false;
-          if (brandList.length > 0 && (!p.brandId || !brandList.includes(p.brandId))) return false;
-          if (targetRating > 0 && p.rating < targetRating) return false;
-          if (occasion && !p.occasion.toLowerCase().includes(String(occasion).toLowerCase())) return false;
-          return true;
-        });
+    let result: Product[] = dbProducts.map(formatProduct);
 
-    // 4. Tag Multi-Select Filter (OR-match)
+    // 5. Tag Multi-Select Filter (OR-match)
     const tagList = parseArrayQuery(tag);
     if (tagList.length > 0) {
       result = result.filter(p => tagList.some(t => p.tags.includes(t as any)));
     }
 
-    // 5. Fabric Multi-Select Filter (OR-match)
+    // 6. Fabric Multi-Select Filter (OR-match)
     const fabricList = parseArrayQuery(fabric);
     if (fabricList.length > 0) {
-      result = result.filter(p => fabricList.some(f => p.fabric.toLowerCase().includes(f.toLowerCase())));
-    }
-
-    // 6. Search Query
-    if (search) {
-      const q = String(search).toLowerCase();
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.fabric.toLowerCase().includes(q) ||
-        (p.brandName && p.brandName.toLowerCase().includes(q))
-      );
+      result = result.filter(p => fabricList.some(f => (p.fabric || '').toLowerCase().includes(f.toLowerCase())));
     }
 
     // 7. Price Range Filter

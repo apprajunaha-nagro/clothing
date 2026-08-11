@@ -84,6 +84,10 @@ function AppContent() {
     if (currentPath === '/' || currentPath === '') {
       return <HomePage onNavigate={navigateTo} />;
     }
+    if (currentPath.startsWith('/search')) {
+      const queryString = currentPath.includes('?') ? currentPath.split('?')[1] : '';
+      return <ProductListingPage onNavigate={navigateTo} categorySlug="all" queryString={queryString} />;
+    }
     if (currentPath.startsWith('/category/')) {
       const slug = currentPath.replace('/category/', '');
       return <ProductListingPage onNavigate={navigateTo} categorySlug={slug} />;
