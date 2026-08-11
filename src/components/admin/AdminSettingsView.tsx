@@ -9,7 +9,7 @@ import { SiteSettings } from '../../types';
 export const AdminSettingsView: React.FC = () => {
   const { settings, updateSettings, showToast, products, orders } = useStore();
 
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'store' | 'theme' | 'policies' | 'shipping' | 'roles' | 'backup'>('store');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'store' | 'theme' | 'policies' | 'shipping' | 'backup'>('store');
 
   // Form states initialized from settings context
   const [sName, setSName] = useState(settings.storeName || 'PGmart');
@@ -148,12 +148,6 @@ export const AdminSettingsView: React.FC = () => {
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${activeSettingsTab === 'shipping' ? 'bg-[#C0654B] text-white' : 'text-stone-400 hover:text-stone-200'}`}
           >
             Logistics Zones
-          </button>
-          <button
-            onClick={() => setActiveSettingsTab('roles')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${activeSettingsTab === 'roles' ? 'bg-[#C0654B] text-white' : 'text-stone-400 hover:text-stone-200'}`}
-          >
-            Logins & Audit
           </button>
           <button
             onClick={() => setActiveSettingsTab('backup')}
@@ -529,62 +523,7 @@ export const AdminSettingsView: React.FC = () => {
         </div>
       )}
 
-      {/* 4. ADMIN USER LOGINS & AUDIT LOGS */}
-      {activeSettingsTab === 'roles' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-xs text-stone-700 font-semibold text-left">
-          
-          {/* Active Logins (Left side) */}
-          <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-4 lg:col-span-1">
-            <div className="border-b border-stone-100 pb-2">
-              <span className="text-[10px] text-stone-400 font-bold block uppercase tracking-wider">Access moderation</span>
-              <h3 className="text-xs font-bold font-serif text-stone-900">Active Admin Staff Logins</h3>
-            </div>
 
-            <div className="space-y-3.5">
-              {adminUsers.map(user => (
-                <div key={user.email} className="p-3 border border-stone-100 rounded-xl bg-stone-50/50 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-stone-900">{user.name}</span>
-                    <span className="bg-stone-200 text-stone-700 text-[8px] font-mono font-bold uppercase px-1.5 py-0.5 rounded">
-                      {user.role}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-stone-400 truncate">{user.email}</p>
-                  <p className="text-[9px] text-stone-400 font-mono">Last session: {user.lastLogin} from IP {user.ip}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Audit Logs (Right side) */}
-          <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm space-y-4 lg:col-span-2">
-            <div className="border-b border-stone-100 pb-2 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] text-stone-400 font-bold block uppercase tracking-wider">Security Trace logs</span>
-                <h3 className="text-xs font-bold font-serif text-stone-900">System Admin Activity Audit Trail</h3>
-              </div>
-              <span className="text-[9px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold uppercase font-mono">Immutable Logbook</span>
-            </div>
-
-            <div className="border border-stone-200 rounded-xl divide-y divide-stone-100 max-h-72 overflow-y-auto">
-              {auditLogs.map((log, index) => (
-                <div key={index} className="p-3 hover:bg-stone-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="space-y-1">
-                    <p className="font-bold text-stone-800 text-[11px]">{log.action}</p>
-                    <div className="flex items-center gap-2 text-[10px] text-stone-400 font-medium font-mono">
-                      <span>By: {log.user}</span>
-                      <span>•</span>
-                      <span className="bg-stone-100 text-stone-500 px-1 rounded text-[8px] uppercase">{log.type}</span>
-                    </div>
-                  </div>
-                  <span className="text-[9px] text-stone-400 font-mono self-end sm:self-center shrink-0">{log.timestamp}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
-      )}
 
       {/* 5. DATABASE BACKUP HUB */}
       {activeSettingsTab === 'backup' && (
