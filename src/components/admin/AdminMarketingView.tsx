@@ -7,7 +7,7 @@ import {
 import { Coupon, Banner, SiteSettings, Product } from '../../types';
 
 export const AdminMarketingView: React.FC = () => {
-  const { coupons, saveCoupon, toggleCoupon, deleteCoupon, banners, setBanners, products, setProducts, settings, updateSettings, showToast } = useStore();
+  const { coupons, saveCoupon, toggleCoupon, deleteCoupon, banners, setBanners, products, setProducts, settings, updateSettings, updateProduct, showToast } = useStore();
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
 
   // Banners List Local override/state
@@ -322,7 +322,7 @@ export const AdminMarketingView: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
               <div>
                 <h4 className="font-bold text-stone-900 text-sm font-serif">
-                  Featured Deal Products ({products.filter(p => p.isDealOfTheDay || p.tags?.includes('deal_of_the_day')).length} Selected)
+                  Featured Deal Products ({products.filter(p => p.isDealOfTheDay || (Array.isArray(p.tags) && p.tags.includes('deal_of_the_day'))).length} Selected)
                 </h4>
                 <p className="text-xs text-stone-500">Toggle products ON/OFF to explicitly feature them in the Deals of the Day section on the storefront</p>
               </div>
@@ -344,7 +344,9 @@ export const AdminMarketingView: React.FC = () => {
               {products
                 .filter(p => p.name.toLowerCase().includes(dealSearchQuery.toLowerCase()))
                 .map(product => {
-                  const isDeal = product.isDealOfTheDay || product.tags?.includes('deal_of_the_day');
+                  const currentTags = Array.isArray(product.tags) ? product.tags : [];
+                  const isDeal = product.isDealOfTheDay || currentTags.includes('deal_of_the_day');
+                  const productImg = product.colors?.[0]?.images?.[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=150&q=80';
                   return (
                     <div
                       key={product.id}
@@ -353,7 +355,7 @@ export const AdminMarketingView: React.FC = () => {
                       }`}
                     >
                       <img
-                        src={product.colors?.[0]?.images?.[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=150&q=80'}
+                        src={productImg}
                         alt={product.name}
                         className="w-12 h-14 object-cover rounded bg-white shrink-0 border border-stone-200"
                       />
@@ -363,11 +365,12 @@ export const AdminMarketingView: React.FC = () => {
                         <button
                           onClick={() => {
                             const newStatus = !isDeal;
+                            const newTags = newStatus
+                              ? Array.from(new Set([...currentTags, 'deal_of_the_day' as const]))
+                              : currentTags.filter(t => t !== 'deal_of_the_day');
+                            updateProduct(product.id, { isDealOfTheDay: newStatus, tags: newTags });
                             setProducts(prev => prev.map(p => {
                               if (p.id === product.id) {
-                                const newTags = newStatus
-                                  ? Array.from(new Set([...p.tags, 'deal_of_the_day' as const]))
-                                  : p.tags.filter(t => t !== 'deal_of_the_day');
                                 return { ...p, isDealOfTheDay: newStatus, tags: newTags };
                               }
                               return p;
@@ -504,7 +507,7 @@ export const AdminMarketingView: React.FC = () => {
                 <p className="text-xs text-stone-500">
                   Tag products as "new_arrival" to feature them in this section. Currently tagged: {' '}
                   <strong className="text-[#C0654B]">
-                    {products.filter(p => p.tags?.includes('new_arrival')).length} items
+                    {products.filter(p => Array.isArray(p.tags) && p.tags.includes('new_arrival')).length} items
                   </strong>
                 </p>
               </div>
@@ -527,18 +530,21 @@ export const AdminMarketingView: React.FC = () => {
                 .filter(p => !naSearchQuery || p.name.toLowerCase().includes(naSearchQuery.toLowerCase()) || p.brandName?.toLowerCase().includes(naSearchQuery.toLowerCase()))
                 .slice(0, 36)
                 .map(product => {
-                  const isNew = product.tags?.includes('new_arrival');
+                  const currentTags = Array.isArray(product.tags) ? product.tags : [];
+                  const isNew = currentTags.includes('new_arrival');
+                  const productImg = product.colors?.[0]?.images?.[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=250&q=80';
                   return (
                     <div key={product.id} className="border border-stone-200 rounded-xl p-2 bg-stone-50 flex flex-col justify-between">
-                      <img src={product.images[0]?.url} alt={product.name} className="w-full h-24 object-cover rounded-lg bg-white mb-2" />
+                      <img src={productImg} alt={product.name} className="w-full h-24 object-cover rounded-lg bg-white mb-2 border border-stone-200" />
                       <div>
                         <p className="text-[11px] font-bold text-stone-900 line-clamp-1">{product.name}</p>
                         <p className="text-[10px] text-stone-500">₹{product.discountPrice || product.basePrice}</p>
                         <button
                           onClick={() => {
                             const newTags = isNew
-                              ? product.tags.filter(t => t !== 'new_arrival')
-                              : [...product.tags, 'new_arrival' as any];
+                              ? currentTags.filter(t => t !== 'new_arrival')
+                              : Array.from(new Set([...currentTags, 'new_arrival' as const]));
+                            updateProduct(product.id, { tags: newTags });
                             setProducts(prev => prev.map(p => p.id === product.id ? { ...p, tags: newTags } : p));
                             showToast(isNew ? `Removed "${product.name}" from New Arrivals` : `✨ Tagged "${product.name}" as New Arrival!`);
                           }}
