@@ -139,19 +139,19 @@ export const AdminMarketingView: React.FC = () => {
       expiryDate: cExpiry,
       isActive: true
     };
-    setCouponsList(prev => [newCoupon, ...prev]);
+    saveCoupon(newCoupon);
     setIsCouponFormOpen(false);
     setCCode('');
     showToast(`Promo Code ${newCoupon.code} is now live & valid on storefront checkouts!`);
   };
 
   const handleToggleCoupon = (id: string) => {
-    setCouponsList(prev => prev.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c));
+    toggleCoupon(id);
     showToast('Coupon status updated.');
   };
 
   const handleDeleteCoupon = (id: string) => {
-    setCouponsList(prev => prev.filter(c => c.id !== id));
+    deleteCoupon(id);
     showToast('Coupon code archived.');
   };
 
