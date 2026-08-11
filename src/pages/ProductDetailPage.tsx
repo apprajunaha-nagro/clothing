@@ -19,7 +19,10 @@ import {
   MapPin,
   Sparkles,
   MessageSquare,
-  ZoomIn
+  ZoomIn,
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface ProductDetailPageProps {
@@ -58,28 +61,59 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  // Image hover zoom state (Amazon/Myntra-style side panel zoom)
-  const [zoomPos, setZoomPos] = useState({ x: 0, y: 0, pctX: 50, pctY: 50 });
-  const [isHovering, setIsHovering] = useState(false);
-  const imgContainerRef = useRef<HTMLDivElement>(null);
-  const ZOOM_FACTOR = 3.0; // 3x magnification in the side panel
-  const LENS_SIZE = 100;  // px — size of the lens box on the source image
+  // Lightbox / fullscreen pan-zoom state (Sabhyata style)
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  // Pan-drag state
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = imgContainerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const rawX = e.clientX - rect.left;
-    const rawY = e.clientY - rect.top;
-    // Clamp so lens stays fully within the image
-    const clampedX = Math.max(LENS_SIZE / 2, Math.min(rect.width  - LENS_SIZE / 2, rawX));
-    const clampedY = Math.max(LENS_SIZE / 2, Math.min(rect.height - LENS_SIZE / 2, rawY));
-    setZoomPos({
-      x: clampedX,
-      y: clampedY,
-      pctX: (clampedX / rect.width)  * 100,
-      pctY: (clampedY / rect.height) * 100,
-    });
+  const openLightbox = useCallback((idx: number) => {
+    setLightboxIndex(idx);
+    setPanOffset({ x: 0, y: 0 });
+    setLightboxOpen(true);
   }, []);
+
+  const closeLightbox = useCallback(() => {
+    setLightboxOpen(false);
+    setIsDragging(false);
+  }, []);
+
+  const lightboxGoTo = useCallback((idx: number) => {
+    setLightboxIndex(idx);
+    setPanOffset({ x: 0, y: 0 });
+  }, []);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStart.current = { x: e.clientX, y: e.clientY, ox: panOffset.x, oy: panOffset.y };
+  }, [panOffset]);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setPanOffset({
+      x: dragStart.current.ox + (e.clientX - dragStart.current.x),
+      y: dragStart.current.oy + (e.clientY - dragStart.current.y),
+    });
+  }, [isDragging]);
+
+  const onMouseUp = useCallback(() => setIsDragging(false), []);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowRight') lightboxGoTo((lightboxIndex + 1) % galleryImages.length);
+      if (e.key === 'ArrowLeft')  lightboxGoTo((lightboxIndex - 1 + galleryImages.length) % galleryImages.length);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxOpen, lightboxIndex, closeLightbox, lightboxGoTo]);
+
+  // Suppress unused-var warning for ZOOM_FACTOR/LENS_SIZE if leftover — they're removed now
+
 
   if (!product) return null;
 
@@ -169,48 +203,26 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             ))}
           </div>
 
-          {/* Main image + side-panel zoom wrapper */}
-          <div className="flex-1 relative">
-
-            {/* Main Large Image — stable, with lens overlay on hover */}
+          {/* Main image — click to open fullscreen zoom */}
+          <div className="flex-1 relative group">
             <div
-              ref={imgContainerRef}
-              className="aspect-3/4 bg-stone-100 rounded-2xl overflow-hidden relative shadow-sm border border-stone-200 select-none w-full"
-              style={{ cursor: isHovering ? 'crosshair' : 'zoom-in' }}
-              onMouseMove={handleMouseMove}
-              onMouseEnter={() => setIsHovering(true)}
-              onMouseLeave={() => setIsHovering(false)}
+              className="aspect-3/4 bg-stone-100 rounded-2xl overflow-hidden relative shadow-sm border border-stone-200 cursor-zoom-in w-full"
+              onClick={() => openLightbox(activeImageIndex)}
             >
-              {/* Base image — does NOT move */}
               <img
                 src={getOptimizedImageUrl(activeImage, { width: 1200, quality: 85 })}
                 alt={product.name}
-                className="w-full h-full object-cover object-top pointer-events-none"
+                className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
                 loading="eager"
                 decoding="async"
               />
 
-              {/* Lens box — shows the area being zoomed */}
-              {isHovering && (
-                <div
-                  className="absolute border-2 border-[#C0654B] bg-white/20 backdrop-blur-[1px] pointer-events-none rounded-sm shadow-md"
-                  style={{
-                    width: LENS_SIZE,
-                    height: LENS_SIZE,
-                    left: zoomPos.x - LENS_SIZE / 2,
-                    top:  zoomPos.y - LENS_SIZE / 2,
-                  }}
-                />
-              )}
-
-              {/* Zoom hint badge */}
-              <div
-                className={`absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] font-semibold px-3 py-1 rounded-full flex items-center gap-1.5 backdrop-blur-sm pointer-events-none transition-opacity duration-200 ${
-                  isHovering ? 'opacity-0' : 'opacity-100'
-                }`}
-              >
-                <ZoomIn className="w-3 h-3" />
-                Hover to zoom
+              {/* Zoom icon overlay on hover */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-200 flex items-center justify-center">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/60 text-white text-xs font-semibold px-4 py-2 rounded-full flex items-center gap-2 backdrop-blur-sm">
+                  <ZoomIn className="w-4 h-4" />
+                  Click to zoom
+                </div>
               </div>
 
               {/* Wishlist button */}
@@ -221,19 +233,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
                 <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-[#C0654B] text-[#C0654B]' : ''}`} />
               </button>
             </div>
-
-            {/* SIDE ZOOM PANEL — appears to the right of the gallery column, desktop only */}
-            {isHovering && (
-              <div
-                className="hidden lg:block absolute top-0 left-[calc(100%+16px)] w-[380px] aspect-3/4 rounded-2xl overflow-hidden shadow-2xl border-2 border-[#C0654B]/40 z-50 pointer-events-none bg-stone-100"
-                style={{
-                  backgroundImage: `url(${getOptimizedImageUrl(activeImage, { width: 2400, quality: 95 })})`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: `${ZOOM_FACTOR * 100}%`,
-                  backgroundPosition: `${zoomPos.pctX}% ${zoomPos.pctY}%`,
-                }}
-              />
-            )}
           </div>
         </div>
 
@@ -581,6 +580,103 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
           <span>BUY NOW</span>
         </button>
       </div>
+
+      {/* ── FULLSCREEN LIGHTBOX (Sabhyata-style: click image → fullscreen pan/drag zoom) ── */}
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/95 flex flex-col select-none"
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+        >
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 py-3 shrink-0">
+            <span className="text-white/60 text-sm font-medium">
+              {lightboxIndex + 1} / {galleryImages.length}
+            </span>
+            <p className="text-white text-sm font-semibold truncate max-w-[60%] text-center">{product.name}</p>
+            <button
+              onClick={closeLightbox}
+              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Main image area — drag to pan */}
+          <div className="flex-1 overflow-hidden flex items-center justify-center relative">
+            {/* Prev button */}
+            {galleryImages.length > 1 && (
+              <button
+                onClick={() => lightboxGoTo((lightboxIndex - 1 + galleryImages.length) % galleryImages.length)}
+                className="absolute left-3 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer transition-colors"
+                aria-label="Previous"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+
+            {/* Draggable zoomed image */}
+            <div
+              className="w-full h-full flex items-center justify-center overflow-hidden"
+              style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+              onMouseDown={onMouseDown}
+            >
+              <img
+                src={getOptimizedImageUrl(galleryImages[lightboxIndex], { width: 2400, quality: 95 })}
+                alt={`${product.name} — photo ${lightboxIndex + 1}`}
+                className="max-h-full max-w-none pointer-events-none"
+                style={{
+                  transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(1.6)`,
+                  transition: isDragging ? 'none' : 'transform 0.2s ease',
+                  userSelect: 'none',
+                  WebkitUserDrag: 'none',
+                } as React.CSSProperties}
+                draggable={false}
+              />
+            </div>
+
+            {/* Next button */}
+            {galleryImages.length > 1 && (
+              <button
+                onClick={() => lightboxGoTo((lightboxIndex + 1) % galleryImages.length)}
+                className="absolute right-3 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer transition-colors"
+                aria-label="Next"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Drag hint */}
+          <p className="text-center text-white/40 text-xs py-1 shrink-0 pointer-events-none">
+            Drag to pan · Use arrow keys or buttons to switch photos
+          </p>
+
+          {/* Thumbnail strip */}
+          {galleryImages.length > 1 && (
+            <div className="flex justify-center gap-2 py-3 px-4 shrink-0 overflow-x-auto">
+              {galleryImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => lightboxGoTo(idx)}
+                  className={`w-14 h-16 rounded-lg overflow-hidden border-2 cursor-pointer transition-all shrink-0 ${
+                    idx === lightboxIndex ? 'border-[#C0654B] scale-110' : 'border-white/20 opacity-50 hover:opacity-90'
+                  }`}
+                >
+                  <img
+                    src={getOptimizedImageUrl(img, { width: 140, quality: 70 })}
+                    alt={`thumb ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
