@@ -531,15 +531,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const createProduct = async (productData: Partial<Product>) => {
     const newProduct: Product = {
-      id: `p-${Date.now()}`,
+      id: productData.id || `p-${Date.now()}`,
       name: productData.name || 'New Product',
-      slug: (productData.name || 'new-product').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      slug: productData.slug || (productData.name || 'new-product').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       brandName: productData.brandName || settings.storeName,
       categoryId: productData.categoryId || 'women',
       subcategoryId: productData.subcategoryId || 'women-ethnic',
       typeId: productData.typeId || 'type-sarees',
       basePrice: productData.basePrice || 1999,
-      discountPrice: productData.discountPrice || 1499,
+      discountPrice: productData.discountPrice,
       fabric: productData.fabric || 'Cotton Blend',
       fit: productData.fit || 'Regular Fit',
       occasion: productData.occasion || 'Everyday',
@@ -559,11 +559,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       variants: productData.variants || [],
       hsnCode: productData.hsnCode || '5407',
       gstPercent: productData.gstPercent || 5,
-      created_at: new Date().toISOString()
+      created_at: productData.created_at || new Date().toISOString()
     };
 
-    setProducts(prev => [newProduct, ...prev]);
-    showToast(`Product "${newProduct.name}" created successfully`);
+    setProducts(prev => {
+      if (prev.some(p => p.id === newProduct.id)) {
+        return prev.map(p => p.id === newProduct.id ? newProduct : p);
+      }
+      return [newProduct, ...prev];
+    });
 
     try {
       await adminFetch('/api/products', {

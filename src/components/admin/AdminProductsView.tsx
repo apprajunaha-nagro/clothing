@@ -494,7 +494,6 @@ export const AdminProductsView: React.FC = () => {
         created_at: new Date().toISOString()
       };
 
-      setProducts(prev => [newProd, ...prev]);
       createProduct(newProd);
       showToast(`New Product "${pName}" successfully created and placed live.`);
     }
