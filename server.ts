@@ -1138,7 +1138,7 @@ app.post('/api/coupons/validate', async (req, res) => {
     const { code, cartTotal } = req.body;
     const coupon = await prisma.coupon.findFirst({
       where: {
-        code: { equals: (code || '').trim(), mode: 'insensitive' },
+        code: { equals: (code || '').trim() },
         isActive: true,
       },
     });
