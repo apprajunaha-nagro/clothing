@@ -23,6 +23,27 @@ export const AdminMarketingView: React.FC = () => {
   const [naBadge, setNaBadge] = useState(settings.newArrivalsBadge || 'JUST ARRIVED');
   const [naMaxItems, setNaMaxItems] = useState(settings.newArrivalsMaxItems || 10);
   const [naSearchQuery, setNaSearchQuery] = useState('');
+
+  // Memoized Product Lists for Instant 0ms Render
+  const filteredDealProducts = React.useMemo(() => {
+    const q = dealSearchQuery.toLowerCase().trim();
+    if (!q) return products.slice(0, 24);
+    return products.filter(p => p.name.toLowerCase().includes(q)).slice(0, 24);
+  }, [products, dealSearchQuery]);
+
+  const filteredNaProducts = React.useMemo(() => {
+    const q = naSearchQuery.toLowerCase().trim();
+    if (!q) return products.slice(0, 24);
+    return products.filter(p => p.name.toLowerCase().includes(q) || p.brandName?.toLowerCase().includes(q)).slice(0, 24);
+  }, [products, naSearchQuery]);
+
+  const taggedDealsCount = React.useMemo(() => {
+    return products.filter(p => p.isDealOfTheDay || (Array.isArray(p.tags) && p.tags.includes('deal_of_the_day'))).length;
+  }, [products]);
+
+  const taggedNaCount = React.useMemo(() => {
+    return products.filter(p => Array.isArray(p.tags) && p.tags.includes('new_arrival')).length;
+  }, [products]);
   
   // Banner creation fields
   const [bTitle, setBTitle] = useState('');
@@ -322,7 +343,7 @@ export const AdminMarketingView: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
               <div>
                 <h4 className="font-bold text-stone-900 text-sm font-serif">
-                  Featured Deal Products ({products.filter(p => p.isDealOfTheDay || (Array.isArray(p.tags) && p.tags.includes('deal_of_the_day'))).length} Selected)
+                  Featured Deal Products ({taggedDealsCount} Selected)
                 </h4>
                 <p className="text-xs text-stone-500">Toggle products ON/OFF to explicitly feature them in the Deals of the Day section on the storefront</p>
               </div>
@@ -341,9 +362,7 @@ export const AdminMarketingView: React.FC = () => {
 
             {/* Product Cards Grid for Toggling */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto pr-1">
-              {products
-                .filter(p => p.name.toLowerCase().includes(dealSearchQuery.toLowerCase()))
-                .map(product => {
+              {filteredDealProducts.map(product => {
                   const currentTags = Array.isArray(product.tags) ? product.tags : [];
                   const isDeal = product.isDealOfTheDay || currentTags.includes('deal_of_the_day');
                   const productImg = product.colors?.[0]?.images?.[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=150&q=80';
@@ -507,7 +526,7 @@ export const AdminMarketingView: React.FC = () => {
                 <p className="text-xs text-stone-500">
                   Tag products as "new_arrival" to feature them in this section. Currently tagged: {' '}
                   <strong className="text-[#C0654B]">
-                    {products.filter(p => Array.isArray(p.tags) && p.tags.includes('new_arrival')).length} items
+                    {taggedNaCount} items
                   </strong>
                 </p>
               </div>
@@ -526,10 +545,7 @@ export const AdminMarketingView: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-96 overflow-y-auto pr-1">
-              {products
-                .filter(p => !naSearchQuery || p.name.toLowerCase().includes(naSearchQuery.toLowerCase()) || p.brandName?.toLowerCase().includes(naSearchQuery.toLowerCase()))
-                .slice(0, 36)
-                .map(product => {
+              {filteredNaProducts.map(product => {
                   const currentTags = Array.isArray(product.tags) ? product.tags : [];
                   const isNew = currentTags.includes('new_arrival');
                   const productImg = product.colors?.[0]?.images?.[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=250&q=80';
