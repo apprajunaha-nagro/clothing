@@ -92,6 +92,7 @@ export const AdminProductsView: React.FC = () => {
   // CSV Import State
   const [csvText, setCsvText] = useState('');
   const [showCsvImport, setShowCsvImport] = useState(false);
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
 
   // Photo Upload & Product Images State
   const photoFileInputRef = useRef<HTMLInputElement>(null);
@@ -504,89 +505,135 @@ export const AdminProductsView: React.FC = () => {
 
   // EXPORT PRODUCTS TO CSV
   const handleExportCSV = () => {
-    let csv = "Product ID,Name,Category,Subcategory,Style,Base Price,Discount Price,SKU,Stock\n";
+    let csv = "Product ID,Name,Category,Subcategory,Style,Base Price,Discount Price,SKU,Stock,Fabric,Fit,Occasion,Status\n";
+    const escapeCsv = (val: any) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+
     products.forEach(p => {
-      (p.variants || []).forEach(v => {
-        csv += `"${p.id}","${p.name}","${p.categoryId}","${p.subcategoryId}","${p.typeId || ''}",${p.basePrice},${p.discountPrice || ''},"${v.sku}",${v.stock}\n`;
-      });
+      if (p.variants && p.variants.length > 0) {
+        p.variants.forEach(v => {
+          csv += `${escapeCsv(p.id)},${escapeCsv(p.name)},${escapeCsv(p.categoryId)},${escapeCsv(p.subcategoryId)},${escapeCsv(p.typeId || '')},${p.basePrice},${p.discountPrice || ''},${escapeCsv(v.sku)},${v.stock},${escapeCsv(p.fabric)},${escapeCsv(p.fit)},${escapeCsv(p.occasion)},${escapeCsv(p.status)}\n`;
+        });
+      } else {
+        csv += `${escapeCsv(p.id)},${escapeCsv(p.name)},${escapeCsv(p.categoryId)},${escapeCsv(p.subcategoryId)},${escapeCsv(p.typeId || '')},${p.basePrice},${p.discountPrice || ''},${escapeCsv(`SKU-${p.id}`)},${(p as any).stock || 25},${escapeCsv(p.fabric)},${escapeCsv(p.fit)},${escapeCsv(p.occasion)},${escapeCsv(p.status)}\n`;
+      }
     });
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `pgmart_products_export_${Date.now()}.csv`);
+    link.setAttribute("download", `pgmart_products_export_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('Catalog exported to CSV.');
+    showToast(`Successfully exported ${products.length} products to CSV file!`);
   };
 
-  // CSV BULK TEMPLATE IMPORT SIMULATION
-  const handleImportCSVText = () => {
-    if (!csvText.trim()) return;
-    try {
-      const rows = csvText.split('\n').slice(1); // skip header
-      let importedCount = 0;
-      const newProductsList = [...products];
+  // DOWNLOAD SAMPLE CSV TEMPLATE
+  const handleDownloadSampleCSV = () => {
+    let sampleCsv = "Name,CategoryId,SubcategoryId,TypeId,BasePrice,DiscountPrice,SKU,Stock,Fabric,Occasion\n";
+    sampleCsv += '"Banarasi Zari Silk Saree","women","women-ethnic","saree",4999,3999,"BZS-RED-01",50,"Banarasi Silk","Bridal"\n';
+    sampleCsv += '"Designer Anarkali Kurta Set","women","women-ethnic","anarkali-suits",2999,2299,"AKS-BLU-02",35,"Georgette","Festival"\n';
+    sampleCsv += '"Royal Heritage Sherwani Set","men","men-executive","sherwani",8999,7499,"RHS-GLD-03",20,"Raw Silk","Wedding"\n';
 
-      rows.forEach(row => {
-        const cols = row.split(',');
-        if (cols.length >= 8) {
-          const [name, categoryId, subcategoryId, typeId, basePrice, discountPrice, sku, stock] = cols.map(c => c.trim().replace(/^"|"$/g, ''));
-          
-          if (name && categoryId && basePrice) {
-            const tempProd: Product = {
-              id: `p-csv-${Date.now()}-${importedCount}`,
-              name,
-              slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-              description: 'Imported style catalog detailing custom threads.',
-              categoryId,
-              subcategoryId,
-              typeId,
-              basePrice: Number(basePrice),
-              discountPrice: discountPrice ? Number(discountPrice) : undefined,
-              fabric: 'Imported Cotton',
-              fit: 'Regular Fit',
-              occasion: 'Everyday',
-              tags: ['new_arrival'],
-              hsnCode: '5407',
-              gstPercent: 5,
+    const blob = new Blob([sampleCsv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "pgmart_sample_import_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Sample CSV template downloaded!");
+  };
+
+  // UPLOAD CSV FILE FROM DEVICE
+  const handleCSVFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (content) {
+        setCsvText(content);
+        showToast(`Loaded file "${file.name}". Click "Parse & Import Data" to process.`);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // PARSE & IMPORT CSV DATA INTO CATALOG & DATABASE
+  const handleImportCSVText = async () => {
+    if (!csvText.trim()) {
+      showToast('Please paste CSV text or select a CSV file first.');
+      return;
+    }
+    try {
+      const rawLines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
+      if (rawLines.length === 0) return;
+
+      let startIndex = 0;
+      const firstLineLower = rawLines[0].toLowerCase();
+      if (firstLineLower.includes('name') || firstLineLower.includes('category') || firstLineLower.includes('price')) {
+        startIndex = 1;
+      }
+
+      let importedCount = 0;
+
+      for (let i = startIndex; i < rawLines.length; i++) {
+        const line = rawLines[i];
+        const cols = line.match(/(?:[^\s",]+|"[^"]*")+/g) || line.split(',');
+        if (cols.length >= 3) {
+          const cleanCols = cols.map(c => c.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+          const [name, categoryId, subcategoryId, typeId, basePrice, discountPrice, sku, stock, fabric, occasion] = cleanCols;
+
+          if (name && basePrice) {
+            const bPrice = Number(basePrice) || 1999;
+            const dPrice = discountPrice ? Number(discountPrice) : undefined;
+            const pStock = stock ? Number(stock) : 30;
+
+            const prodData: Partial<Product> = {
+              name: name.trim(),
+              slug: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+              categoryId: categoryId || 'women',
+              subcategoryId: subcategoryId || 'women-ethnic',
+              typeId: typeId || 'saree',
+              basePrice: bPrice,
+              discountPrice: dPrice,
+              fabric: fabric || 'Cotton Blend',
+              occasion: occasion || 'Festive',
               status: 'published',
-              rating: 4.8,
-              reviewCount: 1,
-              created_at: new Date().toISOString(),
               variants: [{
-                id: `v-csv-${Date.now()}-${importedCount}`,
-                productId: `p-csv-${Date.now()}-${importedCount}`,
-                size: 'M',
+                id: `v-imp-${Date.now()}-${i}`,
+                productId: `p-imp-${Date.now()}-${i}`,
+                size: 'Free Size',
                 color: 'Default',
-                colorHex: settings.primaryColor,
-                sku: sku || `SKU-${Date.now().toString().slice(-4)}`,
-                price: Number(basePrice),
-                discountPrice: discountPrice ? Number(discountPrice) : undefined,
-                stock: Number(stock) || 50,
+                colorHex: settings.primaryColor || '#C0654B',
+                sku: sku || `SKU-IMP-${Date.now().toString().slice(-4)}-${i}`,
+                price: bPrice,
+                discountPrice: dPrice,
+                stock: pStock,
                 images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80']
               }],
-              colors: [{ name: 'Default', hex: settings.primaryColor, images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80'] }],
-              availableSizes: ['M']
+              colors: [{ name: 'Default', hex: settings.primaryColor || '#C0654B', images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80'] }],
+              availableSizes: ['Free Size']
             };
-            newProductsList.unshift(tempProd);
+
+            await createProduct(prodData);
             importedCount++;
           }
         }
-      });
+      }
 
       if (importedCount > 0) {
-        setProducts(newProductsList);
-        showToast(`Successfully bulk imported ${importedCount} products via CSV.`);
+        showToast(`🎉 Bulk imported & saved ${importedCount} products into database!`);
         setCsvText('');
         setShowCsvImport(false);
       } else {
-        alert('Could not parse any valid product rows. Please match the template format exactly.');
+        alert('Could not parse any valid product rows. Please check format.');
       }
-    } catch (e) {
-      alert('Error parsing CSV. Please check formatting.');
+    } catch (err: any) {
+      alert('Error parsing CSV file. Please verify CSV formatting.');
     }
   };
 
@@ -629,32 +676,66 @@ export const AdminProductsView: React.FC = () => {
 
       {/* CSV IMPORT POP-PANEL */}
       {showCsvImport && (
-        <div className="bg-stone-50 border border-stone-200 p-5 rounded-2xl space-y-3">
-          <div className="flex items-center justify-between">
+        <div className="bg-stone-50 border border-stone-200 p-5 rounded-2xl space-y-4">
+          <div className="flex items-center justify-between border-b border-stone-200 pb-3">
             <div>
-              <span className="text-xs font-bold text-stone-800 block">Bulk Import Products via CSV</span>
-              <p className="text-[10px] text-stone-400">Paste your rows below. Do not include a headers row or include columns matching: Name, CategoryId, SubcategoryId, TypeId, BasePrice, DiscountPrice, SKU, Stock</p>
+              <span className="text-sm font-bold text-stone-900 block">Bulk Import Products via CSV</span>
+              <p className="text-[11px] text-stone-500 mt-0.5">
+                Upload a .csv file from your device, or paste CSV rows below. Click "Parse & Import Data" to save into catalog.
+              </p>
             </div>
-            <button onClick={() => setShowCsvImport(false)} className="text-stone-400 hover:text-stone-700">✕</button>
+            <button onClick={() => setShowCsvImport(false)} className="text-stone-400 hover:text-stone-700 text-lg">✕</button>
           </div>
 
-          <div className="bg-[#2B2620] text-stone-300 p-2 rounded-lg font-mono text-[9px] border border-stone-700 space-y-1">
-            <p className="font-bold text-white">Row Layout Format:</p>
-            <p>name, category_id, subcategory_id, type_id, base_price, discount_price, sku, stock</p>
-            <p className="text-[#C0654B]">Example Row: Royal Silk Saree, women, women-ethnic, wt-saree, 3999, 2999, RSS-S-M, 40</p>
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-stone-200">
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                ref={csvFileInputRef}
+                accept=".csv,text/csv"
+                onChange={handleCSVFileUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => csvFileInputRef.current?.click()}
+                className="px-4 py-2 bg-stone-900 hover:bg-black text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Upload className="w-4 h-4 text-[#C0654B]" />
+                Select .CSV File from Device
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadSampleCSV}
+                className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 text-stone-600" />
+                Download Sample CSV Template
+              </button>
+            </div>
+
+            <span className="text-[10px] text-stone-400 font-mono hidden sm:inline-block">
+              Format: Name, CategoryId, SubcategoryId, TypeId, BasePrice, DiscountPrice, SKU, Stock
+            </span>
           </div>
 
           <textarea
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
-            placeholder="Paste raw CSV rows here..."
+            placeholder="Paste raw CSV rows or select a .csv file above..."
             rows={5}
             className="w-full p-3 bg-white border border-stone-300 rounded-xl text-xs font-mono"
           />
 
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setCsvText('')} className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-lg text-xs cursor-pointer">Clear</button>
-            <button onClick={handleImportCSVText} className="px-4 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-lg text-xs cursor-pointer">Parse & Import Data</button>
+          <div className="flex items-center justify-between pt-1">
+            <button onClick={() => setCsvText('')} className="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold rounded-lg text-xs cursor-pointer">
+              Clear Text
+            </button>
+            <button onClick={handleImportCSVText} className="px-5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl text-xs cursor-pointer shadow-md flex items-center gap-1.5">
+              <Upload className="w-4 h-4" />
+              Parse & Import Data into Database
+            </button>
           </div>
         </div>
       )}
