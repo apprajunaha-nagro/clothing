@@ -65,68 +65,95 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   }, [products]);
 
   const newArrivals = React.useMemo(() => {
-    return products.filter(p => p.tags.includes('new_arrival') || p.tags.includes('bestseller')).slice(0, 8);
-  }, [products]);
+    const maxItems = settings.newArrivalsMaxItems || 10;
+    const tagged = products.filter(p => p.tags?.includes('new_arrival'));
+    if (tagged.length >= 4) return tagged.slice(0, maxItems);
+    // Fallback to newest products
+    return [...products].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()).slice(0, maxItems);
+  }, [products, settings.newArrivalsMaxItems]);
 
   const activeAdBanners = React.useMemo(() => {
     return banners.filter(b => (b.position === 'ad_banner' || b.position === 'promo_strip') && b.isActive);
   }, [banners]);
 
   return (
-    <div className="bg-stone-100 min-h-screen pb-12 space-y-4 text-left">
-      {/* 1. REUSABLE HERO SLIDER (Sabhyata Premium Style) */}
-      <HeroSlider onNavigate={onNavigate} />
+    <div className="space-y-6 sm:space-y-8 bg-stone-100/60 pb-12 font-sans text-left">
+      {/* 1. HERO BANNER CAROUSEL SLIDER */}
+      <HeroSlider banners={banners} onNavigate={onNavigate} />
 
-      {/* 2. CATEGORY ICON STRIP (Only 4 Departments) */}
-      <section className="bg-white border-y border-stone-200 py-3 shadow-2xs">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="grid grid-cols-4 gap-2 sm:gap-6 text-center">
-            {categoryTiles.map((tile) => (
-              <button
-                key={tile.name}
-                onClick={() => onNavigate(`/category/${tile.slug}`)}
-                className="flex flex-col items-center gap-1.5 group cursor-pointer"
-              >
-                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-stone-100 border border-stone-200 group-hover:border-[#C0654B] p-0.5 overflow-hidden transition-all group-hover:scale-105 shadow-2xs flex items-center justify-center">
-                  <img
-                    src={tile.img}
-                    alt={tile.name}
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                </div>
-                <span className="text-[11px] sm:text-xs font-bold text-stone-800 group-hover:text-[#C0654B] text-center leading-tight">
-                  {tile.name}
-                </span>
-              </button>
-            ))}
-          </div>
+      {/* 2. ICON STRIP CATEGORIES TILES */}
+      <div className="max-w-7xl mx-auto px-2 sm:px-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 bg-white p-3 sm:p-4 rounded-xl border border-stone-200 shadow-2xs">
+          {categoryTiles.map((tile) => (
+            <button
+              key={tile.slug}
+              onClick={() => onNavigate(`/category/${tile.slug}`)}
+              className="flex items-center gap-2.5 sm:gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors border border-transparent hover:border-stone-200 cursor-pointer text-left group"
+            >
+              <img
+                src={getOptimizedImageUrl(tile.img, { width: 100, quality: 80 })}
+                alt={tile.name}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-stone-200 shrink-0 group-hover:scale-105 transition-transform"
+              />
+              <div>
+                <h3 className="font-extrabold text-stone-900 text-xs sm:text-sm group-hover:text-[#C0654B] transition-colors">{tile.name}</h3>
+                <p className="text-[10px] text-stone-500 font-medium">Explore & Buy →</p>
+              </div>
+            </button>
+          ))}
         </div>
-      </section>
+      </div>
 
-      {/* 3. DEALS OF THE DAY RAIL (Admin Controlled with Countdown Timer) */}
-      {settings.dealsEnabled !== false && (
+      {/* 3. PROMO STRIP AD BANNER */}
+      {settings.adBannerEnabled !== false && activeAdBanners.length > 0 && (
+        <section className="max-w-7xl mx-auto px-2 sm:px-6">
+          <div
+            onClick={() => onNavigate(activeAdBanners[0].link || '/category/women')}
+            className="relative rounded-2xl overflow-hidden bg-stone-900 text-white p-5 sm:p-8 cursor-pointer group shadow-md"
+          >
+            <img
+              src={getOptimizedImageUrl(activeAdBanners[0].image, { width: 1400, quality: 85 })}
+              alt={activeAdBanners[0].title}
+              className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-102 transition-transform duration-500"
+            />
+            <div className="relative z-10 max-w-xl space-y-2">
+              <span className="bg-[#C0654B] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                EXCLUSIVE FESTIVE OFFER
+              </span>
+              <h2 className="text-xl sm:text-3xl font-extrabold font-serif">{activeAdBanners[0].title}</h2>
+              {activeAdBanners[0].subtitle && (
+                <p className="text-xs sm:text-sm text-stone-200 font-medium">{activeAdBanners[0].subtitle}</p>
+              )}
+              <div className="pt-2">
+                <span className="inline-flex items-center gap-2 bg-white text-stone-900 font-bold px-4 py-2 rounded-xl text-xs shadow-md group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
+                  <span>{activeAdBanners[0].buttonText || 'EXPLORE COLLECTION'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* 4. DEALS OF THE DAY RAIL (Admin Controlled) */}
+      {settings.dealsEnabled !== false && dealsOfTheDay.length > 0 && (
         <section className="max-w-7xl mx-auto px-2 sm:px-6">
           <div className="bg-white border border-stone-200 rounded-md overflow-hidden shadow-2xs">
-            {/* Rail Header Bar */}
-            <div className="bg-[#C0654B] text-white p-3 sm:p-4 flex items-center justify-between flex-wrap gap-2">
+            <div className="bg-[#8B3E2F] text-white p-3 sm:p-4 flex items-center justify-between flex-wrap gap-2">
               <div className="flex items-center gap-3">
-                <h2 className="text-base sm:text-xl font-black uppercase tracking-tight">
-                  {settings.dealsTitle || 'Deals of the Day'}
+                <h2 className="text-base sm:text-lg font-bold uppercase tracking-tight flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-amber-300 fill-amber-300" />
+                  <span>{settings.dealsTitle || 'Deals of the Day'}</span>
                 </h2>
-                <DealCountdownTimer
-                  initialHours={settings.dealsTimerHours ?? 14}
-                  initialMinutes={settings.dealsTimerMinutes ?? 22}
-                />
+                <DealCountdownTimer initialHours={settings.dealsTimerHours} initialMinutes={settings.dealsTimerMinutes} />
               </div>
               <button
-                onClick={() => onNavigate('/category/women?tag=sale')}
-                className="bg-white text-[#C0654B] hover:bg-stone-100 font-extrabold text-xs px-3 py-1.5 rounded shadow-2xs uppercase tracking-wider cursor-pointer"
+                onClick={() => onNavigate('/category/all?tag=deal_of_the_day')}
+                className="text-xs font-bold text-amber-300 hover:underline cursor-pointer"
               >
-                View All Deals
+                View All Deals →
               </button>
             </div>
-
-            {/* Product Rail (Horizontal Scroll) */}
             <div className="p-3 sm:p-4 overflow-x-auto no-scrollbar">
               <div className="flex gap-3 sm:gap-4 w-max">
                 {dealsOfTheDay.map((prod) => (
@@ -163,6 +190,47 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           </div>
         </div>
       </section>
+
+      {/* 5.5 NEW ARRIVALS & FRESH DROPS (JUST BELOW TRENDING IN SAREES & ETHNIC) */}
+      {settings.newArrivalsEnabled !== false && newArrivals.length > 0 && (
+        <section className="max-w-7xl mx-auto px-2 sm:px-6">
+          <div className="bg-white border border-stone-200 rounded-md overflow-hidden shadow-2xs">
+            <div className="bg-gradient-to-r from-[#2B2620] via-[#3a332c] to-[#2B2620] text-white p-3 sm:p-4 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-[#C0654B] text-white text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase">
+                    {settings.newArrivalsBadge || 'JUST ARRIVED'}
+                  </span>
+                  <h2 className="text-base sm:text-lg font-bold uppercase tracking-tight">
+                    {settings.newArrivalsTitle || 'New Arrivals & Fresh Drops'}
+                  </h2>
+                </div>
+                {settings.newArrivalsSubtitle && (
+                  <p className="text-[11px] text-stone-300 mt-0.5 hidden sm:block">
+                    {settings.newArrivalsSubtitle}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => onNavigate('/category/all?tag=new_arrival')}
+                className="text-xs font-bold text-[#C0654B] hover:underline cursor-pointer shrink-0 ml-2"
+              >
+                View All New Arrivals →
+              </button>
+            </div>
+
+            <div className="p-3 sm:p-4 overflow-x-auto no-scrollbar">
+              <div className="flex gap-3 sm:gap-4 w-max">
+                {newArrivals.map((prod) => (
+                  <div key={prod.id} className="w-[170px] sm:w-[210px] shrink-0">
+                    <ProductCard product={prod} onNavigate={onNavigate} hideBadges={false} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 6. RECOMMENDED FOR YOU (4 Subsections: Women's Fashion, Men's Fashion, Kids' Fashion, Innerwear & Lingerie) */}
       <section className="max-w-7xl mx-auto px-2 sm:px-6">

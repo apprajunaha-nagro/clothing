@@ -14,8 +14,15 @@ export const AdminMarketingView: React.FC = () => {
   const [bannersList, setBannersList] = useState<Banner[]>(banners);
 
   // Form toggles
-  const [activeTab, setActiveTab] = useState<'banners' | 'deals' | 'coupons' | 'popups' | 'campaigns' | 'pixels'>('deals');
+  const [activeTab, setActiveTab] = useState<'banners' | 'deals' | 'new_arrivals' | 'coupons' | 'popups' | 'campaigns' | 'pixels'>('deals');
   const [dealSearchQuery, setDealSearchQuery] = useState('');
+  
+  // New Arrivals section state fields
+  const [naTitle, setNaTitle] = useState(settings.newArrivalsTitle || 'New Arrivals & Fresh Drops');
+  const [naSubtitle, setNaSubtitle] = useState(settings.newArrivalsSubtitle || 'Explore the latest ethnic wear, designer sarees, & festive drops');
+  const [naBadge, setNaBadge] = useState(settings.newArrivalsBadge || 'JUST ARRIVED');
+  const [naMaxItems, setNaMaxItems] = useState(settings.newArrivalsMaxItems || 10);
+  const [naSearchQuery, setNaSearchQuery] = useState('');
   
   // Banner creation fields
   const [bTitle, setBTitle] = useState('');
@@ -184,6 +191,13 @@ export const AdminMarketingView: React.FC = () => {
           >
             <Flame className="w-3.5 h-3.5 text-amber-300" />
             <span>Deals of the Day</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('new_arrivals')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === 'new_arrivals' ? 'bg-[#C0654B] text-white font-bold' : 'text-stone-400 hover:text-stone-200'}`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>New Arrivals Rail</span>
           </button>
           <button
             onClick={() => setActiveTab('banners')}
@@ -366,6 +380,174 @@ export const AdminMarketingView: React.FC = () => {
                         >
                           <Flame className="w-3 h-3" />
                           <span>{isDeal ? 'FEATURED IN DEALS' : '+ ADD TO DEALS'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEW ARRIVALS RAIL MANAGER */}
+      {activeTab === 'new_arrivals' && (
+        <div className="space-y-6">
+          {/* Main Controls Card */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-50 text-[#C0654B] flex items-center justify-center shrink-0">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold font-serif text-stone-900">New Arrivals & Fresh Drops Section Controls</h3>
+                  <p className="text-xs text-stone-500">
+                    Controls the "New Arrivals" section positioned directly below "Trending in Sarees & Ethnic" on homepage
+                  </p>
+                </div>
+              </div>
+
+              {/* Section Visibility Switch */}
+              <div className="flex items-center gap-3 bg-stone-50 px-4 py-2 rounded-xl border border-stone-200">
+                <span className="text-xs font-bold text-stone-700">Section Status:</span>
+                <button
+                  onClick={() => {
+                    const nextVal = settings.newArrivalsEnabled === false ? true : false;
+                    updateSettings({ newArrivalsEnabled: nextVal });
+                    showToast(nextVal ? 'New Arrivals section is now LIVE on homepage!' : 'New Arrivals section is hidden from homepage.');
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-extrabold cursor-pointer transition-colors ${
+                    settings.newArrivalsEnabled !== false ? 'bg-emerald-600 text-white' : 'bg-stone-300 text-stone-600'
+                  }`}
+                >
+                  {settings.newArrivalsEnabled !== false ? 'ACTIVE (LIVE)' : 'DISABLED (HIDDEN)'}
+                </button>
+              </div>
+            </div>
+
+            {/* Config Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Section Title</label>
+                <input
+                  type="text"
+                  value={naTitle}
+                  onChange={(e) => setNaTitle(e.target.value)}
+                  placeholder="New Arrivals & Fresh Drops"
+                  className="w-full border border-stone-300 rounded-lg p-2.5 focus:outline-none focus:border-[#C0654B]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Badge Tag</label>
+                <input
+                  type="text"
+                  value={naBadge}
+                  onChange={(e) => setNaBadge(e.target.value)}
+                  placeholder="JUST ARRIVED"
+                  className="w-full border border-stone-300 rounded-lg p-2.5 focus:outline-none focus:border-[#C0654B]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Section Subtitle</label>
+                <input
+                  type="text"
+                  value={naSubtitle}
+                  onChange={(e) => setNaSubtitle(e.target.value)}
+                  placeholder="Explore the latest ethnic wear & sarees"
+                  className="w-full border border-stone-300 rounded-lg p-2.5 focus:outline-none focus:border-[#C0654B]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Max Products Displayed</label>
+                <select
+                  value={naMaxItems}
+                  onChange={(e) => setNaMaxItems(Number(e.target.value))}
+                  className="w-full border border-stone-300 rounded-lg p-2.5 focus:outline-none focus:border-[#C0654B] bg-white font-bold"
+                >
+                  <option value={4}>4 Products</option>
+                  <option value={6}>6 Products</option>
+                  <option value={8}>8 Products</option>
+                  <option value={10}>10 Products</option>
+                  <option value={12}>12 Products</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => {
+                  updateSettings({
+                    newArrivalsTitle: naTitle,
+                    newArrivalsSubtitle: naSubtitle,
+                    newArrivalsBadge: naBadge,
+                    newArrivalsMaxItems: naMaxItems
+                  });
+                  showToast('New Arrivals section settings saved successfully!');
+                }}
+                className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-6 py-2.5 rounded-xl shadow-md text-xs cursor-pointer flex items-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>Save Section Settings</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Tagged Products Manager */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+              <div>
+                <h4 className="text-sm font-bold text-stone-900">Featured New Arrivals Catalog</h4>
+                <p className="text-xs text-stone-500">
+                  Tag products as "new_arrival" to feature them in this section. Currently tagged: {' '}
+                  <strong className="text-[#C0654B]">
+                    {products.filter(p => p.tags?.includes('new_arrival')).length} items
+                  </strong>
+                </p>
+              </div>
+
+              {/* Search Filter */}
+              <div className="relative w-full sm:w-64 text-xs">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-stone-400" />
+                <input
+                  type="text"
+                  value={naSearchQuery}
+                  onChange={(e) => setNaSearchQuery(e.target.value)}
+                  placeholder="Search products to tag..."
+                  className="w-full pl-8 pr-3 py-1.5 border border-stone-300 rounded-lg focus:outline-none focus:border-[#C0654B]"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-96 overflow-y-auto pr-1">
+              {products
+                .filter(p => !naSearchQuery || p.name.toLowerCase().includes(naSearchQuery.toLowerCase()) || p.brandName?.toLowerCase().includes(naSearchQuery.toLowerCase()))
+                .slice(0, 36)
+                .map(product => {
+                  const isNew = product.tags?.includes('new_arrival');
+                  return (
+                    <div key={product.id} className="border border-stone-200 rounded-xl p-2 bg-stone-50 flex flex-col justify-between">
+                      <img src={product.images[0]?.url} alt={product.name} className="w-full h-24 object-cover rounded-lg bg-white mb-2" />
+                      <div>
+                        <p className="text-[11px] font-bold text-stone-900 line-clamp-1">{product.name}</p>
+                        <p className="text-[10px] text-stone-500">₹{product.discountPrice || product.basePrice}</p>
+                        <button
+                          onClick={() => {
+                            const newTags = isNew
+                              ? product.tags.filter(t => t !== 'new_arrival')
+                              : [...product.tags, 'new_arrival' as any];
+                            setProducts(prev => prev.map(p => p.id === product.id ? { ...p, tags: newTags } : p));
+                            showToast(isNew ? `Removed "${product.name}" from New Arrivals` : `✨ Tagged "${product.name}" as New Arrival!`);
+                          }}
+                          className={`mt-1.5 w-full text-[10px] font-extrabold py-1 px-2 rounded cursor-pointer transition-colors flex items-center justify-center gap-1 ${
+                            isNew ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-stone-200 text-stone-700 hover:bg-stone-300'
+                          }`}
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>{isNew ? 'TAGGED NEW' : '+ TAG AS NEW'}</span>
                         </button>
                       </div>
                     </div>

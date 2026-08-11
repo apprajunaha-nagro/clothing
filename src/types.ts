@@ -266,6 +266,11 @@ export interface SiteSettings {
   dealsTimerMinutes?: number;
   dealsMinDiscount?: number;
   adBannerEnabled?: boolean;
+  newArrivalsEnabled?: boolean;
+  newArrivalsTitle?: string;
+  newArrivalsSubtitle?: string;
+  newArrivalsBadge?: string;
+  newArrivalsMaxItems?: number;
 }
 
 export interface FilterState {
