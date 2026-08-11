@@ -64,6 +64,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     if (success) {
       setLoginError(null);
       setPasswordInput('');
+      onNavigate('/admin');
     } else {
       setLoginError('Invalid administrator password.');
     }

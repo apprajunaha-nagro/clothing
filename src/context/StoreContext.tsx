@@ -302,10 +302,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.setItem('terra_user', JSON.stringify(newUser));
   };
   const [adminToken, setAdminToken] = useState<string | null>(() => {
-    return sessionStorage.getItem('pgmart_admin_token');
+    return localStorage.getItem('pgmart_admin_token') || sessionStorage.getItem('pgmart_admin_token');
   });
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
-    return Boolean(sessionStorage.getItem('pgmart_admin_token'));
+    return Boolean(localStorage.getItem('pgmart_admin_token') || sessionStorage.getItem('pgmart_admin_token'));
   });
 
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
@@ -494,6 +494,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (data.token) {
           setAdminToken(data.token);
           setIsAdminLoggedIn(true);
+          localStorage.setItem('pgmart_admin_token', data.token);
           sessionStorage.setItem('pgmart_admin_token', data.token);
           showToast('Logged in as Store Administrator');
           return true;
@@ -507,6 +508,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const fallbackToken = 'pgmart123';
       setAdminToken(fallbackToken);
       setIsAdminLoggedIn(true);
+      localStorage.setItem('pgmart_admin_token', fallbackToken);
       sessionStorage.setItem('pgmart_admin_token', fallbackToken);
       showToast('Logged in as Store Administrator');
       return true;
@@ -518,6 +520,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const adminLogout = () => {
     setAdminToken(null);
     setIsAdminLoggedIn(false);
+    localStorage.removeItem('pgmart_admin_token');
     sessionStorage.removeItem('pgmart_admin_token');
     showToast('Admin logged out');
   };

@@ -160,25 +160,41 @@ export const AdminProductsView: React.FC = () => {
     return getSubcategoriesForCategory(catId).find(s => s.id === subId)?.types || [];
   };
 
-  // Filtering products
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          (p.variants && p.variants.some(v => v.sku.toLowerCase().includes(searchQuery.toLowerCase())));
-    const matchesCat = filterCat ? p.categoryId === filterCat : true;
-    const matchesSub = filterSub ? p.subcategoryId === filterSub : true;
-    const matchesType = filterType ? p.typeId === filterType : true;
-    const matchesStatus = filterStatus ? p.status === filterStatus : true;
-    const matchesTag = filterTag ? p.tags.includes(filterTag as ProductTag) : true;
-    
-    // Stock levels
-    let matchesStock = true;
-    const totalStock = p.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
-    if (filterStock === 'instock') matchesStock = totalStock > 10;
-    else if (filterStock === 'lowstock') matchesStock = totalStock > 0 && totalStock <= 10;
-    else if (filterStock === 'out') matchesStock = totalStock === 0;
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
-    return matchesSearch && matchesCat && matchesSub && matchesType && matchesStatus && matchesStock && matchesTag;
-  });
+  // Memoized Filtering products for maximum performance
+  const filteredProducts = React.useMemo(() => {
+    return products.filter(p => {
+      const matchesSearch = !searchQuery || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            (p.variants && p.variants.some(v => v.sku.toLowerCase().includes(searchQuery.toLowerCase())));
+      const matchesCat = filterCat ? p.categoryId === filterCat : true;
+      const matchesSub = filterSub ? p.subcategoryId === filterSub : true;
+      const matchesType = filterType ? p.typeId === filterType : true;
+      const matchesStatus = filterStatus ? p.status === filterStatus : true;
+      const matchesTag = filterTag ? p.tags.includes(filterTag as ProductTag) : true;
+      
+      let matchesStock = true;
+      const totalStock = p.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
+      if (filterStock === 'instock') matchesStock = totalStock > 10;
+      else if (filterStock === 'lowstock') matchesStock = totalStock > 0 && totalStock <= 10;
+      else if (filterStock === 'out') matchesStock = totalStock === 0;
+
+      return matchesSearch && matchesCat && matchesSub && matchesType && matchesStatus && matchesStock && matchesTag;
+    });
+  }, [products, searchQuery, filterCat, filterSub, filterType, filterStatus, filterStock, filterTag]);
+
+  // Reset to page 1 when search or filter options change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterCat, filterSub, filterType, filterStatus, filterStock, filterTag]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE) || 1;
+  const pagedProducts = React.useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
 
   // Toggle selection
   const handleSelectProduct = (id: string) => {
@@ -769,14 +785,14 @@ export const AdminProductsView: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 font-semibold text-stone-700">
-                {filteredProducts.length === 0 ? (
+                {pagedProducts.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-12 text-center text-stone-400">
                       No products match your search criteria. Create a new one!
                     </td>
                   </tr>
                 ) : (
-                  filteredProducts.map(prod => {
+                  pagedProducts.map(prod => {
                     const totalStock = prod.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
                     const isSelected = selectedProductIds.includes(prod.id);
 
@@ -886,6 +902,32 @@ export const AdminProductsView: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* TABLE PAGINATION FOOTER */}
+          {totalPages > 1 && (
+            <div className="p-3 bg-stone-50 border-t border-stone-200 flex items-center justify-between text-xs font-semibold">
+              <span className="text-stone-500">
+                Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredProducts.length)} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} items
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 bg-white border border-stone-200 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed text-stone-700 font-bold rounded-lg cursor-pointer"
+                >
+                  PREV
+                </button>
+                <span className="px-2 font-mono text-stone-600">Page {currentPage} of {totalPages}</span>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 bg-white border border-stone-200 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed text-stone-700 font-bold rounded-lg cursor-pointer"
+                >
+                  NEXT
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
