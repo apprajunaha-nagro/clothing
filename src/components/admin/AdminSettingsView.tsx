@@ -30,12 +30,10 @@ export const AdminSettingsView: React.FC = () => {
   const [secondaryColor, setSecondaryColor] = useState(settings.secondaryDarkColor || '#2B2620');
   const [fontFamily, setFontFamily] = useState('Lora & Playfair Display');
 
-  // Shipping Zones state
+  // Shipping Zones state (Only Jharkhand and Rest of India)
   const [shippingZones, setShippingZones] = useState([
-    { id: 'z1', name: 'West Bengal (Local)', charge: 49, minOrder: 999, active: true },
-    { id: 'z2', name: 'Metros (Delhi, Mumbai, Bengaluru)', charge: 79, minOrder: 1499, active: true },
-    { id: 'z3', name: 'Rest of India', charge: 119, minOrder: 1999, active: true },
-    { id: 'z4', name: 'International Shipping', charge: 2499, minOrder: 15000, active: false },
+    { id: 'z1', name: 'Jharkhand (Local State Delivery)', charge: 49, minOrder: 999, active: true },
+    { id: 'z2', name: 'Rest of India', charge: 99, minOrder: 1499, active: true },
   ]);
 
   // Admin logins and roles states
