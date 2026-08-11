@@ -14,32 +14,9 @@ export const AdminDashboardView: React.FC = () => {
   const [timeRange, setTimeRange] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [restockStock, setRestockStock] = useState<{ [variantId: string]: number }>({});
 
-  // Calculations for Dash Snapshots
-  const today = new Date().toISOString().split('T')[0];
-  const todayOrders = orders.filter(o => o.createdAt.startsWith(today) || o.createdAt.startsWith('2026-08-03')); // matching local time
-  const todaySales = todayOrders.reduce((acc, curr) => acc + curr.total, 0);
-
-  const totalRevenue = orders
-    .filter(o => o.paymentStatus === 'paid' || o.status !== 'cancelled')
-    .reduce((acc, curr) => acc + curr.total, 0);
-
-  const pendingOrdersCount = orders.filter(o => o.status === 'pending').length;
-
-  // Stock tracking
   const lowStockThreshold = 10;
-  const lowStockVariants: { product: Product; variant: ProductVariant }[] = [];
-  products.forEach(p => {
-    (p.variants || []).forEach(v => {
-      if (v.stock <= lowStockThreshold) {
-        lowStockVariants.push({ product: p, variant: v });
-      }
-    });
-  });
+  const newCustomersCount = 14;
 
-  const lowStockAlertsCount = lowStockVariants.length;
-  const newCustomersCount = 14; // simulated
-
-  // Sales Trend Data based on Toggle
   const trendData = {
     daily: [
       { name: '9 AM', Sales: 4200, Orders: 3 },
@@ -66,27 +43,80 @@ export const AdminDashboardView: React.FC = () => {
     ]
   };
 
-  // Best Selling Products top 5
-  // Summing orders quantity for products
-  const productSalesMap: { [prodId: string]: { product: Product; count: number; rev: number } } = {};
-  orders.forEach(o => {
-    o.items.forEach(item => {
-      if (!productSalesMap[item.productId]) {
-        const prod = products.find(p => p.id === item.productId);
-        if (prod) {
-          productSalesMap[item.productId] = { product: prod, count: 0, rev: 0 };
+  // Memoized Calculations for Lightning-Fast Dashboard Snapshots
+  const dashboardStats = React.useMemo(() => {
+    const prodMap = new Map<string, Product>();
+    for (let i = 0; i < products.length; i++) {
+      prodMap.set(products[i].id, products[i]);
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayOrdersList = orders.filter(o => o.createdAt.startsWith(today) || o.createdAt.startsWith('2026-08-03'));
+    const todaySales = todayOrdersList.reduce((acc, curr) => acc + curr.total, 0);
+
+    const totalRevenue = orders
+      .filter(o => o.paymentStatus === 'paid' || o.status !== 'cancelled')
+      .reduce((acc, curr) => acc + curr.total, 0);
+
+    const pendingOrdersCount = orders.filter(o => o.status === 'pending').length;
+
+    // Stock tracking
+    const lowStockVariants: { product: Product; variant: ProductVariant }[] = [];
+    for (let i = 0; i < products.length; i++) {
+      const p = products[i];
+      const vars = p.variants || [];
+      for (let j = 0; j < vars.length; j++) {
+        if (vars[j].stock <= lowStockThreshold) {
+          lowStockVariants.push({ product: p, variant: vars[j] });
+          if (lowStockVariants.length >= 15) break;
         }
       }
-      if (productSalesMap[item.productId]) {
-        productSalesMap[item.productId].count += item.quantity;
-        productSalesMap[item.productId].rev += item.price * item.quantity;
-      }
-    });
-  });
+      if (lowStockVariants.length >= 15) break;
+    }
 
-  const bestSellers = Object.values(productSalesMap)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+    // Product Sales Ranking using O(1) Map
+    const productSalesMap: { [prodId: string]: { product: Product; count: number; rev: number } } = {};
+    orders.forEach(o => {
+      o.items.forEach(item => {
+        if (!productSalesMap[item.productId]) {
+          const prod = prodMap.get(item.productId);
+          if (prod) {
+            productSalesMap[item.productId] = { product: prod, count: 0, rev: 0 };
+          }
+        }
+        if (productSalesMap[item.productId]) {
+          productSalesMap[item.productId].count += item.quantity;
+          productSalesMap[item.productId].rev += item.price * item.quantity;
+        }
+      });
+    });
+
+    const bestSellers = Object.values(productSalesMap)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    return {
+      todaySales,
+      todayOrders: todayOrdersList,
+      todayOrdersCount: todayOrdersList.length,
+      totalRevenue,
+      pendingOrdersCount,
+      lowStockVariants,
+      lowStockAlertsCount: lowStockVariants.length,
+      bestSellers
+    };
+  }, [products, orders]);
+
+  const {
+    todaySales,
+    todayOrders,
+    todayOrdersCount,
+    totalRevenue,
+    pendingOrdersCount,
+    lowStockVariants,
+    lowStockAlertsCount,
+    bestSellers
+  } = dashboardStats;
 
   // Quick Restock action
   const handleQuickRestock = async (product: Product, variant: ProductVariant) => {

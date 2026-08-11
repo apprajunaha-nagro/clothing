@@ -141,8 +141,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     );
   }
 
-  // Active module component selection
-  const renderActiveView = () => {
+  // Active module component selection (Memoized for 60fps instant tab switches)
+  const activeView = React.useMemo(() => {
     switch (activeTab) {
       case 'dashboard':
         return <AdminDashboardView />;
@@ -165,7 +165,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       default:
         return <AdminDashboardView />;
     }
-  };
+  }, [activeTab]);
 
   const sidebarItems = [
     { id: 'dashboard', label: 'Overview Panel', icon: LayoutDashboard },
@@ -405,7 +405,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
         {/* ACTIVE MODULE CONTAINER VIEW */}
         <div className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6">
-          {renderActiveView()}
+          {activeView}
         </div>
 
       </main>

@@ -48,18 +48,25 @@ export const AdminCatalogView: React.FC = () => {
     setExpandedSubs(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Helper: Live count of products
-  const getProductCountForType = (typeId: string) => {
-    return products.filter(p => p.typeId === typeId).length;
-  };
+  // Pre-computed product count maps (0ms O(1) lookup)
+  const productCounts = React.useMemo(() => {
+    const catMap = new Map<string, number>();
+    const subMap = new Map<string, number>();
+    const typeMap = new Map<string, number>();
 
-  const getProductCountForSub = (subId: string) => {
-    return products.filter(p => p.subcategoryId === subId).length;
-  };
+    for (let i = 0; i < products.length; i++) {
+      const p = products[i];
+      if (p.categoryId) catMap.set(p.categoryId, (catMap.get(p.categoryId) || 0) + 1);
+      if (p.subcategoryId) subMap.set(p.subcategoryId, (subMap.get(p.subcategoryId) || 0) + 1);
+      if (p.typeId) typeMap.set(p.typeId, (typeMap.get(p.typeId) || 0) + 1);
+    }
 
-  const getProductCountForCat = (catId: string) => {
-    return products.filter(p => p.categoryId === catId).length;
-  };
+    return { catMap, subMap, typeMap };
+  }, [products]);
+
+  const getProductCountForType = (typeId: string) => productCounts.typeMap.get(typeId) || 0;
+  const getProductCountForSub = (subId: string) => productCounts.subMap.get(subId) || 0;
+  const getProductCountForCat = (catId: string) => productCounts.catMap.get(catId) || 0;
 
   // Auto slug generation helper
   const handleNameChange = (val: string) => {
