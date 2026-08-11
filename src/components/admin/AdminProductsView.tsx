@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { 
   Plus, Search, Edit3, Trash2, Copy, Eye, SlidersHorizontal, Check, X, 
@@ -102,13 +102,13 @@ export const AdminProductsView: React.FC = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach(file => {
+    (Array.from(files) as File[]).forEach((file: File) => {
       if (!file.type.startsWith('image/')) {
         showToast('Please select valid image files.');
         return;
       }
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = (event: ProgressEvent<FileReader>) => {
         if (event.target?.result) {
           const dataUrl = event.target.result as string;
           setProductImages(prev => [...prev, dataUrl]);
