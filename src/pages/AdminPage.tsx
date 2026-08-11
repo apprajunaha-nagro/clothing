@@ -176,7 +176,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     { id: 'analytics', label: 'Sales Intelligence', icon: BarChart3 },
     { id: 'reviews', label: 'Customer Reviews', icon: MessageSquare },
     { id: 'blog', label: 'Blog Manager', icon: BookOpen },
-    { id: 'settings', label: 'Global Settings', icon: SettingsIcon },
+    { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ] as const;
 
   const [mobileAdminMenuOpen, setMobileAdminMenuOpen] = useState(false);
