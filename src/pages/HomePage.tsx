@@ -116,10 +116,26 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             <motion.div
               key={currentHero.id || activeBannerIndex}
               custom={direction}
-              initial={(dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0.9 })}
-              animate={{ x: '0%', opacity: 1 }}
-              exit={(dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0.9 })}
-              transition={{ duration: 0.5, ease: [0.25, 1, 0.5, 1] }}
+              initial={(dir: number) => ({
+                x: dir > 0 ? '100%' : '-100%',
+                scale: 1.08,
+                opacity: 0.8
+              })}
+              animate={{
+                x: '0%',
+                scale: 1.0,
+                opacity: 1
+              }}
+              exit={(dir: number) => ({
+                x: dir > 0 ? '-100%' : '100%',
+                scale: 0.94,
+                opacity: 0.8
+              })}
+              transition={{
+                x: { type: 'spring', stiffness: 260, damping: 26 },
+                scale: { duration: 0.65, ease: [0.16, 1, 0.3, 1] },
+                opacity: { duration: 0.4 }
+              }}
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.2}
