@@ -300,8 +300,8 @@ export const AdminDashboardView: React.FC = () => {
             </span>
           </div>
 
-          <div className="overflow-x-auto border border-stone-200/60 rounded-xl">
-            <table className="w-full text-xs text-left">
+          <div className="overflow-x-auto border border-stone-200/60 rounded-xl touch-scroll">
+            <table className="w-full text-xs text-left min-w-[600px]">
               <thead className="bg-stone-50 text-stone-500 font-bold border-b border-stone-200">
                 <tr>
                   <th className="p-3">Order ID</th>

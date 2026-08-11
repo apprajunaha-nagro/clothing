@@ -482,6 +482,27 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
           </div>
         </section>
       )}
+
+      {/* STICKY MOBILE BOTTOM BUY BAR (Optimized for FHD+ smartphones e.g., Realme P4 Pro 393px-412px) */}
+      <div className="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-stone-200 p-2.5 z-40 lg:hidden flex items-center gap-2 shadow-2xl pb-safe">
+        <div className="flex-1 min-w-0">
+          <p className="text-[10px] text-stone-500 font-bold uppercase truncate">{product.name}</p>
+          <p className="text-sm font-extrabold text-stone-900">₹{effectivePrice.toLocaleString('en-IN')}</p>
+        </div>
+        <button
+          onClick={handleAddToCartWithImage}
+          className="bg-white text-[#C0654B] border-2 border-[#C0654B] font-extrabold px-3 py-2.5 rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+        >
+          <ShoppingCart className="w-4 h-4 text-[#C0654B]" />
+          <span>ADD</span>
+        </button>
+        <button
+          onClick={handleBuyNow}
+          className="bg-[#C0654B] hover:bg-[#a85239] text-white font-extrabold px-4 py-2.5 rounded-xl text-xs flex items-center gap-1 cursor-pointer shrink-0 shadow-md"
+        >
+          <span>BUY NOW</span>
+        </button>
+      </div>
     </div>
   );
 };
