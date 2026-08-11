@@ -65,14 +65,24 @@ export function adminAuth(req: express.Request, res: express.Response, next: exp
   next();
 }
 
+function safeJsonParse<T>(val: any, fallback: T): T {
+  if (!val) return fallback;
+  if (typeof val === 'object') return val as T;
+  try {
+    return JSON.parse(val) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 // Helper functions for formatting Prisma DB records to TypeScript interfaces
 function formatProduct(p: any): Product {
   return {
     ...p,
-    tags: typeof p.tags === 'string' ? JSON.parse(p.tags) : (p.tags || []),
-    variants: typeof p.variants === 'string' ? JSON.parse(p.variants) : (p.variants || []),
-    colors: typeof p.colors === 'string' ? JSON.parse(p.colors) : (p.colors || []),
-    availableSizes: typeof p.availableSizes === 'string' ? JSON.parse(p.availableSizes) : (p.availableSizes || []),
+    tags: safeJsonParse(p.tags, []),
+    variants: safeJsonParse(p.variants, []),
+    colors: safeJsonParse(p.colors, []),
+    availableSizes: safeJsonParse(p.availableSizes, []),
     created_at: p.created_at ? new Date(p.created_at).toISOString() : new Date().toISOString(),
   };
 }
@@ -80,8 +90,17 @@ function formatProduct(p: any): Product {
 function formatOrder(o: any): Order {
   return {
     ...o,
-    shippingAddress: typeof o.shippingAddress === 'string' ? JSON.parse(o.shippingAddress) : o.shippingAddress,
-    items: typeof o.items === 'string' ? JSON.parse(o.items) : (o.items || []),
+    shippingAddress: safeJsonParse(o.shippingAddress, {
+      id: 'addr-default',
+      fullName: o.customerName || 'Customer',
+      phone: o.customerPhone || '',
+      street: '',
+      city: '',
+      state: '',
+      pincode: '',
+      type: 'home'
+    }),
+    items: safeJsonParse(o.items, []),
     createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : new Date().toISOString(),
     updatedAt: o.updatedAt ? new Date(o.updatedAt).toISOString() : new Date().toISOString(),
   };
@@ -90,7 +109,7 @@ function formatOrder(o: any): Order {
 function formatReview(r: any): Review {
   return {
     ...r,
-    photos: typeof r.photos === 'string' ? JSON.parse(r.photos) : (r.photos || []),
+    photos: safeJsonParse(r.photos, []),
     createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : new Date().toISOString(),
   };
 }

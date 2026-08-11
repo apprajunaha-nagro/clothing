@@ -160,9 +160,9 @@ export const AdminDashboardView: React.FC = () => {
             </div>
           </div>
           <div>
-            <h3 className="text-xl font-bold font-mono text-stone-900">{todayOrders.length}</h3>
+            <h3 className="text-xl font-bold font-mono text-stone-900">{todayOrdersCount}</h3>
             <p className="text-[10px] text-stone-500 font-medium mt-0.5">
-              <span>Avg: ₹{(todaySales / (todayOrders.length || 1)).toFixed(0)}</span>
+              <span>Avg: ₹{(todaySales / (todayOrdersCount || 1)).toFixed(0)}</span>
             </p>
           </div>
         </div>
