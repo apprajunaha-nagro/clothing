@@ -81,20 +81,20 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
 
-            {/* BRAND LOGO (30% Increased Size) */}
+            {/* BRAND LOGO & TITLE */}
             <div
               onClick={() => onNavigate('/')}
-              className="flex items-center gap-2.5 cursor-pointer group shrink-0"
+              className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer group shrink-0 min-w-0"
             >
               <img
                 src="/src/assets/images/pgmart_logo_new.png"
                 alt="PGmart Logo"
                 referrerPolicy="no-referrer"
-                className="w-12 h-12 sm:w-[52px] sm:h-[52px] rounded-xl object-contain border border-stone-200/80 group-hover:scale-105 transition-all bg-white p-1 shadow-2xs"
+                className="w-9 h-9 sm:w-[52px] sm:h-[52px] rounded-xl object-contain border border-stone-200/80 group-hover:scale-105 transition-all bg-white p-1 shadow-2xs shrink-0"
               />
-              <div>
+              <div className="shrink-0">
                 <h1
-                  className="text-2xl sm:text-3xl font-black tracking-tight leading-tight flex items-center gap-1"
+                  className="text-xl sm:text-3xl font-black tracking-tight leading-tight flex items-center gap-1"
                   style={{
                     fontFamily: "'Playfair Display', Georgia, serif",
                     fontStyle: 'italic',
@@ -204,11 +204,11 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
             </div>
 
             {/* RIGHT ICON CLUSTER (Account, Wishlist, Cart) */}
-            <div className="flex items-center space-x-2 sm:space-x-4">
+            <div className="flex items-center space-x-1 sm:space-x-3 shrink-0">
               {/* Mobile Search Button */}
               <button
                 onClick={() => setSearchModalOpen(true)}
-                className="md:hidden p-2 text-stone-700 hover:text-[#C0654B] cursor-pointer"
+                className="md:hidden p-1.5 text-stone-700 hover:text-[#C0654B] cursor-pointer"
                 aria-label="Search"
               >
                 <Search className="w-5 h-5" />
@@ -217,7 +217,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               {/* User Account Dropdown Trigger */}
               <button
                 onClick={() => onNavigate('/account')}
-                className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-stone-100 transition-colors cursor-pointer text-stone-800"
+                className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded hover:bg-stone-100 transition-colors cursor-pointer text-stone-800"
                 aria-label="Account"
               >
                 <User className="w-5 h-5 text-stone-700" />
@@ -228,7 +228,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               {/* Wishlist */}
               <button
                 onClick={() => onNavigate('/wishlist')}
-                className="relative p-2 text-stone-700 hover:text-[#C0654B] transition-colors cursor-pointer group flex items-center gap-1"
+                className="relative p-1.5 text-stone-700 hover:text-[#C0654B] transition-colors cursor-pointer group flex items-center gap-1"
                 aria-label="Wishlist"
               >
                 <Heart className="w-5 h-5 group-hover:scale-105 transition-transform" />
@@ -243,7 +243,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               {/* Cart Drawer Button */}
               <button
                 onClick={() => setCartDrawerOpen(true)}
-                className="relative p-2 text-stone-700 hover:text-[#C0654B] transition-colors cursor-pointer group flex items-center gap-1"
+                className="relative p-1.5 text-stone-700 hover:text-[#C0654B] transition-colors cursor-pointer group flex items-center gap-1"
                 aria-label="Cart"
               >
                 <ShoppingCart className="w-5 h-5 group-hover:scale-105 transition-transform text-stone-800" />
