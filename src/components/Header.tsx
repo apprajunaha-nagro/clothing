@@ -84,20 +84,20 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
             {/* BRAND LOGO & TITLE */}
             <div
               onClick={() => onNavigate('/')}
-              className="flex items-center gap-1 sm:gap-2.5 cursor-pointer group shrink-0 min-w-0"
+              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group shrink-0 min-w-0"
             >
               <img
                 src="/src/assets/images/pgmart_logo_new.png"
                 alt="PGmart Logo"
                 referrerPolicy="no-referrer"
-                className="w-8 h-8 sm:w-[52px] sm:h-[52px] rounded-xl object-contain border border-stone-200/80 group-hover:scale-105 transition-all bg-white p-0.5 shadow-2xs shrink-0"
+                className="w-9 h-9 sm:w-[50px] sm:h-[50px] rounded-xl object-contain border border-stone-200/80 group-hover:scale-105 transition-all bg-white p-0.5 shadow-2xs shrink-0"
               />
-              <div className="shrink-0">
+              <div className="shrink-0 flex flex-col items-start leading-none">
                 <h1
-                  className="text-lg sm:text-3xl font-black tracking-tight leading-tight flex items-center gap-1"
+                  className="text-base sm:text-2xl lg:text-3xl font-black tracking-tight flex items-center gap-1"
                   style={{
-                    fontFamily: "'Playfair Display', Georgia, serif",
-                    fontStyle: 'italic',
+                    fontFamily: "'Plus Jakarta Sans', Inter, -apple-system, sans-serif",
+                    fontStyle: 'normal',
                     background: 'linear-gradient(135deg, #C0654B 0%, #D4884A 45%, #2B2620 100%)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
@@ -106,6 +106,9 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
                 >
                   <span>{settings.storeName}</span>
                 </h1>
+                <span className="text-[8px] sm:text-[10px] lg:text-[11px] font-extrabold text-stone-500 tracking-wider mt-0.5">
+                  (Pratap Garments)
+                </span>
               </div>
             </div>
 

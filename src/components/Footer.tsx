@@ -155,7 +155,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
               className="w-10 h-10 rounded-lg object-cover border border-stone-800 shadow-xs"
             />
             <div>
-              <h3 className="font-sans text-xl font-extrabold text-white tracking-wide">{settings.storeName}</h3>
+              <h3
+                className="text-lg font-black text-white tracking-tight"
+                style={{ fontFamily: "'Plus Jakarta Sans', Inter, sans-serif", fontStyle: 'normal' }}
+              >
+                {settings.storeName} <span className="text-xs text-stone-400 font-bold tracking-normal">(Pratap Garments)</span>
+              </h3>
               <p className="text-[10px] text-emerald-400 font-semibold tracking-wide uppercase">{settings.tagline}</p>
             </div>
           </div>
