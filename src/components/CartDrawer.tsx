@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { X, Trash2, Plus, Minus, ShoppingCart, ArrowRight, Tag, ShieldCheck, Truck } from 'lucide-react';
-import { getOptimizedImageUrl } from '../utils/imageOptimizer';
+import { getOptimizedImageUrl, getItemDisplayImage } from '../utils/imageOptimizer';
 import { AnimatePresence, motion } from 'motion/react';
 
 interface CartDrawerProps {
@@ -135,7 +135,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
             ) : (
               cart.map((item) => {
                 const price = item.variant.discountPrice || item.variant.price || item.product.discountPrice || item.product.basePrice;
-                const rawImage = item.variant.images?.[0] || item.product.colors?.[0]?.images?.[0] || 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=400&q=80';
+                const rawImage = getItemDisplayImage(item.product, item.selectedColor, item.variant);
                 const image = getOptimizedImageUrl(rawImage, { width: 200, quality: 75 });
 
                 return (

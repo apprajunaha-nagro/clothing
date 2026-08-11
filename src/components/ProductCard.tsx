@@ -66,12 +66,16 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
 
     // Add-to-cart with ✓ feedback animation
     const handleAddToCart = useCallback(() => {
-      addToCart(product, currentVariant, 1);
+      const variantWithImage: ProductVariant = {
+        ...currentVariant,
+        images: [primaryImage]
+      };
+      addToCart(product, variantWithImage, 1);
       if (!reducedMotion) {
         setAddedToCart(true);
         setTimeout(() => setAddedToCart(false), 1200);
       }
-    }, [addToCart, product, currentVariant, reducedMotion]);
+    }, [addToCart, product, currentVariant, primaryImage, reducedMotion]);
 
     // Wishlist with pulse animation
     const handleWishlistToggle = useCallback(

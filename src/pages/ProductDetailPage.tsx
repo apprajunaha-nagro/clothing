@@ -95,8 +95,16 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
     }
   };
 
+  const handleAddToCartWithImage = () => {
+    const selectedVariantWithImage: ProductVariant = {
+      ...currentVariant,
+      images: [activeImage, ...galleryImages]
+    };
+    addToCart(product, selectedVariantWithImage, quantity);
+  };
+
   const handleBuyNow = () => {
-    addToCart(product, currentVariant, quantity);
+    handleAddToCartWithImage();
     onNavigate('/checkout');
   };
 
@@ -277,7 +285,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
           {/* SIDE-BY-SIDE ACTION BUTTONS (Add to Cart outlined, Buy Now solid Rose Clay) */}
           <div className="grid grid-cols-2 gap-3 pt-2">
             <button
-              onClick={() => addToCart(product, currentVariant, quantity)}
+              onClick={handleAddToCartWithImage}
               className="bg-white hover:bg-stone-50 text-[#C0654B] border-2 border-[#C0654B] font-extrabold py-3 rounded text-xs sm:text-sm shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer uppercase transition-colors"
             >
               <ShoppingCart className="w-4 h-4 text-[#C0654B]" />

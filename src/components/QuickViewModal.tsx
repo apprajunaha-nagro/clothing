@@ -152,7 +152,9 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onNavigate }) =>
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  addToCart(quickViewProduct, variant, 1);
+                  const activeImg = currentColor?.images[0] || 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80';
+                  const variantWithImage = { ...variant, images: [activeImg] };
+                  addToCart(quickViewProduct, variantWithImage, 1);
                   setQuickViewProduct(null);
                 }}
                 className="flex-1 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-2 transition-colors cursor-pointer"

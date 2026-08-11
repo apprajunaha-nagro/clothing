@@ -92,7 +92,15 @@ export const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({ on
             <tbody>
               {order.items.map((item) => (
                 <tr key={item.id} className="border border-stone-200">
-                  <td className="p-3 font-semibold text-stone-900">{item.productName}</td>
+                  <td className="p-3 font-semibold text-stone-900 flex items-center gap-3">
+                    {item.productImage && (
+                      <img src={item.productImage} alt={item.productName} className="w-12 h-14 object-cover rounded border border-stone-200 shrink-0" />
+                    )}
+                    <div>
+                      <p className="font-bold text-stone-900">{item.productName}</p>
+                      <p className="text-[10px] text-stone-400 font-mono">SKU: {item.variantId}</p>
+                    </div>
+                  </td>
                   <td className="p-3 text-stone-600">{item.size} / {item.color}</td>
                   <td className="p-3 text-center">{item.quantity}</td>
                   <td className="p-3 text-right">₹{item.price.toLocaleString('en-IN')}</td>

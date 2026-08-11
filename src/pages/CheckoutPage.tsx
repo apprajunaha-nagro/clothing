@@ -3,6 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { Order, PaymentMethod, Address } from '../types';
 import { ShieldCheck, Lock, Truck, CreditCard, CheckCircle2, ArrowRight } from 'lucide-react';
 import { PincodeField } from '../components/PincodeField';
+import { getItemDisplayImage } from '../utils/imageOptimizer';
 
 interface CheckoutPageProps {
   onNavigate: (path: string) => void;
@@ -62,7 +63,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
       productId: item.product.id,
       variantId: item.variant.id,
       productName: item.product.name,
-      productImage: item.variant.images[0] || item.product.colors[0]?.images[0] || '',
+      productImage: getItemDisplayImage(item.product, item.selectedColor, item.variant),
       size: item.selectedSize,
       color: item.selectedColor,
       price: item.variant.discountPrice || item.variant.price || item.product.discountPrice || item.product.basePrice,
@@ -305,7 +306,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
           <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
             {cart.map((item) => {
               const price = item.variant.discountPrice || item.variant.price || item.product.discountPrice || item.product.basePrice;
-              const img = item.variant.images[0] || item.product.colors[0]?.images[0] || '';
+              const img = getItemDisplayImage(item.product, item.selectedColor, item.variant);
               return (
                 <div key={item.id} className="flex gap-2.5">
                   <img src={img} alt={item.product.name} className="w-12 h-14 object-contain rounded bg-stone-50 shrink-0" />
