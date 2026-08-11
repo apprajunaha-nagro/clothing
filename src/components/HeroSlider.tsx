@@ -96,22 +96,24 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
     >
       {/* CLS PREVENTION CONTAINER: Reserved aspect ratio height */}
       <div className="relative w-full h-[360px] xs:h-[420px] sm:h-[480px] md:h-[540px] lg:h-[600px] xl:h-[640px] md:aspect-[21/9]">
-        <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+        <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={currentSlide.id || activeSlideIndex}
-            custom={direction}
-            initial={(dir: number) => reducedMotion ? { opacity: 0 } : {
-              x: dir > 0 ? '100%' : '-100%',
+            initial={reducedMotion ? { opacity: 0 } : {
+              opacity: 0,
+              scale: 1.06,
             }}
-            animate={{
-              x: '0%',
+            animate={reducedMotion ? { opacity: 1 } : {
               opacity: 1,
+              scale: 1.0,
             }}
-            exit={(dir: number) => reducedMotion ? { opacity: 0 } : {
-              x: dir > 0 ? '-100%' : '100%',
+            exit={reducedMotion ? { opacity: 0 } : {
+              opacity: 0,
+              scale: 0.98,
             }}
-            transition={reducedMotion ? { duration: 0.25 } : {
-              x: { duration: 0.5, ease: [0.32, 0.72, 0, 1] },
+            transition={reducedMotion ? { duration: 0.3 } : {
+              opacity: { duration: 0.7, ease: [0.25, 1, 0.5, 1] },
+              scale: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
             }}
             drag={reducedMotion ? false : "x"}
             dragConstraints={{ left: 0, right: 0 }}
