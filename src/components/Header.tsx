@@ -72,43 +72,46 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
       <div className="bg-white border-b border-stone-200 shadow-xs">
         <div className="max-w-7xl mx-auto px-1.5 sm:px-3 lg:px-4">
           <div className="flex items-center justify-between h-15 sm:h-20 gap-1.5 sm:gap-4">
-            {/* Mobile menu toggle */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden min-w-[36px] min-h-[36px] flex items-center justify-center text-stone-700 hover:text-[#C0654B] cursor-pointer shrink-0"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
+            {/* LEFT BRAND & NAVBAR CONTAINER (Logo & Name positioned right beside navbar/toggle) */}
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
+              {/* Mobile menu toggle */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden min-w-[36px] min-h-[36px] flex items-center justify-center text-stone-700 hover:text-[#C0654B] cursor-pointer shrink-0"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
 
-            {/* BRAND LOGO & TITLE */}
-            <div
-              onClick={() => onNavigate('/')}
-              className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group shrink-0 min-w-0"
-            >
-              <img
-                src="/src/assets/images/pgmart_logo_new.png"
-                alt="PGmart Logo"
-                referrerPolicy="no-referrer"
-                className="w-9 h-9 sm:w-[50px] sm:h-[50px] rounded-xl object-contain border border-stone-200/80 group-hover:scale-105 transition-all bg-white p-0.5 shadow-2xs shrink-0"
-              />
-              <div className="shrink-0 flex flex-col items-start leading-none">
-                <h1
-                  className="text-base sm:text-2xl lg:text-3xl font-black tracking-tight flex items-center gap-1"
-                  style={{
-                    fontFamily: "'Plus Jakarta Sans', Inter, -apple-system, sans-serif",
-                    fontStyle: 'normal',
-                    background: 'linear-gradient(135deg, #C0654B 0%, #D4884A 45%, #2B2620 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
-                >
-                  <span>{settings.storeName}</span>
-                </h1>
-                <span className="text-[8px] sm:text-[10px] lg:text-[11px] font-extrabold text-stone-500 tracking-wider mt-0.5">
-                  (Pratap Garments)
-                </span>
+              {/* BRAND LOGO & TITLE */}
+              <div
+                onClick={() => onNavigate('/')}
+                className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group shrink-0 min-w-0"
+              >
+                <img
+                  src="/src/assets/images/pgmart_logo_new.png"
+                  alt="PGmart Logo"
+                  referrerPolicy="no-referrer"
+                  className="w-9 h-9 sm:w-[48px] sm:h-[48px] rounded-xl object-contain border border-stone-200/80 group-hover:scale-105 transition-all bg-white p-0.5 shadow-2xs shrink-0"
+                />
+                <div className="shrink-0 flex flex-col items-start leading-none">
+                  <h1
+                    className="text-base sm:text-2xl lg:text-3xl font-black tracking-tight flex items-center gap-1"
+                    style={{
+                      fontFamily: "'Plus Jakarta Sans', Inter, -apple-system, sans-serif",
+                      fontStyle: 'normal',
+                      background: 'linear-gradient(135deg, #C0654B 0%, #D4884A 45%, #2B2620 100%)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }}
+                  >
+                    <span>{settings.storeName}</span>
+                  </h1>
+                  <span className="text-[8px] sm:text-[10px] lg:text-[11px] font-extrabold text-stone-500 tracking-wider mt-0.5">
+                    (Pratap Garments)
+                  </span>
+                </div>
               </div>
             </div>
 
