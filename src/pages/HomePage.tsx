@@ -330,31 +330,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* 4 SUBSECTIONS: Women's, Men's, Kids', Innerwear */}
+          {/* 4 SUBSECTIONS: Women's, Men's, Kids', Innerwear (Minimum 12 Products Each) */}
           {[
             { id: 'women', title: "Women's Fashion", subtitle: 'Sarees, Kurtas, Western Dresses & Ethnic Accessories', slug: 'women' },
             { id: 'men', title: "Men's Fashion", subtitle: 'Formal Shirts, Executive Blazers & Festival Kurta Sets', slug: 'men' },
             { id: 'kids', title: "Kids' Fashion", subtitle: 'Infant Wear, Girls Festive Frocks & Boys Outfits', slug: 'kids' },
             { id: 'undergarments', title: 'Innerwear & Lingerie', subtitle: 'Breathable Cotton Bras, Trunks, Briefs & Luxe Loungewear', slug: 'undergarments' },
           ].map((sub) => {
-            const catProds = products.filter(p => p.categoryId === sub.id);
-            // Group by subcategory to ensure diverse styles are represented
-            const styleMap = new Map<string, Product[]>();
-            catProds.forEach(p => {
-              const key = p.subcategoryId || p.typeId || 'general';
-              if (!styleMap.has(key)) styleMap.set(key, []);
-              styleMap.get(key)!.push(p);
-            });
+            const catProds = products.filter(p => p.categoryId === sub.id || (p.subcategoryId && p.subcategoryId.includes(sub.id)));
+            const picked: Product[] = [...catProds];
 
-            const picked: Product[] = [];
-            styleMap.forEach(prods => {
-              if (prods.length > 0) picked.push(prods[0]);
-            });
-            for (const p of catProds) {
-              if (picked.length >= 6) break;
-              if (!picked.some(item => item.id === p.id)) picked.push(p);
+            // If category has fewer than 12 products, backfill with general catalog items so minimum 12 items are guaranteed
+            if (picked.length < 12) {
+              const pickedIds = new Set(picked.map(p => p.id));
+              const remaining = products.filter(p => !pickedIds.has(p.id));
+              picked.push(...remaining);
             }
-            const displayItems = picked.length >= 6 ? picked.slice(0, 6) : (catProds.length >= 6 ? catProds.slice(0, 6) : (picked.length > 0 ? picked : catProds));
+
+            const displayItems = picked.slice(0, 12);
 
             return (
               <div key={sub.id} className="space-y-3 pt-4 first:pt-0 border-t border-stone-200/70 first:border-0">
@@ -371,7 +364,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                   {displayItems.map((product) => (
                     <ProductCard
                       key={product.id}
