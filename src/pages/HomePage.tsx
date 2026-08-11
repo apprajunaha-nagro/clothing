@@ -70,6 +70,30 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     }
   };
 
+  // 20 Featured Clothing Brands (Round Images, 360 Continuous Scrolling)
+  const featured20Brands = React.useMemo(() => [
+    { id: 'b1', name: 'Manyavar', img: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b2', name: 'Biba', img: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b3', name: 'W for Woman', img: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b4', name: 'FabIndia', img: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b5', name: 'Aurelia', img: 'https://images.unsplash.com/photo-1583391733975-01e4a5d84175?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b6', name: 'Allen Solly', img: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b7', name: 'Van Heusen', img: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b8', name: 'Raymond', img: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b9', name: 'Peter England', img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b10', name: 'Blackberrys', img: 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b11', name: 'Mufti', img: 'https://images.unsplash.com/photo-1542272604-780c36856842?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b12', name: 'Monte Carlo', img: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b13', name: "Levi's", img: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b14', name: 'U.S. Polo Assn.', img: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b15', name: 'Pepe Jeans', img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b16', name: "Neeru's", img: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b17', name: 'Craftsvilla', img: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b18', name: 'Mohey', img: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b19', name: 'Sabhyata', img: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=200&h=200&q=80' },
+    { id: 'b20', name: 'Jockey', img: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=200&h=200&q=80' },
+  ], []);
+
   // Specific Product Rails (Guaranteed Minimum 20 Products Each)
   const dealsOfTheDay = React.useMemo(() => {
     const tagged = products.filter(p => p.isDealOfTheDay || (Array.isArray(p.tags) && p.tags.includes('deal_of_the_day')));
@@ -256,6 +280,55 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               {trendingSarees.map((prod) => (
                 <div key={prod.id} className="w-[170px] sm:w-[210px] shrink-0">
                   <ProductCard product={prod} onNavigate={onNavigate} hideBadges={true} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5.3 20 FEATURED CLOTHING BRANDS MARQUEE (JUST ABOVE NEW ARRIVALS) */}
+      <section className="max-w-7xl mx-auto px-2 sm:px-6">
+        <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="bg-[#C0654B] text-white text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase">
+                OFFICIAL BRANDS
+              </span>
+              <h2 className="text-base sm:text-lg font-extrabold uppercase tracking-tight text-stone-900 flex items-center gap-2">
+                <Award className="w-5 h-5 text-[#C0654B]" />
+                <span>Featured Clothing Brands</span>
+              </h2>
+            </div>
+            <span className="text-xs text-stone-500 font-medium hidden sm:inline-block">
+              20 Premier Brands • 100% Authentic Storefront
+            </span>
+          </div>
+
+          {/* INFINITE 360 DEGREE CONTINUOUS MARQUEE (RIGHT TO LEFT) */}
+          <div className="overflow-hidden w-full relative py-1">
+            {/* Fade overlays on left/right edges for smooth 360 aesthetic */}
+            <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+
+            <div className="flex gap-6 sm:gap-8 animate-marquee w-max py-2">
+              {[...featured20Brands, ...featured20Brands].map((brand, idx) => (
+                <div
+                  key={`${brand.id}-${idx}`}
+                  onClick={() => onNavigate(`/category/all?brand=${encodeURIComponent(brand.name)}`)}
+                  className="flex flex-col items-center justify-center group cursor-pointer shrink-0 select-none"
+                >
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 bg-gradient-to-tr from-[#C0654B] via-amber-400 to-[#8B3E2F] shadow-xs group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
+                    <img
+                      src={brand.img}
+                      alt={brand.name}
+                      className="w-full h-full rounded-full object-cover border-2 border-white bg-stone-100"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span className="text-[11px] sm:text-xs font-extrabold text-stone-800 group-hover:text-[#C0654B] truncate max-w-[95px] text-center mt-2 transition-colors">
+                    {brand.name}
+                  </span>
                 </div>
               ))}
             </div>
