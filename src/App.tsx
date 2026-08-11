@@ -144,7 +144,7 @@ function AppContent() {
   const isAdminRoute = currentPath.startsWith('/admin');
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden relative bg-[#FAF7F5] text-stone-900 flex flex-col font-sans selection:bg-[#C0654B] selection:text-white">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden relative bg-[#FAF7F5] text-stone-900 flex flex-col font-sans selection:bg-[#C0654B] selection:text-white pt-20">
       {!isAdminRoute && <Header onNavigate={navigateTo} currentPath={currentPath} />}
 
       <main className="flex-1">

@@ -67,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
     : [];
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-stone-200">
+    <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-stone-200 shadow-sm">
       {/* 2. MAIN HEADER BAR (Flipkart Two-Tier Pattern) */}
       <div className="bg-white border-b border-stone-200 shadow-xs">
         <div className="max-w-7xl mx-auto px-1.5 sm:px-3 lg:px-4">
