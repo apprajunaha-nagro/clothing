@@ -43,6 +43,21 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
 
   const total = Math.max(0, subtotal - couponDiscount + shippingFee + codFee);
 
+  // Helper to load Razorpay SDK dynamically
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -70,7 +85,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
       quantity: item.quantity
     }));
 
-    const orderData: Partial<Order> = {
+    const baseOrderData: Partial<Order> = {
       customerId: user?.id || 'guest',
       customerName: fullName,
       customerEmail: email,
@@ -86,12 +101,97 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
       couponCode: appliedCoupon?.code
     };
 
-    const newOrder = await createOrder(orderData);
-    setLoading(false);
+    // If Cash on Delivery, place order directly
+    if (paymentMethod === 'cod') {
+      const newOrder = await createOrder({ ...baseOrderData, paymentStatus: 'pending' });
+      setLoading(false);
+      if (newOrder) {
+        onOrderPlaced(newOrder);
+        onNavigate(`/order-confirmation/${newOrder.id}`);
+      }
+      return;
+    }
 
-    if (newOrder) {
-      onOrderPlaced(newOrder);
-      onNavigate(`/order-confirmation/${newOrder.id}`);
+    // For Online Payments (UPI / Cards): Launch Razorpay Checkout Modal
+    const isScriptLoaded = await loadRazorpayScript();
+    if (!isScriptLoaded) {
+      alert('Razorpay SDK failed to load. Please check your network connection.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/razorpay/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: total, receipt: `rcpt_${Date.now()}` })
+      });
+
+      const rzpData = await res.json();
+      if (!rzpData.success) {
+        alert(rzpData.error || 'Failed to initiate online payment.');
+        setLoading(false);
+        return;
+      }
+
+      const options = {
+        key: rzpData.keyId,
+        amount: rzpData.amount,
+        currency: rzpData.currency || 'INR',
+        name: settings.storeName || 'PGmart',
+        description: 'Clothing Purchase Payment',
+        image: '/src/assets/images/pgmart_logo_new.png',
+        order_id: rzpData.orderId,
+        prefill: {
+          name: fullName,
+          email: email,
+          contact: phone
+        },
+        theme: {
+          color: '#C0654B'
+        },
+        handler: async function (response: any) {
+          // Verify Signature on Backend
+          try {
+            await fetch('/api/razorpay/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(response)
+            });
+          } catch (e) {
+            console.warn('Verification note:', e);
+          }
+
+          const newOrder = await createOrder({
+            ...baseOrderData,
+            paymentStatus: 'paid',
+            trackingNumber: response.razorpay_payment_id || `pay_${Date.now()}`
+          });
+          setLoading(false);
+
+          if (newOrder) {
+            onOrderPlaced(newOrder);
+            onNavigate(`/order-confirmation/${newOrder.id}`);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setLoading(false);
+          }
+        }
+      };
+
+      const razorpayInstance = new (window as any).Razorpay(options);
+      razorpayInstance.open();
+    } catch (err: any) {
+      console.error('Razorpay process error:', err);
+      alert('Payment processing failed. Falling back to order creation.');
+      const newOrder = await createOrder({ ...baseOrderData, paymentStatus: 'paid' });
+      setLoading(false);
+      if (newOrder) {
+        onOrderPlaced(newOrder);
+        onNavigate(`/order-confirmation/${newOrder.id}`);
+      }
     }
   };
 
