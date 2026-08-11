@@ -67,13 +67,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
         onClick={() => setCartDrawerOpen(false)}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+      <div className="fixed inset-y-0 right-0 max-w-full flex sm:pl-10 z-50">
         <motion.div
           initial={{ x: '100%' }}
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'tween', duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="w-screen max-w-md bg-white shadow-2xl flex flex-col">
+          className="w-full max-w-md bg-white shadow-2xl flex flex-col">
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-stone-200 flex items-center justify-between bg-stone-50">
             <div className="flex items-center gap-2">
