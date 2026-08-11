@@ -177,7 +177,7 @@ export const AdminMarketingView: React.FC = () => {
         </div>
 
         {/* Tab Controls */}
-        <div className="flex bg-stone-800 p-1 rounded-xl text-xs font-semibold">
+        <div className="flex bg-stone-800 p-1 rounded-xl text-xs font-semibold overflow-x-auto no-scrollbar max-w-full">
           <button
             onClick={() => setActiveTab('deals')}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === 'deals' ? 'bg-[#C0654B] text-white font-bold' : 'text-stone-400 hover:text-stone-200'}`}

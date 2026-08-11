@@ -222,7 +222,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             <label className="text-xs font-bold text-stone-800">
               Color: <span className="text-[#C0654B]">{currentColor?.name}</span>
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {(product.colors || []).map((c, idx) => (
                 <button
                   key={c.name}
@@ -230,12 +230,16 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
                     setColorIndex(idx);
                     setActiveImageIndex(0);
                   }}
-                  style={{ backgroundColor: c.hex }}
-                  className={`w-7 h-7 rounded-full border cursor-pointer transition-all ${
-                    colorIndex === idx ? 'border-[#C0654B] ring-2 ring-[#C0654B] ring-offset-1 scale-105' : 'border-stone-300'
-                  }`}
+                  className="min-w-[44px] min-h-[44px] p-1.5 flex items-center justify-center rounded-full cursor-pointer"
                   title={c.name}
-                />
+                >
+                  <span
+                    style={{ backgroundColor: c.hex }}
+                    className={`w-7 h-7 rounded-full border transition-all block ${
+                      colorIndex === idx ? 'border-[#C0654B] ring-2 ring-[#C0654B] ring-offset-1 scale-105' : 'border-stone-300'
+                    }`}
+                  />
+                </button>
               ))}
             </div>
           </div>
@@ -246,9 +250,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
               <label className="text-xs font-bold text-stone-800">Select Size</label>
               <button
                 onClick={() => setSizeChartCategory(product.categoryId)}
-                className="text-xs font-bold text-[#C0654B] hover:underline flex items-center gap-1 cursor-pointer"
+                className="text-xs font-bold text-[#C0654B] hover:underline flex items-center gap-1 cursor-pointer min-h-[44px] px-2"
               >
-                <Ruler className="w-3 h-3" />
+                <Ruler className="w-3.5 h-3.5" />
                 <span>Size Chart</span>
               </button>
             </div>
@@ -258,7 +262,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
-                  className={`text-xs px-3 py-1.5 rounded border font-bold cursor-pointer transition-all ${
+                  className={`min-w-[44px] min-h-[44px] text-xs px-3.5 py-2 rounded border font-bold cursor-pointer flex items-center justify-center transition-all ${
                     selectedSize === size
                       ? 'border-[#C0654B] bg-[#C0654B]/10 text-[#C0654B]'
                       : 'border-stone-300 text-stone-700 hover:border-stone-500'

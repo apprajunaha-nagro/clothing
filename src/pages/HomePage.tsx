@@ -134,14 +134,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           {/* Left / Right Navigation Arrows */}
           <button
             onClick={(e) => { e.stopPropagation(); handlePrevSlide(); }}
-            className="absolute top-1/2 left-2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-stone-800 p-2 rounded-r shadow-md cursor-pointer transition-transform hover:scale-110"
+            className="absolute top-1/2 left-2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-stone-800 min-w-[44px] min-h-[44px] p-2.5 rounded-r shadow-md cursor-pointer flex items-center justify-center transition-transform hover:scale-110"
             aria-label="Previous Banner"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); handleNextSlide(); }}
-            className="absolute top-1/2 right-2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-stone-800 p-2 rounded-l shadow-md cursor-pointer transition-transform hover:scale-110"
+            className="absolute top-1/2 right-2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-stone-800 min-w-[44px] min-h-[44px] p-2.5 rounded-l shadow-md cursor-pointer flex items-center justify-center transition-transform hover:scale-110"
             aria-label="Next Banner"
           >
             <ChevronRight className="w-5 h-5" />

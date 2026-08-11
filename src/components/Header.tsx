@@ -31,6 +31,11 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
 
+  // Auto-close mobile navigation drawer on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [currentPath]);
+
   // Keyboard shortcut listener (Cmd+K / Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

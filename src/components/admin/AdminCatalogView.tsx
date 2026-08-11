@@ -626,7 +626,7 @@ export const AdminCatalogView: React.FC = () => {
       {/* CREATE/EDIT MODAL */}
       {activeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-stone-200 p-6 space-y-4 animate-scale-in text-left">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200 p-4 sm:p-6 space-y-4 animate-scale-in text-left">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <h3 className="text-base font-bold font-serif text-stone-900">
                 {editTarget ? 'Edit' : 'Create New'} {activeModal === 'subcategory' ? 'Subcategory' : 'Style/Type'}
@@ -637,7 +637,7 @@ export const AdminCatalogView: React.FC = () => {
             </div>
 
             <form onSubmit={activeModal === 'subcategory' ? handleSaveSubcategory : handleSaveType} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">Name (Required)</label>
                   <input

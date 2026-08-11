@@ -351,7 +351,7 @@ export const AdminOrdersView: React.FC = () => {
       {/* FULFILLMENT SLIDE-OUT / MODAL */}
       {activeOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-stone-200 p-6 space-y-5 animate-scale-in text-left">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200 p-4 sm:p-6 space-y-5 animate-scale-in text-left">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div>
                 <span className="text-[10px] font-bold text-stone-400 font-mono">Invoice reference #{activeOrder.orderNumber}</span>
@@ -634,7 +634,7 @@ export const AdminOrdersView: React.FC = () => {
       {/* MANUAL ORDER PLACEMENT MODAL */}
       {isManualOrderOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-stone-200 p-6 space-y-4 animate-scale-in text-left">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200 p-4 sm:p-6 space-y-4 animate-scale-in text-left">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <h3 className="text-base font-bold font-serif text-stone-900">Manual Orders Creator</h3>
               <button onClick={() => setIsManualOrderOpen(false)} className="text-stone-400 hover:text-stone-700">✕</button>
@@ -642,7 +642,7 @@ export const AdminOrdersView: React.FC = () => {
 
             <form onSubmit={handleSaveManualOrder} className="space-y-4 text-xs font-medium">
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">Customer Full Name (Required)</label>
                   <input
