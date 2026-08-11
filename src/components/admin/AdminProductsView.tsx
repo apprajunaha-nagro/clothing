@@ -7,7 +7,7 @@ import {
 import { Product, ProductVariant, ColorVariant, ProductTag, Category } from '../../types';
 
 export const AdminProductsView: React.FC = () => {
-  const { products, setProducts, categories, settings, showToast } = useStore();
+  const { products, setProducts, categories, settings, showToast, createProduct, updateProduct } = useStore();
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -412,9 +412,24 @@ export const AdminProductsView: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  const handleSaveProductForm = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pName.trim()) return;
+  const handleSaveProductForm = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    
+    if (!pName.trim()) {
+      showToast('Please provide a Product Title in Step 2.');
+      setFormStep(2);
+      return;
+    }
+    if (!pSubcategoryId) {
+      showToast('Please select a Subcategory in Step 1.');
+      setFormStep(1);
+      return;
+    }
+    if (!pTypeId) {
+      showToast('Please select a Style Type in Step 1.');
+      setFormStep(1);
+      return;
+    }
 
     const savedColors: ColorVariant[] = selectedColors.map(c => ({
       name: c.name,
@@ -449,6 +464,7 @@ export const AdminProductsView: React.FC = () => {
       };
 
       setProducts(prev => prev.map(p => p.id === editProduct.id ? updated : p));
+      updateProduct(editProduct.id, updated);
       showToast(`Product "${pName}" updated successfully.`);
     } else {
       // Create new save
@@ -479,7 +495,8 @@ export const AdminProductsView: React.FC = () => {
       };
 
       setProducts(prev => [newProd, ...prev]);
-      showToast(`New Product "${pName}" successfully created and placed.`);
+      createProduct(newProd);
+      showToast(`New Product "${pName}" successfully created and placed live.`);
     }
 
     setIsFormOpen(false);
@@ -1619,8 +1636,9 @@ export const AdminProductsView: React.FC = () => {
                   </button>
                 ) : (
                   <button
-                    type="submit"
-                    className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl cursor-pointer shadow-md flex items-center gap-1.5"
+                    type="button"
+                    onClick={() => handleSaveProductForm()}
+                    className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl cursor-pointer shadow-md flex items-center gap-1.5 transition-colors"
                   >
                     <Check className="w-4 h-4" /> Confirm & Place Live
                   </button>
