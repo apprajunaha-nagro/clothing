@@ -168,13 +168,13 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   }, [activeTab]);
 
   const sidebarItems = [
-    { id: 'dashboard', label: 'Overview Panel', icon: LayoutDashboard },
-    { id: 'catalog', label: 'Category Hierarchy', icon: FolderTree },
-    { id: 'products', label: 'Products & Styles', icon: Shirt },
-    { id: 'orders', label: 'Fulfillment & Orders', icon: ShoppingCart },
-    { id: 'marketing', label: 'Marketing Suite', icon: Megaphone },
+    { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
+    { id: 'catalog', label: 'Category', icon: FolderTree },
+    { id: 'products', label: 'Product / Add Product', icon: Shirt },
+    { id: 'orders', label: 'Orders', icon: ShoppingCart },
+    { id: 'marketing', label: 'Marketing and Promotion', icon: Megaphone },
     { id: 'analytics', label: 'Sales Intelligence', icon: BarChart3 },
-    { id: 'reviews', label: 'Review Moderation', icon: MessageSquare },
+    { id: 'reviews', label: 'Customer Reviews', icon: MessageSquare },
     { id: 'blog', label: 'Blog Manager', icon: BookOpen },
     { id: 'settings', label: 'Global Settings', icon: SettingsIcon },
   ] as const;
