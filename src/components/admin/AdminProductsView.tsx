@@ -5,6 +5,7 @@ import {
   ArrowLeft, ArrowRight, Download, Upload, RefreshCw, Archive, Sparkles, Image as ImageIcon
 } from 'lucide-react';
 import { Product, ProductVariant, ColorVariant, ProductTag, Category } from '../../types';
+import * as XLSX from 'xlsx';
 
 export const AdminProductsView: React.FC = () => {
   const { products, setProducts, categories, settings, showToast, createProduct, updateProduct } = useStore();
@@ -547,19 +548,87 @@ export const AdminProductsView: React.FC = () => {
     showToast("Sample CSV template downloaded!");
   };
 
-  // UPLOAD CSV FILE FROM DEVICE
-  const handleCSVFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // DOWNLOAD SAMPLE EXCEL (.XLSX) TEMPLATE
+  const handleDownloadSampleExcel = () => {
+    const sampleData = [
+      {
+        "Name": "Banarasi Zari Silk Saree",
+        "CategoryId": "women",
+        "SubcategoryId": "women-ethnic",
+        "TypeId": "saree",
+        "BasePrice": 4999,
+        "DiscountPrice": 3999,
+        "SKU": "BZS-RED-01",
+        "Stock": 50,
+        "Fabric": "Banarasi Silk",
+        "Occasion": "Bridal"
+      },
+      {
+        "Name": "Designer Anarkali Kurta Set",
+        "CategoryId": "women",
+        "SubcategoryId": "women-ethnic",
+        "TypeId": "anarkali-suits",
+        "BasePrice": 2999,
+        "DiscountPrice": 2299,
+        "SKU": "AKS-BLU-02",
+        "Stock": 35,
+        "Fabric": "Georgette",
+        "Occasion": "Festival"
+      },
+      {
+        "Name": "Royal Heritage Sherwani Set",
+        "CategoryId": "men",
+        "SubcategoryId": "men-executive",
+        "TypeId": "sherwani",
+        "BasePrice": 8999,
+        "DiscountPrice": 7499,
+        "SKU": "RHS-GLD-03",
+        "Stock": 20,
+        "Fabric": "Raw Silk",
+        "Occasion": "Wedding"
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+    XLSX.writeFile(workbook, "pgmart_sample_import_template.xlsx");
+    showToast("Sample Excel (.xlsx) template downloaded!");
+  };
+
+  // UPLOAD EXCEL (.XLSX, .XLS) OR CSV FILE FROM DEVICE
+  const handleExcelOrCSVFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const fileName = file.name.toLowerCase();
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (content) {
-        setCsvText(content);
-        showToast(`Loaded file "${file.name}". Click "Parse & Import Data" to process.`);
-      }
-    };
-    reader.readAsText(file);
+
+    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+      reader.onload = (event) => {
+        try {
+          const data = new Uint8Array(event.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
+          setCsvText(csvOutput);
+          showToast(`📊 Excel Sheet "${file.name}" (${firstSheetName}) parsed! Click "Parse & Import Data" to process.`);
+        } catch (err) {
+          alert('Failed to parse Excel workbook. Please check file format.');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        if (content) {
+          setCsvText(content);
+          showToast(`Loaded file "${file.name}". Click "Parse & Import Data" to process.`);
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   // PARSE & IMPORT CSV DATA INTO CATALOG & DATABASE
@@ -674,35 +743,44 @@ export const AdminProductsView: React.FC = () => {
         </div>
       )}
 
-      {/* CSV IMPORT POP-PANEL */}
+      {/* EXCEL / CSV IMPORT POP-PANEL */}
       {showCsvImport && (
         <div className="bg-stone-50 border border-stone-200 p-5 rounded-2xl space-y-4">
           <div className="flex items-center justify-between border-b border-stone-200 pb-3">
             <div>
-              <span className="text-sm font-bold text-stone-900 block">Bulk Import Products via CSV</span>
+              <span className="text-sm font-bold text-stone-900 block">Bulk Import Products via Excel (.xlsx / .xls) or CSV</span>
               <p className="text-[11px] text-stone-500 mt-0.5">
-                Upload a .csv file from your device, or paste CSV rows below. Click "Parse & Import Data" to save into catalog.
+                Upload an Excel sheet (.xlsx, .xls) or CSV file from your device, or paste CSV rows below. Click "Parse & Import Data" to save into catalog.
               </p>
             </div>
             <button onClick={() => setShowCsvImport(false)} className="text-stone-400 hover:text-stone-700 text-lg">✕</button>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-stone-200">
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 type="file"
                 ref={csvFileInputRef}
-                accept=".csv,text/csv"
-                onChange={handleCSVFileUpload}
+                accept=".xlsx,.xls,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                onChange={handleExcelOrCSVFileUpload}
                 className="hidden"
               />
               <button
                 type="button"
                 onClick={() => csvFileInputRef.current?.click()}
-                className="px-4 py-2 bg-stone-900 hover:bg-black text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
-                <Upload className="w-4 h-4 text-[#C0654B]" />
-                Select .CSV File from Device
+                <Upload className="w-4 h-4 text-emerald-300" />
+                Select Excel (.xlsx) / CSV File from Device
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadSampleExcel}
+                className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer border border-emerald-200"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-700" />
+                Download Sample Excel (.xlsx)
               </button>
 
               <button
@@ -711,12 +789,12 @@ export const AdminProductsView: React.FC = () => {
                 className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5 text-stone-600" />
-                Download Sample CSV Template
+                Download Sample CSV
               </button>
             </div>
 
             <span className="text-[10px] text-stone-400 font-mono hidden sm:inline-block">
-              Format: Name, CategoryId, SubcategoryId, TypeId, BasePrice, DiscountPrice, SKU, Stock
+              Supports .xlsx, .xls, and .csv
             </span>
           </div>
 
