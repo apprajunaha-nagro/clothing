@@ -379,20 +379,6 @@ export const Header: React.FC<HeaderProps> = ({ onNavigate, currentPath }) => {
               <span>📖 PGmart Journal (Blog)</span>
               <span className="text-xs text-[#C0654B] font-extrabold">Read Stories →</span>
             </button>
-
-            {/* ADMIN PORTAL MOBILE ENTRY */}
-            <button
-              onClick={() => { onNavigate('/admin'); setMobileMenuOpen(false); }}
-              className="w-full text-left p-3 bg-[#2B2620] text-[#E0856B] rounded-lg font-bold flex items-center justify-between border border-stone-800 shadow-xs mt-2 min-h-[44px]"
-            >
-              <div className="flex items-center gap-2">
-                <Settings className="w-4 h-4 text-[#C0654B]" />
-                <span className="text-white">Store Admin Portal</span>
-              </div>
-              <span className="text-[10px] bg-[#C0654B] text-white font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                {isAdminLoggedIn ? 'Active' : 'Login'}
-              </span>
-            </button>
           </div>
         </div>
       )}

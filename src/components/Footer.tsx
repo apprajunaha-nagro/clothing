@@ -271,10 +271,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
             <button onClick={() => onNavigate('/terms')} className="hover:underline cursor-pointer">Terms of Service</button>
             <button
               onClick={() => onNavigate(isAdminLoggedIn ? '/admin' : '/admin/login')}
-              className="bg-[#C0654B] hover:bg-[#8B4A38] text-white px-3 py-1 rounded-md font-bold text-xs cursor-pointer flex items-center gap-1.5 transition-colors shadow-2xs"
+              className="hover:underline cursor-pointer"
             >
-              <Settings className="w-3.5 h-3.5" />
-              <span>{isAdminLoggedIn ? 'Admin Dashboard' : 'Admin Panel'}</span>
+              Admin
             </button>
           </div>
         </div>
