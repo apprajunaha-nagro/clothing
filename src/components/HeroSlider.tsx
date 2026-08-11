@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 import { useReducedMotion } from '../utils/useReducedMotion';
@@ -18,7 +17,6 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
   const reducedMotion = useReducedMotion();
 
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-  const [direction, setDirection] = useState<number>(1);
   const [isPaused, setIsPaused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -38,21 +36,13 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
   // 2. Navigation Handlers
   const handleNextSlide = useCallback(() => {
     if (slideCount <= 1) return;
-    setDirection(1);
     setActiveSlideIndex((prev) => (prev + 1) % slideCount);
   }, [slideCount]);
 
   const handlePrevSlide = useCallback(() => {
     if (slideCount <= 1) return;
-    setDirection(-1);
     setActiveSlideIndex((prev) => (prev - 1 + slideCount) % slideCount);
   }, [slideCount]);
-
-  const handleGoToSlide = useCallback((index: number) => {
-    if (index === activeSlideIndex) return;
-    setDirection(index > activeSlideIndex ? 1 : -1);
-    setActiveSlideIndex(index);
-  }, [activeSlideIndex]);
 
   // 3. Auto-Play Timer (Pauses on Hover / Touch-Hold / Reduced Motion)
   useEffect(() => {
@@ -65,22 +55,6 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
     return () => clearInterval(timer);
   }, [slideCount, isPaused, reducedMotion, handleNextSlide]);
 
-  // 4. Keyboard Navigation (Left/Right arrow keys)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
-        return;
-      }
-      if (e.key === 'ArrowRight') {
-        handleNextSlide();
-      } else if (e.key === 'ArrowLeft') {
-        handlePrevSlide();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleNextSlide, handlePrevSlide]);
-
   if (!currentSlide || slideCount === 0) return null;
 
   return (
@@ -92,7 +66,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
       onTouchStart={() => setIsPaused(true)}
       onTouchEnd={() => setIsPaused(false)}
       role="region"
-      aria-label="Sabhyata Hero Collection Slideshow"
+      aria-label="Hero Collection Photo Slideshow"
     >
       {/* CLS PREVENTION CONTAINER: Dynamic aspect ratio & responsive height across all screen sizes */}
       <div className="relative w-full h-[220px] min-h-[220px] xs:h-[280px] sm:h-[380px] md:h-[460px] lg:h-[540px] xl:h-[600px] 2xl:h-[650px] aspect-[16/9] xs:aspect-[16/10] sm:aspect-[16/8] md:aspect-[21/9] transition-all duration-300">
@@ -146,76 +120,6 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
             </picture>
           </motion.div>
         </AnimatePresence>
-
-        {/* DESKTOP FLOATING LEFT / RIGHT ARROW CONTROLS (Hidden on Mobile) */}
-        {slideCount > 1 && (
-          <>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePrevSlide();
-              }}
-              className="hidden md:flex absolute top-1/2 left-5 -translate-y-1/2 z-30 bg-stone-900/60 hover:bg-white text-white hover:text-stone-900 w-12 h-12 lg:w-14 lg:h-14 rounded-full shadow-2xl border border-white/30 cursor-pointer items-center justify-center transition-all hover:scale-110 active:scale-95 backdrop-blur-md"
-              aria-label="Previous Slide"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleNextSlide();
-              }}
-              className="hidden md:flex absolute top-1/2 right-5 -translate-y-1/2 z-30 bg-stone-900/60 hover:bg-white text-white hover:text-stone-900 w-12 h-12 lg:w-14 lg:h-14 rounded-full shadow-2xl border border-white/30 cursor-pointer items-center justify-center transition-all hover:scale-110 active:scale-95 backdrop-blur-md"
-              aria-label="Next Slide"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </>
-        )}
-
-        {/* MERAKI STYLE SLIDE COUNTER & ELONGATED PILL INDICATORS */}
-        {slideCount > 1 && (
-          <div className="absolute bottom-5 right-5 sm:right-10 z-30 flex items-center gap-3 bg-stone-950/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-xl">
-            {/* Meraki Slide Counter (e.g., 01 / 04) */}
-            <span className="text-white/90 font-mono font-bold text-xs tracking-wider border-r border-white/20 pr-3">
-              {String(activeSlideIndex + 1).padStart(2, '0')} / {String(slideCount).padStart(2, '0')}
-            </span>
-
-            {/* Pause/Play status indicator */}
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsPaused(!isPaused);
-              }}
-              className="text-white/80 hover:text-white cursor-pointer transition-colors p-0.5"
-              aria-label={isPaused ? "Resume auto slideshow" : "Pause auto slideshow"}
-              title={isPaused ? "Resume auto slideshow" : "Pause auto slideshow"}
-            >
-              {isPaused ? <Play className="w-3.5 h-3.5 fill-white" /> : <Pause className="w-3.5 h-3.5" />}
-            </button>
-
-            {heroSlides.map((_, idx) => {
-              const isActive = activeSlideIndex === idx;
-              return (
-                <button
-                  key={idx}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleGoToSlide(idx);
-                  }}
-                  className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                    isActive
-                      ? 'bg-[#C0654B] w-8 sm:w-10 shadow-xs'
-                      : 'bg-white/50 hover:bg-white w-2.5'
-                  }`}
-                  aria-label={`Go to slide ${idx + 1} of ${slideCount}`}
-                  aria-current={isActive ? 'true' : 'false'}
-                />
-              );
-            })}
-          </div>
-        )}
       </div>
     </section>
   );
