@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { 
   Plus, Calendar, Trash2, Edit, Check, X, Megaphone, Ticket, Image as ImageIcon, 
-  Settings, Sparkles, Send, Copy, AlertTriangle, Eye, Upload, Flame, Search
+  Settings, Sparkles, Send, Copy, AlertTriangle, Eye, Upload, Flame, Search, Save, Award
 } from 'lucide-react';
 import { Coupon, Banner, SiteSettings, Product } from '../../types';
 
@@ -14,9 +14,16 @@ export const AdminMarketingView: React.FC = () => {
   const [bannersList, setBannersList] = useState<Banner[]>(banners);
 
   // Form toggles
-  const [activeTab, setActiveTab] = useState<'banners' | 'deals' | 'new_arrivals' | 'coupons' | 'popups' | 'campaigns' | 'pixels'>('deals');
+  const [activeTab, setActiveTab] = useState<'banners' | 'brands' | 'deals' | 'new_arrivals' | 'coupons' | 'popups' | 'campaigns' | 'pixels'>('brands');
   const [dealSearchQuery, setDealSearchQuery] = useState('');
   
+  // Featured Brands section state fields
+  const [bSectionEnabled, setBSectionEnabled] = useState(settings.brandsEnabled !== false);
+  const [bSectionTitle, setBSectionTitle] = useState(settings.brandsTitle || 'Featured Clothing Brands');
+  const [bSectionSubtitle, setBSectionSubtitle] = useState(settings.brandsSubtitle || '20 Premier Brands • 100% Authentic Storefront');
+  const [bSectionBadge, setBSectionBadge] = useState(settings.brandsBadge || 'OFFICIAL BRANDS');
+  const [bSectionSpeed, setBSectionSpeed] = useState(settings.brandsSpeed || 35);
+
   // New Arrivals section state fields
   const [naTitle, setNaTitle] = useState(settings.newArrivalsTitle || 'New Arrivals');
   const [naSubtitle, setNaSubtitle] = useState(settings.newArrivalsSubtitle || 'Explore the latest ethnic wear, designer sarees, & festive drops');
@@ -152,6 +159,19 @@ export const AdminMarketingView: React.FC = () => {
     showToast('Banner removed from hero slider.');
   };
 
+  // FEATURED BRANDS SECTION HANDLER
+  const handleSaveBrandsSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings({
+      brandsEnabled: bSectionEnabled,
+      brandsTitle: bSectionTitle,
+      brandsSubtitle: bSectionSubtitle,
+      brandsBadge: bSectionBadge,
+      brandsSpeed: Number(bSectionSpeed)
+    });
+    showToast('👑 Featured Clothing Brands section settings published & live on storefront!');
+  };
+
   // COUPON HANDLERS
   const handleSaveCoupon = (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,6 +241,12 @@ export const AdminMarketingView: React.FC = () => {
             <span>New Arrivals Rail</span>
           </button>
           <button
+            onClick={() => setActiveTab('brands')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${activeTab === 'brands' ? 'bg-[#C0654B] text-white font-bold' : 'text-stone-400 hover:text-stone-200'}`}
+          >
+            <span>👑 Featured Brands</span>
+          </button>
+          <button
             onClick={() => setActiveTab('banners')}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${activeTab === 'banners' ? 'bg-[#C0654B] text-white' : 'text-stone-400 hover:text-stone-200'}`}
           >
@@ -252,6 +278,119 @@ export const AdminMarketingView: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* FEATURED CLOTHING BRANDS MANAGER (MARKETING SUITE CONTROL) */}
+      {activeTab === 'brands' && (
+        <form onSubmit={handleSaveBrandsSettings} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="bg-[#C0654B] text-white text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase">
+                  SECTION MANAGER
+                </span>
+                <h3 className="text-lg font-bold font-serif text-stone-900">Featured Clothing Brands Rail Control</h3>
+              </div>
+              <p className="text-xs text-stone-500 mt-1">
+                Manage section visibility, title, badge tag, and continuous 360-degree marquee scroll speed.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 shrink-0"
+            >
+              <Save className="w-4 h-4" /> Save Brand Rail Config
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-semibold text-stone-700">
+            {/* Toggle Switch */}
+            <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3 col-span-1 md:col-span-2 flex items-center justify-between">
+              <div>
+                <span className="font-bold text-stone-900 block text-sm">Enable Featured Brands Rail</span>
+                <p className="text-[11px] text-stone-500 font-normal">
+                  Toggle on/off the 20 official clothing brands section on the homepage (positioned just above New Arrivals).
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={bSectionEnabled}
+                  onChange={(e) => setBSectionEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#C0654B]"></div>
+              </label>
+            </div>
+
+            {/* Section Title */}
+            <div>
+              <label className="block font-bold text-stone-900 mb-1">Section Display Title</label>
+              <input
+                type="text"
+                value={bSectionTitle}
+                onChange={(e) => setBSectionTitle(e.target.value)}
+                placeholder="e.g., Featured Clothing Brands"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs"
+              />
+            </div>
+
+            {/* Badge Tag */}
+            <div>
+              <label className="block font-bold text-stone-900 mb-1">Pill Badge Tag</label>
+              <input
+                type="text"
+                value={bSectionBadge}
+                onChange={(e) => setBSectionBadge(e.target.value)}
+                placeholder="e.g., OFFICIAL BRANDS"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs font-mono"
+              />
+            </div>
+
+            {/* Subtitle text */}
+            <div>
+              <label className="block font-bold text-stone-900 mb-1">Subtitle / Tagline Text</label>
+              <input
+                type="text"
+                value={bSectionSubtitle}
+                onChange={(e) => setBSectionSubtitle(e.target.value)}
+                placeholder="e.g., 20 Premier Brands • 100% Authentic Storefront"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs"
+              />
+            </div>
+
+            {/* Continuous Marquee Animation Speed */}
+            <div>
+              <label className="block font-bold text-stone-900 mb-1">
+                360° Marquee Scroll Speed: <span className="font-mono text-[#C0654B]">{bSectionSpeed} seconds</span>
+              </label>
+              <input
+                type="range"
+                min={15}
+                max={60}
+                step={5}
+                value={bSectionSpeed}
+                onChange={(e) => setBSectionSpeed(Number(e.target.value))}
+                className="w-full cursor-pointer accent-[#C0654B]"
+              />
+              <div className="flex justify-between text-[10px] text-stone-400 font-mono mt-1">
+                <span>Fast (15s)</span>
+                <span>Normal (35s)</span>
+                <span>Slow (60s)</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-3 border-t border-stone-100">
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
+            >
+              <Save className="w-4 h-4" /> Save Brand Rail Config
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* DEALS OF THE DAY MANAGER */}
       {activeTab === 'deals' && (

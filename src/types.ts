@@ -275,6 +275,11 @@ export interface SiteSettings {
   privacyPolicy?: string;
   refundPolicy?: string;
   shippingPolicy?: string;
+  brandsEnabled?: boolean;
+  brandsTitle?: string;
+  brandsSubtitle?: string;
+  brandsBadge?: string;
+  brandsSpeed?: number;
 }
 
 export interface FilterState {

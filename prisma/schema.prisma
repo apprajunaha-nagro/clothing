@@ -47,6 +47,11 @@ model SiteSettings {
   privacyPolicy         String?
   refundPolicy          String?
   shippingPolicy        String?
+  brandsEnabled         Boolean @default(true)
+  brandsTitle           String  @default("Featured Clothing Brands")
+  brandsSubtitle        String  @default("20 Premier Brands • 100% Authentic Storefront")
+  brandsBadge           String  @default("OFFICIAL BRANDS")
+  brandsSpeed           Int     @default(35)
 }
 
 model Brand {

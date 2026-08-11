@@ -287,54 +287,57 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* 5.3 20 FEATURED CLOTHING BRANDS MARQUEE (JUST ABOVE NEW ARRIVALS) */}
-      <section className="max-w-7xl mx-auto px-2 sm:px-6">
-        <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-            <div className="flex items-center gap-2">
-              <span className="bg-[#C0654B] text-white text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase">
-                OFFICIAL BRANDS
-              </span>
-              <h2 className="text-base sm:text-lg font-extrabold uppercase tracking-tight text-stone-900 flex items-center gap-2">
-                <Award className="w-5 h-5 text-[#C0654B]" />
-                <span>Featured Clothing Brands</span>
-              </h2>
+      {/* 5.3 20 FEATURED CLOTHING BRANDS MARQUEE (ADMIN CONTROLLED IN MARKETING SUITE) */}
+      {settings.brandsEnabled !== false && (
+        <section className="max-w-7xl mx-auto px-2 sm:px-6">
+          <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="bg-[#C0654B] text-white text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase">
+                  {settings.brandsBadge || 'OFFICIAL BRANDS'}
+                </span>
+                <h2 className="text-base sm:text-lg font-extrabold uppercase tracking-tight text-stone-900 flex items-center gap-2">
+                  <Award className="w-5 h-5 text-[#C0654B]" />
+                  <span>{settings.brandsTitle || 'Featured Clothing Brands'}</span>
+                </h2>
+              </div>
+              {settings.brandsSubtitle && (
+                <span className="text-xs text-stone-500 font-medium hidden sm:inline-block">
+                  {settings.brandsSubtitle}
+                </span>
+              )}
             </div>
-            <span className="text-xs text-stone-500 font-medium hidden sm:inline-block">
-              20 Premier Brands • 100% Authentic Storefront
-            </span>
-          </div>
 
-          {/* INFINITE 360 DEGREE CONTINUOUS MARQUEE (RIGHT TO LEFT) */}
-          <div className="overflow-hidden w-full relative py-1">
-            {/* Fade overlays on left/right edges for smooth 360 aesthetic */}
-            <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-16 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
-
-            <div className="flex gap-6 sm:gap-8 animate-marquee w-max py-2">
-              {[...featured20Brands, ...featured20Brands].map((brand, idx) => (
-                <div
-                  key={`${brand.id}-${idx}`}
-                  onClick={() => onNavigate(`/category/all?brand=${encodeURIComponent(brand.name)}`)}
-                  className="flex flex-col items-center justify-center group cursor-pointer shrink-0 select-none"
-                >
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 bg-gradient-to-tr from-[#C0654B] via-amber-400 to-[#8B3E2F] shadow-xs group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
-                    <img
-                      src={brand.img}
-                      alt={brand.name}
-                      className="w-full h-full rounded-full object-cover border-2 border-white bg-stone-100"
-                      loading="lazy"
-                    />
+            {/* INFINITE 360 DEGREE CONTINUOUS MARQUEE (RIGHT TO LEFT - NO SIDE BLUR) */}
+            <div className="overflow-hidden w-full relative py-1">
+              <div
+                className="flex gap-6 sm:gap-8 animate-marquee w-max py-2"
+                style={{ animationDuration: `${settings.brandsSpeed || 35}s` }}
+              >
+                {[...featured20Brands, ...featured20Brands].map((brand, idx) => (
+                  <div
+                    key={`${brand.id}-${idx}`}
+                    onClick={() => onNavigate(`/category/all?brand=${encodeURIComponent(brand.name)}`)}
+                    className="flex flex-col items-center justify-center group cursor-pointer shrink-0 select-none"
+                  >
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 bg-gradient-to-tr from-[#C0654B] via-amber-400 to-[#8B3E2F] shadow-xs group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
+                      <img
+                        src={brand.img}
+                        alt={brand.name}
+                        className="w-full h-full rounded-full object-cover border-2 border-white bg-stone-100"
+                        loading="lazy"
+                      />
+                    </div>
+                    <span className="text-[11px] sm:text-xs font-extrabold text-stone-800 group-hover:text-[#C0654B] truncate max-w-[95px] text-center mt-2 transition-colors">
+                      {brand.name}
+                    </span>
                   </div>
-                  <span className="text-[11px] sm:text-xs font-extrabold text-stone-800 group-hover:text-[#C0654B] truncate max-w-[95px] text-center mt-2 transition-colors">
-                    {brand.name}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* 5.5 NEW ARRIVALS */}
       {settings.newArrivalsEnabled !== false && newArrivals.length > 0 && (
