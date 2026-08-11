@@ -235,80 +235,50 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* 7. TRUST BADGES ROW (Redesigned Premium Template) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 my-6">
-        <div className="bg-gradient-to-r from-[#FAF4F0] via-white to-[#FDF8F5] border border-stone-200/90 rounded-2xl p-6 sm:p-8 shadow-sm">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 divide-y sm:divide-y-0 sm:divide-x divide-stone-200/70">
-            {/* Item 1 */}
-            <div className="flex items-start gap-4 pt-4 sm:pt-0 sm:px-2 first:pt-0 group">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C0654B] to-[#D4884A] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#C0654B]/25 group-hover:scale-110 transition-transform">
-                <CheckCircle2 className="w-6 h-6 stroke-[2.2]" />
-              </div>
-              <div className="space-y-0.5 text-left">
-                <span className="text-[9px] font-black text-[#C0654B] uppercase tracking-widest block">
-                  Artisanal Quality
-                </span>
-                <h4 className="text-sm font-black text-stone-900 tracking-tight">
-                  100% Original
-                </h4>
-                <p className="text-xs text-stone-500 font-medium leading-normal">
-                  Direct from heritage weavers
-                </p>
-              </div>
+      {/* 7. VALUE PROPOSITION STRIP (Ultra-Clean Modern Floating Pills) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 my-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Card 1 */}
+          <div className="bg-white border border-stone-200/80 rounded-xl p-4 flex items-center gap-3.5 shadow-2xs hover:shadow-md hover:border-[#C0654B] transition-all group cursor-default">
+            <div className="w-10 h-10 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
+              <CheckCircle2 className="w-5 h-5" />
             </div>
-
-            {/* Item 2 */}
-            <div className="flex items-start gap-4 pt-4 sm:pt-0 sm:pl-6 group">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C0654B] to-[#D4884A] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#C0654B]/25 group-hover:scale-110 transition-transform">
-                <Truck className="w-6 h-6 stroke-[2.2]" />
-              </div>
-              <div className="space-y-0.5 text-left">
-                <span className="text-[9px] font-black text-[#C0654B] uppercase tracking-widest block">
-                  Express Shipping
-                </span>
-                <h4 className="text-sm font-black text-stone-900 tracking-tight">
-                  Free Shipping
-                </h4>
-                <p className="text-xs text-stone-500 font-medium leading-normal">
-                  On all orders over ₹999
-                </p>
-              </div>
+            <div className="text-left">
+              <h4 className="text-xs sm:text-sm font-extrabold text-stone-900 leading-tight">100% Original</h4>
+              <p className="text-[11px] text-stone-500 font-medium mt-0.5">Direct from heritage weavers</p>
             </div>
+          </div>
 
-            {/* Item 3 */}
-            <div className="flex items-start gap-4 pt-4 sm:pt-0 sm:pl-6 group">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C0654B] to-[#D4884A] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#C0654B]/25 group-hover:scale-110 transition-transform">
-                <RotateCcw className="w-6 h-6 stroke-[2.2]" />
-              </div>
-              <div className="space-y-0.5 text-left">
-                <span className="text-[9px] font-black text-[#C0654B] uppercase tracking-widest block">
-                  Easy Exchange
-                </span>
-                <h4 className="text-sm font-black text-stone-900 tracking-tight">
-                  Easy 7-Day Returns
-                </h4>
-                <p className="text-xs text-stone-500 font-medium leading-normal">
-                  Hassle-free exchange policy
-                </p>
-              </div>
+          {/* Card 2 */}
+          <div className="bg-white border border-stone-200/80 rounded-xl p-4 flex items-center gap-3.5 shadow-2xs hover:shadow-md hover:border-[#C0654B] transition-all group cursor-default">
+            <div className="w-10 h-10 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
+              <Truck className="w-5 h-5" />
             </div>
+            <div className="text-left">
+              <h4 className="text-xs sm:text-sm font-extrabold text-stone-900 leading-tight">Free Shipping</h4>
+              <p className="text-[11px] text-stone-500 font-medium mt-0.5">On all orders over ₹999</p>
+            </div>
+          </div>
 
-            {/* Item 4 */}
-            <div className="flex items-start gap-4 pt-4 sm:pt-0 sm:pl-6 group">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C0654B] to-[#D4884A] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#C0654B]/25 group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-6 h-6 stroke-[2.2]" />
-              </div>
-              <div className="space-y-0.5 text-left">
-                <span className="text-[9px] font-black text-[#C0654B] uppercase tracking-widest block">
-                  Encrypted Checkout
-                </span>
-                <h4 className="text-sm font-black text-stone-900 tracking-tight">
-                  100% Secure Payments
-                </h4>
-                <p className="text-xs text-stone-500 font-medium leading-normal">
-                  UPI, Cards, Netbanking & COD
-                </p>
-              </div>
+          {/* Card 3 */}
+          <div className="bg-white border border-stone-200/80 rounded-xl p-4 flex items-center gap-3.5 shadow-2xs hover:shadow-md hover:border-[#C0654B] transition-all group cursor-default">
+            <div className="w-10 h-10 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
+              <RotateCcw className="w-5 h-5" />
+            </div>
+            <div className="text-left">
+              <h4 className="text-xs sm:text-sm font-extrabold text-stone-900 leading-tight">Easy 7-Day Returns</h4>
+              <p className="text-[11px] text-stone-500 font-medium mt-0.5">Hassle-free exchange policy</p>
+            </div>
+          </div>
+
+          {/* Card 4 */}
+          <div className="bg-white border border-stone-200/80 rounded-xl p-4 flex items-center gap-3.5 shadow-2xs hover:shadow-md hover:border-[#C0654B] transition-all group cursor-default">
+            <div className="w-10 h-10 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div className="text-left">
+              <h4 className="text-xs sm:text-sm font-extrabold text-stone-900 leading-tight">100% Secure Payments</h4>
+              <p className="text-[11px] text-stone-500 font-medium mt-0.5">UPI, Cards, Netbanking & COD</p>
             </div>
           </div>
         </div>
