@@ -12,16 +12,16 @@ export const AdminSettingsView: React.FC = () => {
   const [activeSettingsTab, setActiveSettingsTab] = useState<'store' | 'theme' | 'shipping' | 'roles' | 'backup'>('store');
 
   // Form states initialized from settings context
-  const [sName, setSName] = useState(settings.storeName);
-  const [sEmail, setSEmail] = useState(settings.supportEmail);
-  const [sPhone, setSPhone] = useState(settings.supportPhone);
-  const [sAddress, setSAddress] = useState(settings.address);
-  const [sGst, setSGst] = useState(settings.gstNumber);
+  const [sName, setSName] = useState(settings.storeName || 'PGmart');
+  const [sEmail, setSEmail] = useState(settings.supportEmail || settings.contactEmail || 'support@pgmart.com');
+  const [sPhone, setSPhone] = useState(settings.supportPhone || settings.contactPhone || '+91 94711 55434');
+  const [sAddress, setSAddress] = useState(settings.address || '');
+  const [sGst, setSGst] = useState(settings.gstNumber || '');
   const [sCurrency, setSCurrency] = useState('INR (₹)');
 
   // Customizable Theme palette state
-  const [primaryColor, setPrimaryColor] = useState(settings.primaryColor);
-  const [secondaryColor, setSecondaryColor] = useState(settings.secondaryColor);
+  const [primaryColor, setPrimaryColor] = useState(settings.primaryColor || '#C0654B');
+  const [secondaryColor, setSecondaryColor] = useState(settings.secondaryDarkColor || '#2B2620');
   const [fontFamily, setFontFamily] = useState('Lora & Playfair Display');
 
   // Shipping Zones state
@@ -56,7 +56,7 @@ export const AdminSettingsView: React.FC = () => {
       address: sAddress,
       gstNumber: sGst,
       primaryColor,
-      secondaryColor
+      secondaryDarkColor: secondaryColor
     });
     showToast('Core store specifications updated and synced to host server.');
   };
