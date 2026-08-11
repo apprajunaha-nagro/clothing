@@ -94,14 +94,14 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
       role="region"
       aria-label="Sabhyata Hero Collection Slideshow"
     >
-      {/* CLS PREVENTION CONTAINER: Reserved aspect ratio height */}
-      <div className="relative w-full h-[360px] xs:h-[420px] sm:h-[480px] md:h-[540px] lg:h-[600px] xl:h-[640px] md:aspect-[21/9]">
+      {/* CLS PREVENTION CONTAINER: Dynamic aspect ratio & responsive height across all screen sizes */}
+      <div className="relative w-full h-[220px] min-h-[220px] xs:h-[280px] sm:h-[380px] md:h-[460px] lg:h-[540px] xl:h-[600px] 2xl:h-[650px] aspect-[16/9] xs:aspect-[16/10] sm:aspect-[16/8] md:aspect-[21/9] transition-all duration-300">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={currentSlide.id || activeSlideIndex}
             initial={reducedMotion ? { opacity: 0 } : {
               opacity: 0,
-              scale: 1.06,
+              scale: 1.05,
             }}
             animate={reducedMotion ? { opacity: 1 } : {
               opacity: 1,
@@ -112,8 +112,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
               scale: 0.98,
             }}
             transition={reducedMotion ? { duration: 0.3 } : {
-              opacity: { duration: 0.7, ease: [0.25, 1, 0.5, 1] },
-              scale: { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
+              opacity: { duration: 0.65, ease: [0.25, 1, 0.5, 1] },
+              scale: { duration: 0.85, ease: [0.16, 1, 0.3, 1] },
             }}
             drag={reducedMotion ? false : "x"}
             dragConstraints={{ left: 0, right: 0 }}
@@ -125,16 +125,18 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
             onClick={() => onNavigate(currentSlide.link || '/category/women')}
             className="absolute inset-0 w-full h-full cursor-pointer touch-pan-y group overflow-hidden"
           >
-            {/* RESPONSIVE PICTURE: Only Pure High-Quality Photos */}
+            {/* RESPONSIVE PICTURE: Dynamically optimized for Mobile (320px–640px), Tablet (641px–1024px), Desktop (1025px+) */}
             <picture className="w-full h-full block">
-              {currentSlide.mobileImage && (
-                <source
-                  media="(max-width: 640px)"
-                  srcSet={getOptimizedImageUrl(currentSlide.mobileImage, { width: 800, quality: 90 })}
-                />
-              )}
+              <source
+                media="(max-width: 640px)"
+                srcSet={getOptimizedImageUrl(currentSlide.mobileImage || currentSlide.image, { width: 800, quality: 90 })}
+              />
+              <source
+                media="(max-width: 1024px)"
+                srcSet={getOptimizedImageUrl(currentSlide.image, { width: 1200, quality: 90 })}
+              />
               <img
-                src={getOptimizedImageUrl(currentSlide.image, { width: 1600, quality: 92 })}
+                src={getOptimizedImageUrl(currentSlide.image, { width: 1800, quality: 92 })}
                 alt={currentSlide.title || "PGmart Hero Photo Slide"}
                 className="w-full h-full object-cover object-center pointer-events-none transition-transform duration-700 group-hover:scale-103"
                 loading={activeSlideIndex === 0 ? "eager" : "lazy"}
