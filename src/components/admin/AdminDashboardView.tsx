@@ -496,9 +496,6 @@ export const AdminDashboardView: React.FC = () => {
               <option value={2}>&le; 2 items</option>
               <option value={3}>&le; 3 items</option>
               <option value={5}>&le; 5 items</option>
-              <option value={10}>&le; 10 items</option>
-              <option value={15}>&le; 15 items</option>
-              <option value={20}>&le; 20 items</option>
             </select>
           </div>
         </div>
