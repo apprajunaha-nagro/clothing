@@ -56,6 +56,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const dealsScrollRef = useRef<HTMLDivElement>(null);
   const trendingScrollRef = useRef<HTMLDivElement>(null);
   const newArrivalsScrollRef = useRef<HTMLDivElement>(null);
+  const subScrollRefs: { [key: string]: React.RefObject<HTMLDivElement | null> } = {
+    women: useRef<HTMLDivElement>(null),
+    men: useRef<HTMLDivElement>(null),
+    kids: useRef<HTMLDivElement>(null),
+    undergarments: useRef<HTMLDivElement>(null),
+  };
 
   const scrollRail = (ref: React.RefObject<HTMLDivElement | null>, direction: 'left' | 'right') => {
     if (ref.current) {
@@ -317,25 +323,70 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         </section>
       )}
 
-      {/* 6. RECOMMENDED FOR YOU (4 Subsections: Women's Fashion, Men's Fashion, Kids' Fashion, Innerwear & Lingerie) */}
+      {/* 6. RECOMMENDED FOR YOU (4 Sub-category Themes: Women's, Men's, Kids', Innerwear with 12 Products Each) */}
       <section className="max-w-7xl mx-auto px-2 sm:px-6">
-        <div className="bg-white border border-stone-200 rounded-md p-3 sm:p-5 shadow-2xs space-y-6">
-          <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+        <div className="bg-white border border-stone-200 rounded-2xl p-4 sm:p-6 shadow-xs space-y-6">
+          <div className="border-b border-stone-200 pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg sm:text-2xl font-extrabold text-stone-900 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#C0654B]" />
-                <span>Recommended For You</span>
-              </h2>
-              <p className="text-xs text-stone-500">Handpicked trending styles curated across all 4 core departments</p>
+              <div className="flex items-center gap-2">
+                <span className="bg-[#C0654B] text-white text-[10px] font-black px-2.5 py-0.5 rounded uppercase tracking-wider">
+                  CURATED FOR YOU
+                </span>
+                <h2 className="text-xl sm:text-2xl font-extrabold font-serif text-stone-900 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-[#C0654B]" />
+                  <span>Recommended Collections</span>
+                </h2>
+              </div>
+              <p className="text-xs text-stone-500 mt-1">Handpicked trending styles & bestselling outfits curated across all 4 core departments</p>
             </div>
           </div>
 
-          {/* 4 SUBSECTIONS: Women's, Men's, Kids', Innerwear (Minimum 12 Products Each) */}
+          {/* 4 DISTINCTLY THEMED SUBCATEGORY SECTIONS */}
           {[
-            { id: 'women', title: "Women's Fashion", subtitle: 'Sarees, Kurtas, Western Dresses & Ethnic Accessories', slug: 'women' },
-            { id: 'men', title: "Men's Fashion", subtitle: 'Formal Shirts, Executive Blazers & Festival Kurta Sets', slug: 'men' },
-            { id: 'kids', title: "Kids' Fashion", subtitle: 'Infant Wear, Girls Festive Frocks & Boys Outfits', slug: 'kids' },
-            { id: 'undergarments', title: 'Innerwear & Lingerie', subtitle: 'Breathable Cotton Bras, Trunks, Briefs & Luxe Loungewear', slug: 'undergarments' },
+            {
+              id: 'women',
+              title: "Women's Ethnic & Festive Collection",
+              subtitle: 'Handcrafted Sarees, Silk Kurtas, Designer Dresses & Festive Outfits',
+              slug: 'women',
+              badge: "HERITAGE ETHNIC",
+              gradient: 'from-[#541D12] via-[#8B3E2F] to-[#C0654B]',
+              borderAccent: 'border-[#C0654B]/40 bg-stone-50/40',
+              btnColor: 'text-amber-200 hover:text-white',
+              IconComp: Sparkles
+            },
+            {
+              id: 'men',
+              title: "Men's Executive & Casual Wear",
+              subtitle: 'Formal Shirts, Executive Blazers, Jackets & Festival Kurta Sets',
+              slug: 'men',
+              badge: "EXECUTIVE EDIT",
+              gradient: 'from-[#0A1324] via-[#1B2A4A] to-[#2C416A]',
+              borderAccent: 'border-[#2C416A]/40 bg-stone-50/40',
+              btnColor: 'text-sky-200 hover:text-white',
+              IconComp: Crown
+            },
+            {
+              id: 'kids',
+              title: "Kids' Festive & Daily Wear",
+              subtitle: 'Infant Wear, Girls Festive Frocks & Boys Party Kurta Pyjamas',
+              slug: 'kids',
+              badge: "LITTLE CHAMPIONS",
+              gradient: 'from-[#3B2204] via-[#784A12] to-[#B46B12]',
+              borderAccent: 'border-[#B46B12]/40 bg-stone-50/40',
+              btnColor: 'text-amber-200 hover:text-white',
+              IconComp: Star
+            },
+            {
+              id: 'undergarments',
+              title: 'Luxe Innerwear & Lingerie',
+              subtitle: 'Breathable Cotton Bras, Trunks, Briefs & Soft Luxe Loungewear',
+              slug: 'undergarments',
+              badge: "ULTIMATE COMFORT",
+              gradient: 'from-[#190C16] via-[#3B1933] to-[#5C2B4E]',
+              borderAccent: 'border-[#5C2B4E]/40 bg-stone-50/40',
+              btnColor: 'text-rose-200 hover:text-white',
+              IconComp: Heart
+            },
           ].map((sub) => {
             const catProds = products.filter(p => p.categoryId === sub.id || (p.subcategoryId && p.subcategoryId.includes(sub.id)));
             const picked: Product[] = [...catProds];
@@ -348,32 +399,69 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             }
 
             const displayItems = picked.slice(0, 12);
+            const SubIcon = sub.IconComp;
+            const scrollRef = subScrollRefs[sub.id];
 
             return (
-              <div key={sub.id} className="space-y-3 pt-4 first:pt-0 border-t border-stone-200/70 first:border-0">
-                <div className="flex items-center justify-between bg-stone-50 p-2.5 px-3 rounded border border-stone-200/80">
-                  <div>
-                    <h3 className="text-sm sm:text-base font-extrabold text-stone-900">{sub.title}</h3>
-                    <p className="text-[11px] text-stone-500">{sub.subtitle}</p>
+              <div key={sub.id} className={`rounded-xl border ${sub.borderAccent} overflow-hidden shadow-2xs space-y-0`}>
+                {/* THEMED HEADER BANNER */}
+                <div className={`bg-gradient-to-r ${sub.gradient} text-white p-3.5 sm:p-4.5 flex items-center justify-between flex-wrap gap-2`}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white/10 backdrop-blur-xs flex items-center justify-center shrink-0">
+                      <SubIcon className="w-4 h-4 text-amber-200" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-white/20 text-white text-[9px] font-black px-2 py-0.5 rounded tracking-wider uppercase backdrop-blur-xs">
+                          {sub.badge}
+                        </span>
+                        <h3 className="text-sm sm:text-base font-extrabold uppercase tracking-tight">{sub.title}</h3>
+                      </div>
+                      <p className="text-[11px] text-stone-200/90 font-medium mt-0.5 hidden sm:block">{sub.subtitle}</p>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => onNavigate(`/category/${sub.slug}`)}
-                    className="text-xs font-bold text-[#C0654B] hover:underline cursor-pointer whitespace-nowrap"
-                  >
-                    View All {sub.title} →
-                  </button>
+
+                  <div className="flex items-center gap-3">
+                    {/* Left Right Scroll Controls */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => scrollRail(scrollRef, 'left')}
+                        aria-label="Scroll left"
+                        className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => scrollRail(scrollRef, 'right')}
+                        aria-label="Scroll right"
+                        className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors cursor-pointer"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => onNavigate(`/category/${sub.slug}`)}
+                      className={`text-xs font-bold ${sub.btnColor} underline underline-offset-2 cursor-pointer whitespace-nowrap ml-1`}
+                    >
+                      Explore All →
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-                  {displayItems.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      onNavigate={onNavigate}
-                      hideBadges={true}
-                      hideColorAndSize={true}
-                    />
-                  ))}
+                {/* HORIZONTAL PRODUCT SLIDER RAIL (12 ITEMS MINIMUM) */}
+                <div ref={scrollRef} className="p-3 sm:p-4 overflow-x-auto no-scrollbar scroll-smooth bg-white">
+                  <div className="flex gap-3 sm:gap-4 w-max">
+                    {displayItems.map((product) => (
+                      <div key={product.id} className="w-[170px] sm:w-[210px] shrink-0">
+                        <ProductCard
+                          product={product}
+                          onNavigate={onNavigate}
+                          hideBadges={true}
+                          hideColorAndSize={true}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             );
