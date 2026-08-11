@@ -287,10 +287,10 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               if (prods.length > 0) picked.push(prods[0]);
             });
             for (const p of catProds) {
-              if (picked.length >= 5) break;
+              if (picked.length >= 6) break;
               if (!picked.some(item => item.id === p.id)) picked.push(p);
             }
-            const displayItems = picked.length > 0 ? picked : catProds.slice(0, 5);
+            const displayItems = picked.length >= 6 ? picked.slice(0, 6) : (catProds.length >= 6 ? catProds.slice(0, 6) : (picked.length > 0 ? picked : catProds));
 
             return (
               <div key={sub.id} className="space-y-3 pt-4 first:pt-0 border-t border-stone-200/70 first:border-0">
@@ -307,7 +307,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                   {displayItems.map((product) => (
                     <ProductCard
                       key={product.id}
