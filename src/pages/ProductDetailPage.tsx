@@ -58,17 +58,27 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
-  // Image hover zoom state
-  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+  // Image hover zoom state (Amazon/Myntra-style side panel zoom)
+  const [zoomPos, setZoomPos] = useState({ x: 0, y: 0, pctX: 50, pctY: 50 });
   const [isHovering, setIsHovering] = useState(false);
   const imgContainerRef = useRef<HTMLDivElement>(null);
+  const ZOOM_FACTOR = 3.0; // 3x magnification in the side panel
+  const LENS_SIZE = 100;  // px — size of the lens box on the source image
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = imgContainerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setZoomPos({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+    const rawX = e.clientX - rect.left;
+    const rawY = e.clientY - rect.top;
+    // Clamp so lens stays fully within the image
+    const clampedX = Math.max(LENS_SIZE / 2, Math.min(rect.width  - LENS_SIZE / 2, rawX));
+    const clampedY = Math.max(LENS_SIZE / 2, Math.min(rect.height - LENS_SIZE / 2, rawY));
+    setZoomPos({
+      x: clampedX,
+      y: clampedY,
+      pctX: (clampedX / rect.width)  * 100,
+      pctY: (clampedY / rect.height) * 100,
+    });
   }, []);
 
   if (!product) return null;
@@ -159,45 +169,71 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             ))}
           </div>
 
-          {/* Main Large Image — Inline Hover Zoom (no click/lightbox) */}
-          <div
-            ref={imgContainerRef}
-            className="flex-1 aspect-3/4 bg-stone-100 rounded-2xl overflow-hidden relative shadow-sm border border-stone-200 select-none"
-            style={{ cursor: isHovering ? 'crosshair' : 'zoom-in' }}
-            onMouseMove={handleMouseMove}
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
-          >
-            {/* Zoomable image — scale driven by hover + cursor position via transform-origin */}
-            <img
-              src={getOptimizedImageUrl(activeImage, { width: 1200, quality: 85 })}
-              alt={product.name}
-              className="w-full h-full object-cover object-top pointer-events-none transition-transform duration-200"
-              style={{
-                transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
-                transform: isHovering ? 'scale(2.2)' : 'scale(1)',
-              }}
-              loading="eager"
-              decoding="async"
-            />
+          {/* Main image + side-panel zoom wrapper */}
+          <div className="flex-1 relative">
 
-            {/* Zoom hint — shown only when not hovering */}
+            {/* Main Large Image — stable, with lens overlay on hover */}
             <div
-              className={`absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] font-semibold px-3 py-1 rounded-full flex items-center gap-1.5 backdrop-blur-sm pointer-events-none transition-opacity duration-200 ${
-                isHovering ? 'opacity-0' : 'opacity-100'
-              }`}
+              ref={imgContainerRef}
+              className="aspect-3/4 bg-stone-100 rounded-2xl overflow-hidden relative shadow-sm border border-stone-200 select-none w-full"
+              style={{ cursor: isHovering ? 'crosshair' : 'zoom-in' }}
+              onMouseMove={handleMouseMove}
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
             >
-              <ZoomIn className="w-3 h-3" />
-              Hover to zoom · Click to expand
+              {/* Base image — does NOT move */}
+              <img
+                src={getOptimizedImageUrl(activeImage, { width: 1200, quality: 85 })}
+                alt={product.name}
+                className="w-full h-full object-cover object-top pointer-events-none"
+                loading="eager"
+                decoding="async"
+              />
+
+              {/* Lens box — shows the area being zoomed */}
+              {isHovering && (
+                <div
+                  className="absolute border-2 border-[#C0654B] bg-white/20 backdrop-blur-[1px] pointer-events-none rounded-sm shadow-md"
+                  style={{
+                    width: LENS_SIZE,
+                    height: LENS_SIZE,
+                    left: zoomPos.x - LENS_SIZE / 2,
+                    top:  zoomPos.y - LENS_SIZE / 2,
+                  }}
+                />
+              )}
+
+              {/* Zoom hint badge */}
+              <div
+                className={`absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] font-semibold px-3 py-1 rounded-full flex items-center gap-1.5 backdrop-blur-sm pointer-events-none transition-opacity duration-200 ${
+                  isHovering ? 'opacity-0' : 'opacity-100'
+                }`}
+              >
+                <ZoomIn className="w-3 h-3" />
+                Hover to zoom
+              </div>
+
+              {/* Wishlist button */}
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); }}
+                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-xs shadow-md flex items-center justify-center text-stone-700 hover:text-[#C0654B] cursor-pointer transition-transform hover:scale-110"
+              >
+                <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-[#C0654B] text-[#C0654B]' : ''}`} />
+              </button>
             </div>
 
-            {/* Wishlist button */}
-            <button
-              onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); }}
-              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-xs shadow-md flex items-center justify-center text-stone-700 hover:text-[#C0654B] cursor-pointer transition-transform hover:scale-110"
-            >
-              <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-[#C0654B] text-[#C0654B]' : ''}`} />
-            </button>
+            {/* SIDE ZOOM PANEL — appears to the right of the gallery column, desktop only */}
+            {isHovering && (
+              <div
+                className="hidden lg:block absolute top-0 left-[calc(100%+16px)] w-[380px] aspect-3/4 rounded-2xl overflow-hidden shadow-2xl border-2 border-[#C0654B]/40 z-50 pointer-events-none bg-stone-100"
+                style={{
+                  backgroundImage: `url(${getOptimizedImageUrl(activeImage, { width: 2400, quality: 95 })})`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: `${ZOOM_FACTOR * 100}%`,
+                  backgroundPosition: `${zoomPos.pctX}% ${zoomPos.pctY}%`,
+                }}
+              />
+            )}
           </div>
         </div>
 
