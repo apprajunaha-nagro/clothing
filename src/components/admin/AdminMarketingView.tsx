@@ -27,14 +27,14 @@ export const AdminMarketingView: React.FC = () => {
   // Memoized Product Lists for Instant 0ms Render
   const filteredDealProducts = React.useMemo(() => {
     const q = dealSearchQuery.toLowerCase().trim();
-    if (!q) return products.slice(0, 24);
-    return products.filter(p => p.name.toLowerCase().includes(q)).slice(0, 24);
+    if (!q) return products.slice(0, 30);
+    return products.filter(p => p.name.toLowerCase().includes(q)).slice(0, 30);
   }, [products, dealSearchQuery]);
 
   const filteredNaProducts = React.useMemo(() => {
     const q = naSearchQuery.toLowerCase().trim();
-    if (!q) return products.slice(0, 24);
-    return products.filter(p => p.name.toLowerCase().includes(q) || p.brandName?.toLowerCase().includes(q)).slice(0, 24);
+    if (!q) return products.slice(0, 30);
+    return products.filter(p => p.name.toLowerCase().includes(q) || p.brandName?.toLowerCase().includes(q)).slice(0, 30);
   }, [products, naSearchQuery]);
 
   const taggedDealsCount = React.useMemo(() => {
@@ -495,6 +495,10 @@ export const AdminMarketingView: React.FC = () => {
                   <option value={8}>8 Products</option>
                   <option value={10}>10 Products</option>
                   <option value={12}>12 Products</option>
+                  <option value={15}>15 Products</option>
+                  <option value={20}>20 Products</option>
+                  <option value={24}>24 Products</option>
+                  <option value={30}>30 Products</option>
                 </select>
               </div>
             </div>

@@ -190,7 +190,8 @@ export const AdminProductsView: React.FC = () => {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 15;
+  const [itemsPerPage, setItemsPerPage] = useState(30);
+  const ITEMS_PER_PAGE = itemsPerPage;
 
   // Memoized Filtering products for maximum performance
   const filteredProducts = React.useMemo(() => {
