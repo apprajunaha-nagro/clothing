@@ -1381,6 +1381,141 @@ app.post('/api/ai-stylist/edit', async (req, res) => {
 });
 
 
+// ---------------- PROMO COUPONS API ENDPOINTS ----------------
+let serverCoupons: any[] = [
+  {
+    id: 'c1',
+    code: 'WELCOME100',
+    discountType: 'flat',
+    value: 200,
+    minOrderValue: 999,
+    usageLimit: 500,
+    usedCount: 42,
+    expiryDate: '2026-12-31',
+    isActive: true
+  },
+  {
+    id: 'c2',
+    code: 'TERRA15',
+    discountType: 'percentage',
+    value: 15,
+    minOrderValue: 1499,
+    maxDiscount: 500,
+    usageLimit: 1000,
+    usedCount: 189,
+    expiryDate: '2026-12-31',
+    isActive: true
+  },
+  {
+    id: 'c3',
+    code: 'FESTIVE25',
+    discountType: 'percentage',
+    value: 25,
+    minOrderValue: 2499,
+    maxDiscount: 1000,
+    usageLimit: 200,
+    usedCount: 78,
+    expiryDate: '2026-11-30',
+    isActive: true
+  }
+];
+
+app.get('/api/coupons', (req, res) => {
+  res.json(serverCoupons);
+});
+
+app.post('/api/coupons/validate', (req, res) => {
+  try {
+    const { code, cartTotal } = req.body;
+    if (!code) {
+      return res.status(400).json({ success: false, error: 'Coupon promo code is required.' });
+    }
+
+    const cleanCode = String(code).trim().toUpperCase();
+    const coupon = serverCoupons.find(c => c.code.toUpperCase() === cleanCode && c.isActive);
+
+    if (!coupon) {
+      return res.status(404).json({ success: false, error: `Invalid or inactive promo code "${cleanCode}".` });
+    }
+
+    if (coupon.expiryDate && new Date(coupon.expiryDate) < new Date()) {
+      return res.status(400).json({ success: false, error: `Coupon promo code "${cleanCode}" has expired.` });
+    }
+
+    const totalVal = Number(cartTotal) || 0;
+    if (totalVal < (coupon.minOrderValue || 0)) {
+      return res.status(400).json({
+        success: false,
+        error: `Minimum bag total of ₹${coupon.minOrderValue} required for ${cleanCode}. Add ₹${coupon.minOrderValue - totalVal} more items.`
+      });
+    }
+
+    let discountAmount = 0;
+    if (coupon.discountType === 'percentage') {
+      discountAmount = Math.round(totalVal * (coupon.value / 100));
+      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+        discountAmount = coupon.maxDiscount;
+      }
+    } else {
+      discountAmount = coupon.value;
+    }
+
+    discountAmount = Math.min(discountAmount, totalVal);
+
+    res.json({
+      success: true,
+      coupon,
+      discountAmount
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/admin/coupons', (req, res) => {
+  try {
+    const newCoupon = req.body;
+    if (!newCoupon.code) {
+      return res.status(400).json({ error: 'Coupon promo code is required' });
+    }
+    const cleanCode = String(newCoupon.code).trim().toUpperCase();
+    
+    const existingIdx = serverCoupons.findIndex(c => c.id === newCoupon.id || c.code.toUpperCase() === cleanCode);
+    const couponObj = {
+      id: newCoupon.id || `cop-${Date.now()}`,
+      code: cleanCode,
+      discountType: newCoupon.discountType || 'flat',
+      value: Number(newCoupon.value) || 100,
+      minOrderValue: Number(newCoupon.minOrderValue) || 0,
+      maxDiscount: newCoupon.maxDiscount ? Number(newCoupon.maxDiscount) : undefined,
+      usageLimit: Number(newCoupon.usageLimit) || 1000,
+      usedCount: Number(newCoupon.usedCount) || 0,
+      expiryDate: newCoupon.expiryDate || '2026-12-31',
+      isActive: newCoupon.isActive !== false
+    };
+
+    if (existingIdx > -1) {
+      serverCoupons[existingIdx] = couponObj;
+    } else {
+      serverCoupons.unshift(couponObj);
+    }
+
+    res.json({ success: true, coupon: couponObj, coupons: serverCoupons });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/coupons/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    serverCoupons = serverCoupons.filter(c => c.id !== id);
+    res.json({ success: true, coupons: serverCoupons });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---------------- SERVER STARTUP ----------------
 async function startServer() {
   if (!process.env.VERCEL) {

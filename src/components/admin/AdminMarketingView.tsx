@@ -7,12 +7,11 @@ import {
 import { Coupon, Banner, SiteSettings, Product } from '../../types';
 
 export const AdminMarketingView: React.FC = () => {
-  const { coupons, banners, setBanners, products, setProducts, settings, updateSettings, showToast } = useStore();
+  const { coupons, saveCoupon, toggleCoupon, deleteCoupon, banners, setBanners, products, setProducts, settings, updateSettings, showToast } = useStore();
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
 
   // Banners List Local override/state
   const [bannersList, setBannersList] = useState<Banner[]>(banners);
-  const [couponsList, setCouponsList] = useState<Coupon[]>(coupons);
 
   // Form toggles
   const [activeTab, setActiveTab] = useState<'banners' | 'deals' | 'coupons' | 'popups' | 'campaigns' | 'pixels'>('deals');
@@ -22,14 +21,15 @@ export const AdminMarketingView: React.FC = () => {
   const [bTitle, setBTitle] = useState('');
   const [bSubtitle, setBSubtitle] = useState('');
   const [bImage, setBImage] = useState('');
-  const [bLink, setBLink] = useState('');
+  const [bLink, setBLink] = useState('/category/women');
+  const [bButtonText, setBButtonText] = useState('Shop Collection');
   const [bPosition, setBPosition] = useState<'hero' | 'category' | 'promo_strip' | 'ad_banner'>('hero');
   const [isBannerFormOpen, setIsBannerFormOpen] = useState(false);
 
   // Coupon creation fields
   const [cCode, setCCode] = useState('');
-  const [cType, setCType] = useState<'flat' | 'percentage'>('percentage');
-  const [cValue, setCValue] = useState(15);
+  const [cType, setCType] = useState<'percentage' | 'flat'>('flat');
+  const [cValue, setCValue] = useState(200);
   const [cMinOrder, setCMinOrder] = useState(999);
   const [cUsageLimit, setCUsageLimit] = useState(500);
   const [cExpiry, setCExpiry] = useState('2026-12-31');
@@ -681,7 +681,7 @@ export const AdminMarketingView: React.FC = () => {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {couponsList.map(cop => (
+            {coupons.map(cop => (
               <div key={cop.id} className="bg-white border border-stone-200 rounded-2xl p-4 shadow-sm flex flex-col justify-between text-left space-y-3">
                 <div className="flex justify-between items-start border-b border-stone-100 pb-2">
                   <div>

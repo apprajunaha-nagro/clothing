@@ -26,6 +26,10 @@ interface StoreContextType {
   banners: Banner[];
   setBanners: React.Dispatch<React.SetStateAction<Banner[]>>;
   coupons: Coupon[];
+  setCoupons: React.Dispatch<React.SetStateAction<Coupon[]>>;
+  saveCoupon: (coupon: Coupon) => Promise<void>;
+  toggleCoupon: (id: string) => Promise<void>;
+  deleteCoupon: (id: string) => Promise<void>;
   cart: CartItem[];
   addToCart: (product: Product, variant: ProductVariant, qty?: number) => void;
   removeFromCart: (cartItemId: string) => void;
@@ -104,7 +108,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return initialBanners;
     }
   });
-  const [coupons, setCoupons] = useState<Coupon[]>(initialCoupons);
+  const [coupons, setCoupons] = useState<Coupon[]>(() => {
+    try {
+      const saved = localStorage.getItem('pgmart_coupons');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return initialCoupons;
+  });
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem('terra_orders_v2');
@@ -442,26 +452,105 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCouponDiscount(0);
   };
 
+  const saveCoupon = async (newCoupon: Coupon) => {
+    setCoupons(prev => {
+      const cleanCode = newCoupon.code.trim().toUpperCase();
+      const existingIdx = prev.findIndex(c => c.id === newCoupon.id || c.code.toUpperCase() === cleanCode);
+      let updated: Coupon[];
+      if (existingIdx > -1) {
+        updated = prev.map((c, i) => i === existingIdx ? newCoupon : c);
+      } else {
+        updated = [newCoupon, ...prev];
+      }
+      try { localStorage.setItem('pgmart_coupons', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    try {
+      await adminFetch('/api/admin/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCoupon)
+      });
+    } catch (e) {
+      console.warn('Backend sync failed for coupon creation', e);
+    }
+  };
+
+  const toggleCoupon = async (id: string) => {
+    setCoupons(prev => {
+      const updated = prev.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c);
+      try { localStorage.setItem('pgmart_coupons', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  const deleteCoupon = async (id: string) => {
+    setCoupons(prev => {
+      const updated = prev.filter(c => c.id !== id);
+      try { localStorage.setItem('pgmart_coupons', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    try {
+      await adminFetch(`/api/admin/coupons/${id}`, { method: 'DELETE' });
+    } catch (e) {
+      console.warn('Backend sync failed for coupon deletion', e);
+    }
+  };
+
   const applyCoupon = async (code: string) => {
     const cartTotal = cart.reduce((acc, item) => acc + (item.variant.discountPrice || item.variant.price) * item.quantity, 0);
+    const cleanCode = code.trim().toUpperCase();
+
     try {
       const res = await fetch('/api/coupons/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, cartTotal })
+        body: JSON.stringify({ code: cleanCode, cartTotal })
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setAppliedCoupon(data.coupon);
-        setCouponDiscount(data.discountAmount);
-        showToast(`Coupon ${code.toUpperCase()} applied! Saved ₹${data.discountAmount}`);
-        return { success: true, message: `Coupon applied: ₹${data.discountAmount} off` };
-      } else {
-        return { success: false, message: data.error || 'Failed to apply coupon' };
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setAppliedCoupon(data.coupon);
+          setCouponDiscount(data.discountAmount);
+          showToast(`Coupon ${cleanCode} applied! Saved ₹${data.discountAmount}`);
+          return { success: true, message: `Coupon applied: ₹${data.discountAmount} off` };
+        } else {
+          return { success: false, message: data.error || 'Failed to apply coupon' };
+        }
       }
     } catch (e) {
-      return { success: false, message: 'Server error applying coupon' };
+      console.warn('Backend coupon validate offline fallback', e);
     }
+
+    // Local state fallback validation
+    const coupon = coupons.find(c => c.code.toUpperCase() === cleanCode && c.isActive);
+    if (!coupon) {
+      return { success: false, message: `Invalid or inactive promo code "${cleanCode}".` };
+    }
+    if (coupon.expiryDate && new Date(coupon.expiryDate) < new Date()) {
+      return { success: false, message: `Promo coupon code "${cleanCode}" has expired.` };
+    }
+    if (cartTotal < (coupon.minOrderValue || 0)) {
+      return { success: false, message: `Minimum order value of ₹${coupon.minOrderValue} required for ${cleanCode}.` };
+    }
+
+    let discountAmount = 0;
+    if (coupon.discountType === 'percentage') {
+      discountAmount = Math.round(cartTotal * (coupon.value / 100));
+      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+        discountAmount = coupon.maxDiscount;
+      }
+    } else {
+      discountAmount = coupon.value;
+    }
+
+    discountAmount = Math.min(discountAmount, cartTotal);
+    setAppliedCoupon(coupon);
+    setCouponDiscount(discountAmount);
+    showToast(`Coupon ${cleanCode} applied! Saved ₹${discountAmount}`);
+    return { success: true, message: `Coupon applied: ₹${discountAmount} off` };
   };
 
   const removeCoupon = () => {
@@ -694,6 +783,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         banners,
         setBanners,
         coupons,
+        setCoupons,
+        saveCoupon,
+        toggleCoupon,
+        deleteCoupon,
         cart,
         addToCart,
         removeFromCart,
