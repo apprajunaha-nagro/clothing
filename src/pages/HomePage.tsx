@@ -235,47 +235,79 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* 7. TRUST BADGES ROW (Above Footer) */}
-      <section className="max-w-7xl mx-auto px-2 sm:px-6">
-        <div className="bg-white border border-stone-200 rounded-md p-4 shadow-2xs">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-5 h-5" />
+      {/* 7. TRUST BADGES ROW (Redesigned Premium Template) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 my-6">
+        <div className="bg-gradient-to-r from-[#FAF4F0] via-white to-[#FDF8F5] border border-stone-200/90 rounded-2xl p-6 sm:p-8 shadow-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 divide-y sm:divide-y-0 sm:divide-x divide-stone-200/70">
+            {/* Item 1 */}
+            <div className="flex items-start gap-4 pt-4 sm:pt-0 sm:px-2 first:pt-0 group">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C0654B] to-[#D4884A] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#C0654B]/25 group-hover:scale-110 transition-transform">
+                <CheckCircle2 className="w-6 h-6 stroke-[2.2]" />
               </div>
-              <div>
-                <h4 className="text-xs sm:text-sm font-extrabold text-stone-900">100% Original</h4>
-                <p className="text-[11px] text-stone-500">Direct from heritage weavers</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
-                <Truck className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-xs sm:text-sm font-extrabold text-stone-900">Free Shipping</h4>
-                <p className="text-[11px] text-stone-500">On all orders over ₹999</p>
+              <div className="space-y-0.5 text-left">
+                <span className="text-[9px] font-black text-[#C0654B] uppercase tracking-widest block">
+                  Artisanal Quality
+                </span>
+                <h4 className="text-sm font-black text-stone-900 tracking-tight">
+                  100% Original
+                </h4>
+                <p className="text-xs text-stone-500 font-medium leading-normal">
+                  Direct from heritage weavers
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-                <RotateCcw className="w-5 h-5" />
+            {/* Item 2 */}
+            <div className="flex items-start gap-4 pt-4 sm:pt-0 sm:pl-6 group">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C0654B] to-[#D4884A] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#C0654B]/25 group-hover:scale-110 transition-transform">
+                <Truck className="w-6 h-6 stroke-[2.2]" />
               </div>
-              <div>
-                <h4 className="text-xs sm:text-sm font-extrabold text-stone-900">Easy 7-Day Returns</h4>
-                <p className="text-[11px] text-stone-500">Hassle-free exchange policy</p>
+              <div className="space-y-0.5 text-left">
+                <span className="text-[9px] font-black text-[#C0654B] uppercase tracking-widest block">
+                  Express Shipping
+                </span>
+                <h4 className="text-sm font-black text-stone-900 tracking-tight">
+                  Free Shipping
+                </h4>
+                <p className="text-xs text-stone-500 font-medium leading-normal">
+                  On all orders over ₹999
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-rose-50 text-[#C0654B] flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-5 h-5" />
+            {/* Item 3 */}
+            <div className="flex items-start gap-4 pt-4 sm:pt-0 sm:pl-6 group">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C0654B] to-[#D4884A] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#C0654B]/25 group-hover:scale-110 transition-transform">
+                <RotateCcw className="w-6 h-6 stroke-[2.2]" />
               </div>
-              <div>
-                <h4 className="text-xs sm:text-sm font-extrabold text-stone-900">100% Secure Payments</h4>
-                <p className="text-[11px] text-stone-500">UPI, Cards, Netbanking & COD</p>
+              <div className="space-y-0.5 text-left">
+                <span className="text-[9px] font-black text-[#C0654B] uppercase tracking-widest block">
+                  Easy Exchange
+                </span>
+                <h4 className="text-sm font-black text-stone-900 tracking-tight">
+                  Easy 7-Day Returns
+                </h4>
+                <p className="text-xs text-stone-500 font-medium leading-normal">
+                  Hassle-free exchange policy
+                </p>
+              </div>
+            </div>
+
+            {/* Item 4 */}
+            <div className="flex items-start gap-4 pt-4 sm:pt-0 sm:pl-6 group">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C0654B] to-[#D4884A] text-white flex items-center justify-center shrink-0 shadow-md shadow-[#C0654B]/25 group-hover:scale-110 transition-transform">
+                <ShieldCheck className="w-6 h-6 stroke-[2.2]" />
+              </div>
+              <div className="space-y-0.5 text-left">
+                <span className="text-[9px] font-black text-[#C0654B] uppercase tracking-widest block">
+                  Encrypted Checkout
+                </span>
+                <h4 className="text-sm font-black text-stone-900 tracking-tight">
+                  100% Secure Payments
+                </h4>
+                <p className="text-xs text-stone-500 font-medium leading-normal">
+                  UPI, Cards, Netbanking & COD
+                </p>
               </div>
             </div>
           </div>
