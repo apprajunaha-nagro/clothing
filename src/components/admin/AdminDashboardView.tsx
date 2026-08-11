@@ -13,8 +13,9 @@ export const AdminDashboardView: React.FC = () => {
   const { products, orders, updateOrderStatus, updateProduct, showToast } = useStore();
   const [timeRange, setTimeRange] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
   const [restockStock, setRestockStock] = useState<{ [variantId: string]: number }>({});
-
-  const lowStockThreshold = 10;
+  
+  // Customizable Low Stock Threshold (Defaults to 1 - alerts on stock <= 1)
+  const [lowStockThreshold, setLowStockThreshold] = useState<number>(1);
   const newCustomersCount = 14;
 
   const trendData = {
@@ -60,18 +61,36 @@ export const AdminDashboardView: React.FC = () => {
 
     const pendingOrdersCount = orders.filter(o => o.status === 'pending').length;
 
-    // Stock tracking
+    // Stock tracking (Alerts on stock <= lowStockThreshold)
     const lowStockVariants: { product: Product; variant: ProductVariant }[] = [];
     for (let i = 0; i < products.length; i++) {
       const p = products[i];
       const vars = p.variants || [];
-      for (let j = 0; j < vars.length; j++) {
-        if (vars[j].stock <= lowStockThreshold) {
-          lowStockVariants.push({ product: p, variant: vars[j] });
-          if (lowStockVariants.length >= 15) break;
+      if (vars.length === 0) {
+        const pStock = (p as any).stock ?? 0;
+        if (pStock <= lowStockThreshold) {
+          lowStockVariants.push({
+            product: p,
+            variant: {
+              id: `p-${p.id}`,
+              productId: p.id,
+              size: 'Standard',
+              color: p.colors?.[0]?.name || 'Standard',
+              colorHex: p.colors?.[0]?.hex || '#000000',
+              sku: `SKU-${p.id}`,
+              price: p.price,
+              stock: pStock,
+              images: p.colors?.[0]?.images || []
+            }
+          });
+        }
+      } else {
+        for (let j = 0; j < vars.length; j++) {
+          if (vars[j].stock <= lowStockThreshold) {
+            lowStockVariants.push({ product: p, variant: vars[j] });
+          }
         }
       }
-      if (lowStockVariants.length >= 15) break;
     }
 
     // Product Sales Ranking using O(1) Map
@@ -105,7 +124,7 @@ export const AdminDashboardView: React.FC = () => {
       lowStockAlertsCount: lowStockVariants.length,
       bestSellers
     };
-  }, [products, orders]);
+  }, [products, orders, lowStockThreshold]);
 
   const {
     todaySales,
@@ -449,59 +468,105 @@ export const AdminDashboardView: React.FC = () => {
       </div>
 
       {/* QUICK LOW-STOCK RESTOCK PANEL */}
-      <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm text-left space-y-4">
-        <div>
-          <h2 className="text-base font-bold font-serif text-stone-900">Low Stock & Out-of-Stock Alert Center</h2>
-          <p className="text-xs text-stone-400">Instantly refill stock levels for the catalog without entering product forms</p>
+      <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm text-left space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase">
+                INVENTORY CENTER
+              </span>
+              <h2 className="text-base font-bold font-serif text-stone-900 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600" />
+                <span>Low Stock & Out-of-Stock Alert Center</span>
+              </h2>
+            </div>
+            <p className="text-xs text-stone-500 mt-1">
+              Live alert list for products with stock &le; {lowStockThreshold} units. Refill inventory instantly.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 bg-stone-50 p-2 rounded-xl border border-stone-200">
+            <span className="text-xs font-bold text-stone-700">Alert Stock Threshold:</span>
+            <select
+              value={lowStockThreshold}
+              onChange={(e) => setLowStockThreshold(Number(e.target.value))}
+              className="px-2.5 py-1 border border-stone-300 rounded-lg text-xs font-bold bg-white text-stone-900 cursor-pointer shadow-2xs focus:ring-1 focus:ring-[#C0654B]"
+            >
+              <option value={1}>&le; 1 item (Default - Out of Stock & 1 left)</option>
+              <option value={2}>&le; 2 items</option>
+              <option value={3}>&le; 3 items</option>
+              <option value={5}>&le; 5 items</option>
+              <option value={10}>&le; 10 items</option>
+              <option value={15}>&le; 15 items</option>
+              <option value={20}>&le; 20 items</option>
+            </select>
+          </div>
         </div>
 
         {lowStockVariants.length === 0 ? (
-          <div className="p-6 bg-emerald-50 text-emerald-800 border border-emerald-200/60 rounded-xl text-xs font-semibold text-center">
-            🎉 Excellent! All product variants have high stock levels (above 10 units).
+          <div className="p-8 bg-emerald-50 text-emerald-800 border border-emerald-200/60 rounded-xl text-xs font-semibold text-center space-y-1">
+            <p className="text-sm font-extrabold">🎉 All Product Inventory Levels Healthy!</p>
+            <p className="text-stone-500 font-normal">
+              No products found with stock &le; {lowStockThreshold} units. You can adjust the alert threshold selector above to check higher stock limits.
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {lowStockVariants.slice(0, 9).map(({ product, variant }) => (
-              <div key={variant.id} className="flex items-center justify-between border border-stone-200 p-3 rounded-xl bg-stone-50/50 hover:bg-white transition-all">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <img 
-                    src={variant.images[0] || product.colors[0]?.images[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=120&q=80'} 
-                    alt={product.name} 
-                    className="w-10 h-10 object-cover rounded-lg border border-stone-200"
-                    referrerPolicy="no-referrer"
-                  />
-                  <div className="min-w-0 text-xs">
-                    <h4 className="font-bold text-stone-800 truncate leading-snug">{product.name}</h4>
-                    <p className="text-[10px] text-stone-400 font-mono truncate">
-                      Size: <span className="font-bold text-stone-700">{variant.size}</span> | Col: <span className="font-bold text-stone-700">{variant.color}</span>
-                    </p>
-                    <span className={`inline-block font-mono text-[10px] font-bold px-1.5 py-0.5 rounded-md mt-1 ${
-                      variant.stock === 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {variant.stock} Left
-                    </span>
+            {lowStockVariants.map(({ product, variant }) => {
+              const isOutOfStock = variant.stock === 0;
+              const isCritical1Left = variant.stock === 1;
+
+              return (
+                <div key={variant.id} className="flex items-center justify-between border border-stone-200 p-3 rounded-xl bg-stone-50/50 hover:bg-white transition-all shadow-2xs">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <img 
+                      src={variant.images?.[0] || product.colors?.[0]?.images?.[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=120&q=80'} 
+                      alt={product.name} 
+                      className="w-11 h-11 object-cover rounded-lg border border-stone-200 shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="min-w-0 text-xs">
+                      <h4 className="font-bold text-stone-900 truncate leading-snug">{product.name}</h4>
+                      <p className="text-[10px] text-stone-400 font-mono truncate">
+                        Size: <span className="font-bold text-stone-700">{variant.size}</span> | Col: <span className="font-bold text-stone-700">{variant.color}</span>
+                      </p>
+                      {isOutOfStock ? (
+                        <span className="inline-block bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider mt-1 animate-pulse">
+                          🔴 Out of Stock (0)
+                        </span>
+                      ) : isCritical1Left ? (
+                        <span className="inline-block bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded mt-1">
+                          ⚠️ Critical (Only 1 Left)
+                        </span>
+                      ) : (
+                        <span className="inline-block bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded mt-1">
+                          Low Stock ({variant.stock} Left)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0 pl-2">
+                    <input
+                      type="number"
+                      min={1}
+                      value={restockStock[variant.id] || ''}
+                      placeholder="+ Qty"
+                      onChange={(e) => setRestockStock(prev => ({ ...prev, [variant.id]: Number(e.target.value) }))}
+                      className="w-16 px-2 py-1.5 border border-stone-300 rounded-lg text-xs font-semibold font-mono text-center outline-none focus:border-[#C0654B] bg-white"
+                    />
+                    <button
+                      onClick={() => handleQuickRestock(product, variant)}
+                      disabled={!restockStock[variant.id]}
+                      className="p-1.5 bg-[#C0654B] hover:bg-[#8B4A38] disabled:bg-stone-200 disabled:cursor-not-allowed text-white rounded-lg cursor-pointer shadow-xs transition-colors"
+                      title="Refill Stock"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <input
-                    type="number"
-                    min={1}
-                    value={restockStock[variant.id] || ''}
-                    placeholder="+ Qty"
-                    onChange={(e) => setRestockStock(prev => ({ ...prev, [variant.id]: Number(e.target.value) }))}
-                    className="w-16 px-2 py-1.5 border border-stone-300 rounded-lg text-xs font-semibold font-mono text-center outline-none focus:border-[#C0654B] bg-white"
-                  />
-                  <button
-                    onClick={() => handleQuickRestock(product, variant)}
-                    disabled={!restockStock[variant.id]}
-                    className="p-1.5 bg-[#C0654B] hover:bg-[#8B4A38] disabled:bg-stone-200 disabled:cursor-not-allowed text-white rounded-lg cursor-pointer shadow-sm transition-colors"
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
