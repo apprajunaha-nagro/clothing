@@ -317,8 +317,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 {[...featured20Brands, ...featured20Brands].map((brand, idx) => (
                   <div
                     key={`${brand.id}-${idx}`}
-                    onClick={() => onNavigate(`/category/all?brand=${encodeURIComponent(brand.name)}`)}
-                    className="flex flex-col items-center justify-center group cursor-pointer shrink-0 select-none"
+                    className="flex flex-col items-center justify-center group cursor-default shrink-0 select-none"
                   >
                     <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 bg-gradient-to-tr from-[#C0654B] via-amber-400 to-[#8B3E2F] shadow-xs group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
                       <img
