@@ -119,7 +119,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     sectionSubtitle = 'Flat 30% to 60% OFF on festive sarees, kurtas, western wear, and soft innerwear.';
     sectionBadge = 'UP TO 60% OFF';
   } else if (tagParam === 'new_arrival' || rawSlug === 'new-arrivals') {
-    sectionTitle = 'New Arrivals & Fresh Drops';
+    sectionTitle = 'New Arrivals';
     sectionSubtitle = 'Latest trends and newly launched styles updated daily across all departments.';
     sectionBadge = 'NEW IN STORE';
   } else if (tagParam === 'bestseller' || rawSlug === 'bestsellers') {

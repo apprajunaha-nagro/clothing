@@ -39,7 +39,7 @@ export const initialSiteSettings: SiteSettings = {
   dealsMinDiscount: 20,
   adBannerEnabled: true,
   newArrivalsEnabled: true,
-  newArrivalsTitle: "New Arrivals & Fresh Drops",
+  newArrivalsTitle: "New Arrivals",
   newArrivalsSubtitle: "Explore the latest ethnic wear, designer sarees, & festive drops",
   newArrivalsBadge: "JUST ARRIVED",
   newArrivalsMaxItems: 10,

@@ -18,7 +18,7 @@ export const AdminMarketingView: React.FC = () => {
   const [dealSearchQuery, setDealSearchQuery] = useState('');
   
   // New Arrivals section state fields
-  const [naTitle, setNaTitle] = useState(settings.newArrivalsTitle || 'New Arrivals & Fresh Drops');
+  const [naTitle, setNaTitle] = useState(settings.newArrivalsTitle || 'New Arrivals');
   const [naSubtitle, setNaSubtitle] = useState(settings.newArrivalsSubtitle || 'Explore the latest ethnic wear, designer sarees, & festive drops');
   const [naBadge, setNaBadge] = useState(settings.newArrivalsBadge || 'JUST ARRIVED');
   const [naMaxItems, setNaMaxItems] = useState(settings.newArrivalsMaxItems || 10);
@@ -423,7 +423,7 @@ export const AdminMarketingView: React.FC = () => {
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold font-serif text-stone-900">New Arrivals & Fresh Drops Section Controls</h3>
+                  <h3 className="text-base font-bold font-serif text-stone-900">New Arrivals Section Controls</h3>
                   <p className="text-xs text-stone-500">
                     Controls the "New Arrivals" section positioned directly below "Trending in Sarees & Ethnic" on homepage
                   </p>
@@ -456,7 +456,7 @@ export const AdminMarketingView: React.FC = () => {
                   type="text"
                   value={naTitle}
                   onChange={(e) => setNaTitle(e.target.value)}
-                  placeholder="New Arrivals & Fresh Drops"
+                  placeholder="New Arrivals"
                   className="w-full border border-stone-300 rounded-lg p-2.5 focus:outline-none focus:border-[#C0654B]"
                 />
               </div>

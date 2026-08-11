@@ -202,7 +202,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                     {settings.newArrivalsBadge || 'JUST ARRIVED'}
                   </span>
                   <h2 className="text-base sm:text-lg font-bold uppercase tracking-tight">
-                    {settings.newArrivalsTitle || 'New Arrivals & Fresh Drops'}
+                    {settings.newArrivalsTitle || 'New Arrivals'}
                   </h2>
                 </div>
                 {settings.newArrivalsSubtitle && (
