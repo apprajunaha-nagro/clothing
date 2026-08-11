@@ -193,42 +193,34 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
           {/* Main Large Image — Hover Zoom + Click Lightbox */}
           <div
             ref={imgContainerRef}
-            className="flex-1 aspect-3/4 bg-stone-100 rounded-2xl overflow-hidden relative shadow-sm border border-stone-200 cursor-zoom-in select-none"
+            className="flex-1 aspect-3/4 bg-stone-100 rounded-2xl overflow-hidden relative shadow-sm border border-stone-200 cursor-zoom-in select-none group/zoom"
             onMouseMove={handleMouseMove}
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
             onClick={() => openLightbox(activeImageIndex)}
           >
-            {/* Base image */}
+            {/* Zoomable image — scale driven by hover + cursor position via transform-origin */}
             <img
-              src={getOptimizedImageUrl(activeImage, { width: 1000, quality: 80 })}
+              src={getOptimizedImageUrl(activeImage, { width: 1200, quality: 85 })}
               alt={product.name}
-              className="w-full h-full object-cover object-top pointer-events-none"
+              className="w-full h-full object-cover object-top pointer-events-none transition-transform duration-200"
+              style={{
+                transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                transform: isHovering ? 'scale(2.2)' : 'scale(1)',
+              }}
               loading="eager"
               decoding="async"
             />
 
-            {/* Hover magnified layer */}
-            {isHovering && (
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  backgroundImage: `url(${getOptimizedImageUrl(activeImage, { width: 2000, quality: 92 })})`,
-                  backgroundSize: '250%',
-                  backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
-                  backgroundRepeat: 'no-repeat',
-                  opacity: 1,
-                }}
-              />
-            )}
-
-            {/* Zoom hint */}
-            {!isHovering && (
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] font-semibold px-3 py-1 rounded-full flex items-center gap-1.5 backdrop-blur-sm pointer-events-none">
-                <ZoomIn className="w-3 h-3" />
-                Hover to zoom · Click to expand
-              </div>
-            )}
+            {/* Zoom hint — shown only when not hovering */}
+            <div
+              className={`absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] font-semibold px-3 py-1 rounded-full flex items-center gap-1.5 backdrop-blur-sm pointer-events-none transition-opacity duration-200 ${
+                isHovering ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
+              <ZoomIn className="w-3 h-3" />
+              Hover to zoom · Click to expand
+            </div>
 
             {/* Wishlist button */}
             <button
