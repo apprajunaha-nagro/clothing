@@ -80,6 +80,7 @@ export interface Brand {
   logo: string;
   description: string;
   isFeatured?: boolean;
+  isActive?: boolean;
 }
 
 export type ProductTag = 'new_arrival' | 'bestseller' | 'trending' | 'sale' | 'online_exclusive' | 'value_pack' | 'curves_plus_size' | 'deal_of_the_day';
@@ -280,6 +281,7 @@ export interface SiteSettings {
   brandsSubtitle?: string;
   brandsBadge?: string;
   brandsSpeed?: number;
+  brandsMaxItems?: number;
 }
 
 export interface FilterState {

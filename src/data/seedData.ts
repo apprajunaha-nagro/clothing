@@ -46,11 +46,26 @@ export const initialSiteSettings: SiteSettings = {
 };
 
 export const initialBrands: Brand[] = [
-  { id: 'b1', name: 'Terra Ethnic', slug: 'terra-ethnic', logo: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=200&q=80', description: 'Handcrafted Heritage & Festive Apparel', isFeatured: true },
-  { id: 'b2', name: 'Clay Urban', slug: 'clay-urban', logo: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=200&q=80', description: 'Modern Western & Minimalist Streetwear', isFeatured: true },
-  { id: 'b3', name: 'Bare Essentials', slug: 'bare-essentials', logo: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=200&q=80', description: 'Ultra-Soft Breathable Innerwear & Lingerie', isFeatured: true },
-  { id: 'b4', name: 'Velour Men', slug: 'velour-men', logo: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=200&q=80', description: 'Tailored Formals & Casual Menswear', isFeatured: true },
-  { id: 'b5', name: 'Aura Kids', slug: 'aura-kids', logo: '/src/assets/images/kids_department_nano_banana.png', description: 'Skin-Friendly Vibrant Kids Apparel', isFeatured: true },
+  { id: 'b1', name: 'Manyavar', slug: 'manyavar', logo: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=200&h=200&q=80', description: 'Royal Ethnic & Sherwanis', isFeatured: true, isActive: true },
+  { id: 'b2', name: 'Biba', slug: 'biba', logo: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=200&h=200&q=80', description: "Women's Ethnic & Anarkalis", isFeatured: true, isActive: true },
+  { id: 'b3', name: 'W for Woman', slug: 'w-for-woman', logo: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=200&h=200&q=80', description: 'Contemporary Indo-Western Wear', isFeatured: true, isActive: true },
+  { id: 'b4', name: 'FabIndia', slug: 'fabindia', logo: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=200&h=200&q=80', description: 'Handwoven Silk & Cotton Outfits', isFeatured: true, isActive: true },
+  { id: 'b5', name: 'Aurelia', slug: 'aurelia', logo: 'https://images.unsplash.com/photo-1583391733975-01e4a5d84175?auto=format&fit=crop&w=200&h=200&q=80', description: 'Designer Kurti & Ethnic Sets', isFeatured: true, isActive: true },
+  { id: 'b6', name: 'Allen Solly', slug: 'allen-solly', logo: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=200&h=200&q=80', description: 'Modern Workwear & Executive Wear', isFeatured: true, isActive: true },
+  { id: 'b7', name: 'Van Heusen', slug: 'van-heusen', logo: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=200&h=200&q=80', description: 'Premium Formal & Corporate Apparel', isFeatured: true, isActive: true },
+  { id: 'b8', name: 'Raymond', slug: 'raymond', logo: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=200&h=200&q=80', description: 'The Complete Man Heritage Suiting', isFeatured: true, isActive: true },
+  { id: 'b9', name: 'Peter England', slug: 'peter-england', logo: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=200&h=200&q=80', description: 'Classic Formal & Casual Menswear', isFeatured: true, isActive: true },
+  { id: 'b10', name: 'Blackberrys', slug: 'blackberrys', logo: 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&w=200&h=200&q=80', description: 'Sharp Suits & Executive Trousers', isFeatured: true, isActive: true },
+  { id: 'b11', name: 'Mufti', slug: 'mufti', logo: 'https://images.unsplash.com/photo-1542272604-780c36856842?auto=format&fit=crop&w=200&h=200&q=80', description: 'Urban Denim & Streetwear Fashion', isFeatured: true, isActive: true },
+  { id: 'b12', name: 'Monte Carlo', slug: 'monte-carlo', logo: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=200&h=200&q=80', description: 'Luxe Woollens & Seasonal Apparel', isFeatured: true, isActive: true },
+  { id: 'b13', name: "Levi's", slug: 'levis', logo: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=200&h=200&q=80', description: 'Original Denim & Casual Wear', isFeatured: true, isActive: true },
+  { id: 'b14', name: 'U.S. Polo Assn.', slug: 'us-polo-assn', logo: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=200&h=200&q=80', description: 'Authentic Sporty Lifestyle Wear', isFeatured: true, isActive: true },
+  { id: 'b15', name: 'Pepe Jeans', slug: 'pepe-jeans', logo: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=200&h=200&q=80', description: 'Casual Denim & Outerwear Apparel', isFeatured: true, isActive: true },
+  { id: 'b16', name: "Neeru's", slug: 'neerus', logo: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=200&h=200&q=80', description: 'Royal Ethnic & Bridal Sarees', isFeatured: true, isActive: true },
+  { id: 'b17', name: 'Craftsvilla', slug: 'craftsvilla', logo: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=200&h=200&q=80', description: 'Traditional Artisan Ethnic Apparel', isFeatured: true, isActive: true },
+  { id: 'b18', name: 'Mohey', slug: 'mohey', logo: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=200&h=200&q=80', description: 'Luxury Bridal & Festival Lehengas', isFeatured: true, isActive: true },
+  { id: 'b19', name: 'Sabhyata', slug: 'sabhyata', logo: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=200&h=200&q=80', description: 'Ethnic Kurti Collections', isFeatured: true, isActive: true },
+  { id: 'b20', name: 'Jockey', slug: 'jockey', logo: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=200&h=200&q=80', description: 'Premium Loungewear & Innerwear', isFeatured: true, isActive: true },
 ];
 
 export const initialCategories: Category[] = [

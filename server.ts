@@ -851,17 +851,49 @@ app.get('/api/brands', async (req, res) => {
 
 app.post('/api/brands', adminAuth, async (req, res) => {
   try {
-    const newBrand = await prisma.brand.create({
-      data: {
-        id: req.body.id || `b-${Date.now()}`,
-        name: req.body.name,
-        slug: req.body.slug || req.body.name.toLowerCase().replace(/\s+/g, '-'),
-        logo: req.body.logo || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=200&q=80',
-        description: req.body.description || '',
-        isFeatured: req.body.isFeatured || false,
-      },
+    const brandId = req.body.id || `b-${Date.now()}`;
+    const brandData: any = {
+      name: req.body.name,
+      slug: req.body.slug || req.body.name.toLowerCase().replace(/\s+/g, '-'),
+      logo: req.body.logo || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=200&q=80',
+      description: req.body.description || '',
+      isFeatured: req.body.isFeatured ?? true,
+      isActive: req.body.isActive ?? true,
+    };
+    const brand = await prisma.brand.upsert({
+      where: { id: brandId },
+      update: brandData,
+      create: { id: brandId, ...brandData },
     });
-    res.json({ success: true, brand: newBrand });
+    res.json({ success: true, brand });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/brands/:id', adminAuth, async (req, res) => {
+  try {
+    const brandData: any = {
+      name: req.body.name,
+      logo: req.body.logo,
+      description: req.body.description,
+      isFeatured: req.body.isFeatured,
+      isActive: req.body.isActive,
+    };
+    const updated = await prisma.brand.update({
+      where: { id: req.params.id },
+      data: brandData,
+    });
+    res.json({ success: true, brand: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/brands/:id', adminAuth, async (req, res) => {
+  try {
+    await prisma.brand.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

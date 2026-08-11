@@ -7,8 +7,9 @@ import {
 import { Coupon, Banner, SiteSettings, Product } from '../../types';
 
 export const AdminMarketingView: React.FC = () => {
-  const { coupons, saveCoupon, toggleCoupon, deleteCoupon, banners, setBanners, products, setProducts, settings, updateSettings, updateProduct, showToast } = useStore();
+  const { coupons, saveCoupon, toggleCoupon, deleteCoupon, banners, setBanners, products, setProducts, settings, updateSettings, updateProduct, showToast, brands, setBrands, saveBrand, toggleBrand, deleteBrand } = useStore();
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
+  const brandFileInputRef = useRef<HTMLInputElement>(null);
 
   // Banners List Local override/state
   const [bannersList, setBannersList] = useState<Banner[]>(banners);
@@ -23,6 +24,14 @@ export const AdminMarketingView: React.FC = () => {
   const [bSectionSubtitle, setBSectionSubtitle] = useState(settings.brandsSubtitle || '20 Premier Brands • 100% Authentic Storefront');
   const [bSectionBadge, setBSectionBadge] = useState(settings.brandsBadge || 'OFFICIAL BRANDS');
   const [bSectionSpeed, setBSectionSpeed] = useState(settings.brandsSpeed || 35);
+  const [bSectionMaxItems, setBSectionMaxItems] = useState(settings.brandsMaxItems || 20);
+
+  // New Brand Creation / Editing State
+  const [newBrandName, setNewBrandName] = useState('');
+  const [newBrandLogo, setNewBrandLogo] = useState('');
+  const [editingBrandId, setEditingBrandId] = useState<string | null>(null);
+  const [editBrandName, setEditBrandName] = useState('');
+  const [editBrandLogo, setEditBrandLogo] = useState('');
 
   // New Arrivals section state fields
   const [naTitle, setNaTitle] = useState(settings.newArrivalsTitle || 'New Arrivals');
@@ -167,9 +176,71 @@ export const AdminMarketingView: React.FC = () => {
       brandsTitle: bSectionTitle,
       brandsSubtitle: bSectionSubtitle,
       brandsBadge: bSectionBadge,
-      brandsSpeed: Number(bSectionSpeed)
+      brandsSpeed: Number(bSectionSpeed),
+      brandsMaxItems: Number(bSectionMaxItems),
     });
-    showToast('👑 Featured Clothing Brands section settings published & live on storefront!');
+    showToast('👑 Featured Clothing Brands section configuration saved & live on storefront!');
+  };
+
+  const handleBrandLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 12 * 1024 * 1024) {
+      showToast('Brand logo image file must be under 12MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        if (isEdit) {
+          setEditBrandLogo(reader.result);
+        } else {
+          setNewBrandLogo(reader.result);
+        }
+        showToast('Brand logo photo uploaded from device!');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAddNewBrand = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBrandName.trim()) {
+      showToast('Please enter brand name.');
+      return;
+    }
+    const createdBrand = {
+      id: `b-${Date.now()}`,
+      name: newBrandName.trim(),
+      slug: newBrandName.trim().toLowerCase().replace(/\s+/g, '-'),
+      logo: newBrandLogo || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=200&h=200&q=80',
+      description: 'Official Brand Partner',
+      isFeatured: true,
+      isActive: true,
+    };
+    saveBrand(createdBrand);
+    setNewBrandName('');
+    setNewBrandLogo('');
+    showToast(`Brand "${createdBrand.name}" added to Featured Brands list!`);
+  };
+
+  const handleUpdateBrand = (id: string) => {
+    if (!editBrandName.trim()) {
+      showToast('Brand name cannot be empty.');
+      return;
+    }
+    const existing = brands.find(b => b.id === id);
+    if (existing) {
+      const updated = {
+        ...existing,
+        name: editBrandName.trim(),
+        slug: editBrandName.trim().toLowerCase().replace(/\s+/g, '-'),
+        logo: editBrandLogo || existing.logo,
+      };
+      saveBrand(updated);
+      setEditingBrandId(null);
+      showToast(`Brand "${updated.name}" photo & name updated!`);
+    }
   };
 
   // COUPON HANDLERS
@@ -281,115 +352,303 @@ export const AdminMarketingView: React.FC = () => {
 
       {/* FEATURED CLOTHING BRANDS MANAGER (MARKETING SUITE CONTROL) */}
       {activeTab === 'brands' && (
-        <form onSubmit={handleSaveBrandsSettings} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="bg-[#C0654B] text-white text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase">
-                  SECTION MANAGER
-                </span>
-                <h3 className="text-lg font-bold font-serif text-stone-900">Featured Clothing Brands Rail Control</h3>
-              </div>
-              <p className="text-xs text-stone-500 mt-1">
-                Manage section visibility, title, badge tag, and continuous 360-degree marquee scroll speed.
-              </p>
-            </div>
-
-            <button
-              type="submit"
-              className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 shrink-0"
-            >
-              <Save className="w-4 h-4" /> Save Brand Rail Config
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs font-semibold text-stone-700">
-            {/* Toggle Switch */}
-            <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3 col-span-1 md:col-span-2 flex items-center justify-between">
+        <div className="space-y-6">
+          {/* Section Settings Form */}
+          <form onSubmit={handleSaveBrandsSettings} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
               <div>
-                <span className="font-bold text-stone-900 block text-sm">Enable Featured Brands Rail</span>
-                <p className="text-[11px] text-stone-500 font-normal">
-                  Toggle on/off the 20 official clothing brands section on the homepage (positioned just above New Arrivals).
+                <div className="flex items-center gap-2">
+                  <span className="bg-[#C0654B] text-white text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase">
+                    FEATURED BRANDS SUITE
+                  </span>
+                  <h3 className="text-lg font-bold font-serif text-stone-900">Featured Clothing Brands Rail Settings</h3>
+                </div>
+                <p className="text-xs text-stone-500 mt-1">
+                  Customize brand names, photos, max displayed limit, and activate or deactivate listed brands.
                 </p>
               </div>
-              <label className="relative inline-flex items-center cursor-pointer">
+
+              <button
+                type="submit"
+                className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 shrink-0 text-xs"
+              >
+                <Save className="w-4 h-4" /> Save Brand Rail Settings
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs font-semibold text-stone-700">
+              {/* Toggle Switch */}
+              <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3 col-span-1 md:col-span-3 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-stone-900 block text-sm">Enable Featured Brands Rail</span>
+                  <p className="text-[11px] text-stone-500 font-normal">
+                    Toggle on/off the featured clothing brands section on homepage (positioned just above New Arrivals).
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={bSectionEnabled}
+                    onChange={(e) => setBSectionEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#C0654B]"></div>
+                </label>
+              </div>
+
+              {/* Section Title */}
+              <div>
+                <label className="block font-bold text-stone-900 mb-1">Section Display Title</label>
                 <input
-                  type="checkbox"
-                  checked={bSectionEnabled}
-                  onChange={(e) => setBSectionEnabled(e.target.checked)}
-                  className="sr-only peer"
+                  type="text"
+                  value={bSectionTitle}
+                  onChange={(e) => setBSectionTitle(e.target.value)}
+                  placeholder="e.g., Featured Clothing Brands"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs"
                 />
-                <div className="w-11 h-6 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#C0654B]"></div>
-              </label>
-            </div>
+              </div>
 
-            {/* Section Title */}
-            <div>
-              <label className="block font-bold text-stone-900 mb-1">Section Display Title</label>
-              <input
-                type="text"
-                value={bSectionTitle}
-                onChange={(e) => setBSectionTitle(e.target.value)}
-                placeholder="e.g., Featured Clothing Brands"
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs"
-              />
-            </div>
+              {/* Subtitle text */}
+              <div>
+                <label className="block font-bold text-stone-900 mb-1">Subtitle / Tagline Text</label>
+                <input
+                  type="text"
+                  value={bSectionSubtitle}
+                  onChange={(e) => setBSectionSubtitle(e.target.value)}
+                  placeholder="e.g., 20 Premier Brands • 100% Authentic Storefront"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs"
+                />
+              </div>
 
-            {/* Badge Tag */}
-            <div>
-              <label className="block font-bold text-stone-900 mb-1">Pill Badge Tag</label>
-              <input
-                type="text"
-                value={bSectionBadge}
-                onChange={(e) => setBSectionBadge(e.target.value)}
-                placeholder="e.g., OFFICIAL BRANDS"
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs font-mono"
-              />
-            </div>
-
-            {/* Subtitle text */}
-            <div>
-              <label className="block font-bold text-stone-900 mb-1">Subtitle / Tagline Text</label>
-              <input
-                type="text"
-                value={bSectionSubtitle}
-                onChange={(e) => setBSectionSubtitle(e.target.value)}
-                placeholder="e.g., 20 Premier Brands • 100% Authentic Storefront"
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs"
-              />
-            </div>
-
-            {/* Continuous Marquee Animation Speed */}
-            <div>
-              <label className="block font-bold text-stone-900 mb-1">
-                360° Marquee Scroll Speed: <span className="font-mono text-[#C0654B]">{bSectionSpeed} seconds</span>
-              </label>
-              <input
-                type="range"
-                min={15}
-                max={60}
-                step={5}
-                value={bSectionSpeed}
-                onChange={(e) => setBSectionSpeed(Number(e.target.value))}
-                className="w-full cursor-pointer accent-[#C0654B]"
-              />
-              <div className="flex justify-between text-[10px] text-stone-400 font-mono mt-1">
-                <span>Fast (15s)</span>
-                <span>Normal (35s)</span>
-                <span>Slow (60s)</span>
+              {/* Number of Brands Displayed Customization */}
+              <div>
+                <label className="block font-bold text-stone-900 mb-1">Number of Brands Displayed on Homepage</label>
+                <select
+                  value={bSectionMaxItems}
+                  onChange={(e) => setBSectionMaxItems(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs font-bold bg-white"
+                >
+                  <option value={5}>5 Brands</option>
+                  <option value={10}>10 Brands</option>
+                  <option value={15}>15 Brands</option>
+                  <option value={20}>20 Brands (Standard)</option>
+                  <option value={25}>25 Brands</option>
+                  <option value={30}>30 Brands</option>
+                </select>
               </div>
             </div>
+          </form>
+
+          {/* Add New Brand Form */}
+          <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+            <div className="flex items-center gap-2 border-b border-stone-100 pb-3">
+              <Plus className="w-4 h-4 text-[#C0654B]" />
+              <h4 className="text-sm font-bold font-serif text-stone-900">Add New Clothing Brand</h4>
+            </div>
+
+            <form onSubmit={handleAddNewBrand} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end text-xs font-semibold text-stone-700">
+              <div>
+                <label className="block font-bold text-stone-900 mb-1">Brand Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={newBrandName}
+                  onChange={(e) => setNewBrandName(e.target.value)}
+                  placeholder="e.g. Manyavar, Biba, Raymond"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-900 mb-1">Brand Photo / Logo *</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newBrandLogo}
+                    onChange={(e) => setNewBrandLogo(e.target.value)}
+                    placeholder="Image URL or upload photo..."
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg text-xs"
+                  />
+                  <input
+                    type="file"
+                    ref={brandFileInputRef}
+                    onChange={(e) => handleBrandLogoFileUpload(e, false)}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => brandFileInputRef.current?.click()}
+                    className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-bold shrink-0 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Upload
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  className="w-full py-2 bg-stone-900 hover:bg-black text-white font-bold rounded-lg shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" /> Add Brand
+                </button>
+              </div>
+            </form>
           </div>
 
-          <div className="flex justify-end pt-3 border-t border-stone-100">
-            <button
-              type="submit"
-              className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
-            >
-              <Save className="w-4 h-4" /> Save Brand Rail Config
-            </button>
+          {/* Detailed Listed Brands Table */}
+          <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden text-xs">
+            <div className="p-4 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
+              <div>
+                <h4 className="font-extrabold text-stone-900 text-sm flex items-center gap-2">
+                  <Award className="w-4 h-4 text-[#C0654B]" />
+                  <span>Listed Clothing Brands Catalog</span>
+                </h4>
+                <p className="text-[11px] text-stone-500 font-normal mt-0.5">
+                  {brands.length} Total Brands Listed • {brands.filter(b => b.isActive !== false).length} Active on Storefront
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-stone-100/60 text-stone-600 font-bold border-b border-stone-200 text-[11px] uppercase tracking-wider">
+                    <th className="p-3 pl-4">Round Photo</th>
+                    <th className="p-3">Brand Name</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3 text-center">Active Switch</th>
+                    <th className="p-3 text-right pr-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 font-medium">
+                  {brands.map((b) => {
+                    const isEditing = editingBrandId === b.id;
+                    const isActive = b.isActive !== false;
+
+                    return (
+                      <tr key={b.id} className="hover:bg-stone-50/70 transition-colors">
+                        {/* Photo */}
+                        <td className="p-3 pl-4">
+                          <div className="w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-[#C0654B] to-amber-400 shrink-0">
+                            <img
+                              src={isEditing ? (editBrandLogo || b.logo) : b.logo}
+                              alt={b.name}
+                              className="w-full h-full rounded-full object-cover border-2 border-white bg-stone-100"
+                            />
+                          </div>
+                        </td>
+
+                        {/* Name */}
+                        <td className="p-3">
+                          {isEditing ? (
+                            <div className="space-y-1.5">
+                              <input
+                                type="text"
+                                value={editBrandName}
+                                onChange={(e) => setEditBrandName(e.target.value)}
+                                className="w-full px-2.5 py-1 border border-stone-300 rounded font-bold text-xs"
+                              />
+                              <div className="flex items-center gap-1.5">
+                                <input
+                                  type="text"
+                                  value={editBrandLogo}
+                                  onChange={(e) => setEditBrandLogo(e.target.value)}
+                                  placeholder="Photo URL..."
+                                  className="w-full px-2 py-0.5 border border-stone-300 rounded text-[10px]"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="font-extrabold text-stone-900 text-xs block">{b.name}</span>
+                              <span className="text-[10px] text-stone-400 font-mono">{b.slug}</span>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Status */}
+                        <td className="p-3">
+                          {isActive ? (
+                            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Active
+                            </span>
+                          ) : (
+                            <span className="bg-stone-100 text-stone-500 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-stone-400" /> Inactive
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Active Toggle Switch */}
+                        <td className="p-3 text-center">
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isActive}
+                              onChange={() => toggleBrand(b.id)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-stone-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                          </label>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="p-3 text-right pr-4">
+                          {isEditing ? (
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateBrand(b.id)}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[11px] cursor-pointer flex items-center gap-1"
+                              >
+                                <Check className="w-3 h-3" /> Save
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setEditingBrandId(null)}
+                                className="px-2 py-1 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded font-bold text-[11px] cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingBrandId(b.id);
+                                  setEditBrandName(b.name);
+                                  setEditBrandLogo(b.logo);
+                                }}
+                                className="p-1.5 text-stone-600 hover:text-[#C0654B] hover:bg-stone-100 rounded-lg cursor-pointer transition-colors"
+                                title="Edit Brand Name & Photo"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  deleteBrand(b.id);
+                                  showToast(`Brand "${b.name}" deleted from catalog.`);
+                                }}
+                                className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors"
+                                title="Delete Brand"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </form>
+        </div>
       )}
 
       {/* DEALS OF THE DAY MANAGER */}

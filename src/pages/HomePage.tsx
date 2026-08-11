@@ -70,29 +70,12 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     }
   };
 
-  // 20 Featured Clothing Brands (Round Images, 360 Continuous Scrolling)
-  const featured20Brands = React.useMemo(() => [
-    { id: 'b1', name: 'Manyavar', img: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b2', name: 'Biba', img: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b3', name: 'W for Woman', img: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b4', name: 'FabIndia', img: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b5', name: 'Aurelia', img: 'https://images.unsplash.com/photo-1583391733975-01e4a5d84175?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b6', name: 'Allen Solly', img: 'https://images.unsplash.com/photo-1617137968427-85924c800a22?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b7', name: 'Van Heusen', img: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b8', name: 'Raymond', img: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b9', name: 'Peter England', img: 'https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b10', name: 'Blackberrys', img: 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b11', name: 'Mufti', img: 'https://images.unsplash.com/photo-1542272604-780c36856842?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b12', name: 'Monte Carlo', img: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b13', name: "Levi's", img: 'https://images.unsplash.com/photo-1582552938357-32b906df40cb?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b14', name: 'U.S. Polo Assn.', img: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b15', name: 'Pepe Jeans', img: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b16', name: "Neeru's", img: 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b17', name: 'Craftsvilla', img: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b18', name: 'Mohey', img: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b19', name: 'Sabhyata', img: 'https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=200&h=200&q=80' },
-    { id: 'b20', name: 'Jockey', img: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=200&h=200&q=80' },
-  ], []);
+  // Dynamic Featured Clothing Brands (Controlled via Admin Portal Marketing Suite)
+  const activeBrandsToDisplay = React.useMemo(() => {
+    const activeList = brands.filter(b => b.isActive !== false);
+    const limit = settings.brandsMaxItems || 20;
+    return activeList.slice(0, limit);
+  }, [brands, settings.brandsMaxItems]);
 
   // Specific Product Rails (Guaranteed Minimum 20 Products Each)
   const dealsOfTheDay = React.useMemo(() => {
@@ -314,14 +297,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 className="flex gap-6 sm:gap-8 animate-marquee w-max py-2"
                 style={{ animationDuration: `${settings.brandsSpeed || 35}s` }}
               >
-                {[...featured20Brands, ...featured20Brands].map((brand, idx) => (
+                {[...activeBrandsToDisplay, ...activeBrandsToDisplay].map((brand, idx) => (
                   <div
                     key={`${brand.id}-${idx}`}
                     className="flex flex-col items-center justify-center group cursor-default shrink-0 select-none"
                   >
                     <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full p-0.5 bg-gradient-to-tr from-[#C0654B] via-amber-400 to-[#8B3E2F] shadow-xs group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
                       <img
-                        src={brand.img}
+                        src={brand.logo}
                         alt={brand.name}
                         className="w-full h-full rounded-full object-cover border-2 border-white bg-stone-100"
                         loading="lazy"

@@ -21,6 +21,10 @@ interface StoreContextType {
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   brands: Brand[];
+  setBrands: React.Dispatch<React.SetStateAction<Brand[]>>;
+  saveBrand: (brand: Brand) => Promise<void>;
+  toggleBrand: (id: string) => Promise<void>;
+  deleteBrand: (id: string) => Promise<void>;
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   banners: Banner[];
@@ -499,6 +503,48 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const saveBrand = async (brand: Brand) => {
+    setBrands(prev => {
+      const exists = prev.some(b => b.id === brand.id);
+      if (exists) return prev.map(b => b.id === brand.id ? brand : b);
+      return [...prev, brand];
+    });
+    try {
+      await adminFetch('/api/brands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(brand),
+      });
+    } catch (e) {
+      console.warn('Backend brand save fallback', e);
+    }
+  };
+
+  const toggleBrand = async (id: string) => {
+    setBrands(prev => prev.map(b => b.id === id ? { ...b, isActive: b.isActive === false ? true : false } : b));
+    try {
+      const target = brands.find(b => b.id === id);
+      if (target) {
+        await adminFetch(`/api/brands/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...target, isActive: target.isActive === false ? true : false }),
+        });
+      }
+    } catch (e) {
+      console.warn('Backend brand toggle fallback', e);
+    }
+  };
+
+  const deleteBrand = async (id: string) => {
+    setBrands(prev => prev.filter(b => b.id !== id));
+    try {
+      await adminFetch(`/api/brands/${id}`, { method: 'DELETE' });
+    } catch (e) {
+      console.warn('Backend brand delete fallback', e);
+    }
+  };
+
   const applyCoupon = async (code: string) => {
     const cartTotal = cart.reduce((acc, item) => acc + (item.variant.discountPrice || item.variant.price) * item.quantity, 0);
     const cleanCode = code.trim().toUpperCase();
@@ -778,6 +824,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         categories,
         setCategories,
         brands,
+        setBrands,
+        saveBrand,
+        toggleBrand,
+        deleteBrand,
         products,
         setProducts,
         banners,
