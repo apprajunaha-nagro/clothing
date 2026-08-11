@@ -102,19 +102,16 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
             custom={direction}
             initial={(dir: number) => reducedMotion ? { opacity: 0 } : {
               x: dir > 0 ? '100%' : '-100%',
-              opacity: 0.65,
             }}
-            animate={reducedMotion ? { opacity: 1 } : {
+            animate={{
               x: '0%',
               opacity: 1,
             }}
             exit={(dir: number) => reducedMotion ? { opacity: 0 } : {
               x: dir > 0 ? '-100%' : '100%',
-              opacity: 0.65,
             }}
             transition={reducedMotion ? { duration: 0.25 } : {
-              x: { duration: 0.55, ease: [0.32, 0.72, 0, 1] },
-              opacity: { duration: 0.45, ease: 'easeInOut' }
+              x: { duration: 0.5, ease: [0.32, 0.72, 0, 1] },
             }}
             drag={reducedMotion ? false : "x"}
             dragConstraints={{ left: 0, right: 0 }}
