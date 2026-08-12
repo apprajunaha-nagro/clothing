@@ -484,46 +484,27 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {/* Left Right Scroll Controls */}
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => scrollRail(scrollRef, 'left')}
-                        aria-label="Scroll left"
-                        className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors cursor-pointer"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => scrollRail(scrollRef, 'right')}
-                        aria-label="Scroll right"
-                        className="w-7 h-7 rounded-full bg-black/20 hover:bg-black/40 text-white flex items-center justify-center transition-colors cursor-pointer"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
                     <button
                       onClick={() => onNavigate(`/category/${sub.slug}`)}
-                      className={`text-xs font-bold ${sub.btnColor} underline underline-offset-2 cursor-pointer whitespace-nowrap ml-1`}
+                      className={`text-xs font-bold ${sub.btnColor} underline underline-offset-2 cursor-pointer whitespace-nowrap ml-1 flex items-center gap-1`}
                     >
-                      Explore All →
+                      <span>Explore Department</span>
+                      <ArrowRight className="w-3.5 h-3.5 inline-block" />
                     </button>
                   </div>
                 </div>
 
-                {/* HORIZONTAL PRODUCT SLIDER RAIL (12 ITEMS MINIMUM) */}
-                <div ref={scrollRef} className="p-3 sm:p-4 overflow-x-auto no-scrollbar scroll-smooth bg-white">
-                  <div className="flex gap-3 sm:gap-4 w-max">
-                    {displayItems.map((product) => (
-                      <div key={product.id} className="w-[170px] sm:w-[210px] shrink-0">
-                        <ProductCard
-                          product={product}
-                          onNavigate={onNavigate}
-                          hideBadges={true}
-                          hideColorAndSize={true}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                {/* VERTICAL PRODUCT LIST GRID */}
+                <div className="p-3.5 sm:p-5 bg-white grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 sm:gap-4">
+                  {displayItems.map((product) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onNavigate={onNavigate}
+                      hideBadges={true}
+                      hideColorAndSize={true}
+                    />
+                  ))}
                 </div>
               </div>
             );
