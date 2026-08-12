@@ -68,8 +68,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ onNavigate }) => {
       role="region"
       aria-label="Hero Collection Photo Slideshow"
     >
-      {/* CLS PREVENTION CONTAINER: Dynamic aspect ratio & responsive height across all screen sizes */}
-      <div className="relative w-full h-[220px] min-h-[220px] xs:h-[280px] sm:h-[380px] md:h-[460px] lg:h-[540px] xl:h-[600px] 2xl:h-[650px] aspect-[16/9] xs:aspect-[16/10] sm:aspect-[16/8] md:aspect-[21/9] transition-all duration-300">
+      {/* CLS PREVENTION CONTAINER: 16:5 aspect ratio hero banner slider container */}
+      <div className="relative w-full aspect-[16/5] min-h-[160px] sm:min-h-[220px] md:min-h-[280px] lg:min-h-[350px] overflow-hidden transition-all duration-300">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.div
             key={currentSlide.id || activeSlideIndex}

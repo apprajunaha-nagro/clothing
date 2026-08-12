@@ -987,8 +987,15 @@ export const AdminMarketingView: React.FC = () => {
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <h3 className="text-base font-bold font-serif text-stone-900">Homepage Sliders & Page Banners</h3>
-              <p className="text-xs text-stone-400">Design promotional headers, hero sliders, and ad banners for your storefront</p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold font-serif text-stone-900">Homepage Sliders & Page Banners</h3>
+                <span className="bg-emerald-50 text-emerald-600 border border-emerald-300 text-xs font-extrabold font-mono px-2 py-0.5 rounded-md shadow-2xs">
+                  16:5
+                </span>
+              </div>
+              <p className="text-xs text-stone-400 mt-0.5">
+                Design promotional headers, hero sliders (recommended ratio <span className="text-emerald-600 font-extrabold font-mono">16:5</span>), and ad banners for your storefront
+              </p>
             </div>
             
             <div className="flex items-center gap-3">
@@ -1026,8 +1033,13 @@ export const AdminMarketingView: React.FC = () => {
               <div className="border border-dashed border-stone-300 rounded-xl p-4 bg-stone-50 space-y-3">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div>
-                    <label className="block font-bold text-stone-800 text-xs">Hero / Ad Banner Photo (Device Upload)</label>
-                    <p className="text-[11px] text-stone-500">Upload high-resolution Indian model fashion photos directly from your phone or computer.</p>
+                    <div className="flex items-center gap-2">
+                      <label className="block font-bold text-stone-800 text-xs">Hero / Ad Banner Photo (Device Upload)</label>
+                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-300 text-[10px] font-extrabold font-mono px-1.5 py-0.2 rounded">
+                        16:5
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 mt-0.5">Upload high-resolution Indian model fashion photos in <span className="text-emerald-600 font-extrabold font-mono">16:5</span> ratio directly from your phone or computer.</p>
                   </div>
                   
                   <input
@@ -1129,10 +1141,13 @@ export const AdminMarketingView: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {bannersList.map(ban => (
               <div key={ban.id} className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
-                <div className="relative aspect-video bg-stone-900 overflow-hidden group">
+                <div className="relative aspect-[16/5] bg-stone-900 overflow-hidden group">
                   <img src={ban.image} alt="" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                   <span className="absolute top-2 left-2 text-[8px] bg-black/70 text-white font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-wider z-10">
                     {ban.position} Slider
+                  </span>
+                  <span className="absolute top-2 right-2 text-[9px] bg-emerald-600 text-white font-mono font-black px-2 py-0.5 rounded-md uppercase tracking-wider z-10 shadow-xs border border-emerald-400">
+                    16:5
                   </span>
                   
                   {/* Upload photo overlay */}
