@@ -759,8 +759,31 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                               {isExpanded ? 'Hide Details' : 'View Full Details & Address'}
                             </button>
                             <div className="flex flex-wrap items-center gap-2">
-                              {/* AFTER PRODUCT IS DELIVERED: ONLY RETURN REQUEST OPTION OPENS */}
-                              {order.status === 'delivered' ? (
+                              {/* 1. CANCEL ORDER BUTTON: Active until order is shipped (pending, confirmed, processing) */}
+                              {(order.status === 'pending' || order.status === 'confirmed' || order.status === 'processing') && (
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`CONFIRM ORDER CANCELLATION:\n\nAre you sure you want to CANCEL Order #${order.orderNumber}? This will cancel your order.`)) {
+                                      updateOrderStatus(order.id, 'cancelled');
+                                      showToast(`Order #${order.orderNumber} has been cancelled successfully.`);
+                                    }
+                                  }}
+                                  className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold px-3.5 py-2 rounded-xl transition-colors cursor-pointer text-xs flex items-center gap-1 shadow-2xs"
+                                >
+                                  <span>Cancel Order</span>
+                                </button>
+                              )}
+
+                              {/* 2. SHIPPED STATUS BADGE: Cancel button automatically turns off once admin ships product */}
+                              {order.status === 'shipped' && (
+                                <span className="bg-sky-50 text-sky-800 border border-sky-300 font-bold px-3 py-1.5 rounded-xl text-[11px] flex items-center gap-1.5">
+                                  <Truck className="w-3.5 h-3.5 text-sky-600" />
+                                  <span>Shipped & In Transit (Cancellation Closed)</span>
+                                </span>
+                              )}
+
+                              {/* 3. DELIVERED STATUS: Only Return Request option opens */}
+                              {order.status === 'delivered' && (
                                 order.returnStatus && order.returnStatus !== 'none' ? (
                                   <span className={`font-bold px-3 py-1.5 rounded-xl text-[11px] flex items-center gap-1.5 border ${
                                     order.returnStatus === 'approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' :
@@ -781,21 +804,13 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                                     <span>Request Return</span>
                                   </button>
                                 )
-                              ) : (
-                                /* Pre-delivery orders (pending, confirmed, processing) allow cancellation */
-                                (order.status === 'pending' || order.status === 'confirmed' || order.status === 'processing') && (
-                                  <button
-                                    onClick={() => {
-                                      if (confirm(`Are you sure you want to cancel Order #${order.orderNumber}?`)) {
-                                        updateOrderStatus(order.id, 'cancelled');
-                                        showToast(`Order #${order.orderNumber} has been cancelled.`);
-                                      }
-                                    }}
-                                    className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold px-3.5 py-2 rounded-xl transition-colors cursor-pointer text-xs flex items-center gap-1"
-                                  >
-                                    <span>Cancel Order</span>
-                                  </button>
-                                )
+                              )}
+
+                              {/* 4. CANCELLED STATUS BADGE */}
+                              {order.status === 'cancelled' && (
+                                <span className="bg-red-50 text-red-800 border border-red-200 font-bold px-3 py-1.5 rounded-xl text-[11px] flex items-center gap-1">
+                                  <span>❌ Order Cancelled</span>
+                                </span>
                               )}
 
                               <button
