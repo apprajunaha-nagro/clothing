@@ -44,16 +44,39 @@ const DealCountdownTimer: React.FC<{ initialHours?: number; initialMinutes?: num
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const { banners, categories, brands, products, settings, showToast, setChatOpen } = useStore();
 
-  // Category Icon Strip tiles under hero banner (Dynamically controlled from Admin Portal Category Page)
+  // Category tiles under hero banner (Strictly Women, Men, Kids, Innerwear & Lingerie)
   const categoryTiles = React.useMemo(() => {
-    if (!categories || categories.length === 0) return [];
-    return categories
-      .filter(c => c.status !== 'inactive')
-      .map(c => ({
-        name: c.name,
-        slug: c.slug || c.id,
-        img: c.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=250&q=80'
-      }));
+    const targetCategories = [
+      {
+        id: 'women',
+        name: 'Women',
+        defaultImg: '/src/assets/images/anarkali_aqua_turquoise_floral.png'
+      },
+      {
+        id: 'men',
+        name: 'Men',
+        defaultImg: '/src/assets/images/men_kurta_teal_embroidered.jpg'
+      },
+      {
+        id: 'kids',
+        name: 'Kids',
+        defaultImg: '/src/assets/images/kids_department_nano_banana.png'
+      },
+      {
+        id: 'undergarments',
+        name: 'Innerwear & Lingerie',
+        defaultImg: '/src/assets/images/innerwear_department_new.png'
+      }
+    ];
+
+    return targetCategories.map(item => {
+      const match = categories?.find(c => c.id === item.id || c.slug === item.id);
+      return {
+        name: item.name,
+        slug: match?.slug || item.id,
+        img: match?.image || item.defaultImg
+      };
+    });
   }, [categories]);
 
   // Scroll refs for horizontal product rails
@@ -126,26 +149,29 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       {/* 1. HERO BANNER CAROUSEL SLIDER */}
       <HeroSlider banners={banners} onNavigate={onNavigate} />
 
-      {/* 2. ICON STRIP CATEGORIES TILES */}
-      <div className="max-w-7xl mx-auto px-2 sm:px-6">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 bg-white p-3 sm:p-4 rounded-xl border border-stone-200 shadow-2xs">
-          {categoryTiles.map((tile) => (
-            <button
-              key={tile.slug}
-              onClick={() => onNavigate(`/category/${tile.slug}`)}
-              className="flex items-center gap-2.5 sm:gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors border border-transparent hover:border-stone-200 cursor-pointer text-left group"
-            >
-              <img
-                src={getOptimizedImageUrl(tile.img, { width: 100, quality: 80 })}
-                alt={tile.name}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border border-stone-200 shrink-0 group-hover:scale-105 transition-transform"
-              />
-              <div>
-                <h3 className="font-extrabold text-stone-900 text-xs sm:text-sm group-hover:text-[#C0654B] transition-colors">{tile.name}</h3>
-                <p className="text-[10px] text-stone-500 font-medium">Explore & Buy →</p>
-              </div>
-            </button>
-          ))}
+      {/* 2. CATEGORIES SECTION BELOW HERO BANNER */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-200 shadow-xs">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+            {categoryTiles.map((tile) => (
+              <button
+                key={tile.slug}
+                onClick={() => onNavigate(`/category/${tile.slug}`)}
+                className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl hover:bg-stone-50 transition-all cursor-pointer group text-center"
+              >
+                <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full overflow-hidden border-2 border-stone-200 group-hover:border-[#C0654B] shadow-sm group-hover:shadow-md transition-all mb-3 shrink-0 bg-stone-100">
+                  <img
+                    src={getOptimizedImageUrl(tile.img, { width: 350, quality: 85 })}
+                    alt={tile.name}
+                    className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-300"
+                  />
+                </div>
+                <h3 className="font-bold text-stone-900 text-sm sm:text-base md:text-lg group-hover:text-[#C0654B] transition-colors tracking-tight">
+                  {tile.name}
+                </h3>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
