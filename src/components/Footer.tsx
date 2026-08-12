@@ -133,7 +133,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
       </div>
 
       {/* 2. MAIN FOOTER CONTENT */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 text-xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-xs">
         {/* Col 1: Brand & Bio */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center gap-3">
@@ -187,22 +187,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
           </div>
         </div>
 
-        {/* Col 2: Shop Categories */}
-        <div className="space-y-3">
-          <h4 className="font-bold text-white uppercase tracking-wider text-xs border-b border-stone-800 pb-2">
-            Categories
-          </h4>
-          <ul className="space-y-2 text-stone-400">
-            <li><button onClick={() => onNavigate('/category/women')} className="hover:text-[#C0654B] cursor-pointer">Women's Ethnic & Western</button></li>
-            <li><button onClick={() => onNavigate('/category/men')} className="hover:text-[#C0654B] cursor-pointer">Men's Shirts & Formals</button></li>
-            <li><button onClick={() => onNavigate('/category/kids')} className="hover:text-[#C0654B] cursor-pointer">Kids & Infants Apparel</button></li>
-            <li><button onClick={() => onNavigate('/category/undergarments')} className="hover:text-[#C0654B] cursor-pointer">Lingerie & Innerwear</button></li>
-
-            <li><button onClick={() => onNavigate('/category/sale')} className="hover:text-red-400 font-bold cursor-pointer">Clearance Sale (Up to 60% OFF)</button></li>
-          </ul>
-        </div>
-
-        {/* Col 3: Customer Care */}
+        {/* Col 2: Customer Care */}
         <div className="space-y-3">
           <h4 className="font-bold text-white uppercase tracking-wider text-xs border-b border-stone-800 pb-2">
             Customer Care & Journal
