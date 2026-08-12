@@ -755,7 +755,7 @@ export const AdminUserAccountsView: React.FC = () => {
                             {ord.items.map((item, i) => (
                               <div key={i} className="flex items-center gap-3 bg-white p-2 rounded-lg border border-stone-200">
                                 <img
-                                  src={item.productImage || item.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=100&q=80'}
+                                  src={item.productImage || (item as any).image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=100&q=80'}
                                   alt={item.productName}
                                   className="w-10 h-10 object-cover rounded-md border border-stone-200 shrink-0"
                                 />
