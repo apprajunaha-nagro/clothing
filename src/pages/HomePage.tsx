@@ -512,50 +512,50 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* 7. VALUE PROPOSITION STRIP (Ultra-Clean Modern Floating Pills) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 my-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* 7. VALUE PROPOSITION STRIP (Compact Ultra-Clean Modern Pills) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 my-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
           {/* Card 1 */}
-          <div className="bg-white border border-stone-200/80 rounded-xl p-4 flex items-center gap-3.5 shadow-2xs hover:shadow-md hover:border-[#C0654B] transition-all group cursor-default">
-            <div className="w-10 h-10 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
-              <CheckCircle2 className="w-5 h-5" />
+          <div className="bg-white border border-stone-200/80 rounded-xl p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs hover:border-[#C0654B] transition-all group cursor-default">
+            <div className="w-8 h-8 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
+              <CheckCircle2 className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <h4 className="text-xs sm:text-sm font-extrabold text-stone-900 leading-tight">100% Original</h4>
-              <p className="text-[11px] text-stone-500 font-medium mt-0.5">Direct from heritage weavers</p>
+              <h4 className="text-xs font-extrabold text-stone-900 leading-tight">100% Original</h4>
+              <p className="text-[10px] text-stone-500 font-medium">Direct from weavers</p>
             </div>
           </div>
 
           {/* Card 2 */}
-          <div className="bg-white border border-stone-200/80 rounded-xl p-4 flex items-center gap-3.5 shadow-2xs hover:shadow-md hover:border-[#C0654B] transition-all group cursor-default">
-            <div className="w-10 h-10 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
-              <Truck className="w-5 h-5" />
+          <div className="bg-white border border-stone-200/80 rounded-xl p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs hover:border-[#C0654B] transition-all group cursor-default">
+            <div className="w-8 h-8 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
+              <Truck className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <h4 className="text-xs sm:text-sm font-extrabold text-stone-900 leading-tight">Free Shipping</h4>
-              <p className="text-[11px] text-stone-500 font-medium mt-0.5">On all orders over ₹999</p>
+              <h4 className="text-xs font-extrabold text-stone-900 leading-tight">Free Shipping</h4>
+              <p className="text-[10px] text-stone-500 font-medium">Orders over ₹999</p>
             </div>
           </div>
 
           {/* Card 3 */}
-          <div className="bg-white border border-stone-200/80 rounded-xl p-4 flex items-center gap-3.5 shadow-2xs hover:shadow-md hover:border-[#C0654B] transition-all group cursor-default">
-            <div className="w-10 h-10 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
-              <RotateCcw className="w-5 h-5" />
+          <div className="bg-white border border-stone-200/80 rounded-xl p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs hover:border-[#C0654B] transition-all group cursor-default">
+            <div className="w-8 h-8 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
+              <RotateCcw className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <h4 className="text-xs sm:text-sm font-extrabold text-stone-900 leading-tight">Easy 7-Day Returns</h4>
-              <p className="text-[11px] text-stone-500 font-medium mt-0.5">Hassle-free 7-day return policy</p>
+              <h4 className="text-xs font-extrabold text-stone-900 leading-tight">Easy 7-Day Returns</h4>
+              <p className="text-[10px] text-stone-500 font-medium">Hassle-free return policy</p>
             </div>
           </div>
 
           {/* Card 4 */}
-          <div className="bg-white border border-stone-200/80 rounded-xl p-4 flex items-center gap-3.5 shadow-2xs hover:shadow-md hover:border-[#C0654B] transition-all group cursor-default">
-            <div className="w-10 h-10 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
-              <ShieldCheck className="w-5 h-5" />
+          <div className="bg-white border border-stone-200/80 rounded-xl p-2.5 sm:p-3 flex items-center gap-2.5 shadow-2xs hover:border-[#C0654B] transition-all group cursor-default">
+            <div className="w-8 h-8 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0 group-hover:bg-[#C0654B] group-hover:text-white transition-colors">
+              <ShieldCheck className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <h4 className="text-xs sm:text-sm font-extrabold text-stone-900 leading-tight">100% Secure Payments</h4>
-              <p className="text-[11px] text-stone-500 font-medium mt-0.5">UPI, Cards, Netbanking & COD</p>
+              <h4 className="text-xs font-extrabold text-stone-900 leading-tight">100% Secure Payments</h4>
+              <p className="text-[10px] text-stone-500 font-medium">UPI, Cards & COD</p>
             </div>
           </div>
         </div>

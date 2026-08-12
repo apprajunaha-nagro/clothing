@@ -31,47 +31,34 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
           style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=60)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
         <div className="absolute inset-0 bg-gradient-to-b from-[#1A120C]/80 via-[#1A120C]/60 to-[#1A120C]/95 pointer-events-none" />
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 text-center space-y-8">
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 text-center space-y-4">
 
-          {/* Big Logo + Name */}
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="absolute inset-0 bg-[#C0654B]/30 rounded-3xl blur-xl scale-110" />
-              <img
-                src="/src/assets/images/pgmart_logo_1785764319471.jpg"
-                alt="PGmart Logo"
-                className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-[#C0654B]/40 shadow-2xl"
-              />
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-4xl sm:text-6xl font-extrabold font-serif text-white tracking-wide leading-none">
+          {/* Compact Logo + Name */}
+          <div className="flex items-center justify-center gap-3">
+            <img
+              src="/src/assets/images/pgmart_logo_1785764319471.jpg"
+              alt="PGmart Logo"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border-2 border-[#C0654B]/50 shadow-md shrink-0"
+            />
+            <div className="text-left space-y-0.5">
+              <h2 className="text-xl sm:text-2xl font-bold font-serif text-white tracking-wide leading-tight">
                 PGmart ( Pratap Garments )
               </h2>
-              <p className="text-[#C0654B] font-bold text-xs sm:text-sm uppercase tracking-[0.3em]">
+              <p className="text-[#C0654B] font-bold text-[10px] sm:text-xs uppercase tracking-wider">
                 {settings.tagline}
               </p>
             </div>
           </div>
 
           {/* Story Excerpt */}
-          <div className="max-w-2xl mx-auto space-y-3">
-            <div className="inline-flex items-center gap-2 bg-[#C0654B]/20 border border-[#C0654B]/30 text-[#C0654B] text-[11px] font-bold px-4 py-1.5 rounded-full uppercase tracking-widest">
-              <Sparkles className="w-3.5 h-3.5" />
-              Our Story
-            </div>
-            <p className="text-stone-300 text-sm sm:text-base leading-relaxed font-light">
-              Born in a rain-soaked weaver's workshop in Shantipur, Bengal — PGmart was built on a single promise:
-              that <span className="text-white font-semibold">authentic Indian craftsmanship</span> deserves fair prices,
-              for the weavers who make it and the people who wear it.
-            </p>
-            <p className="text-stone-400 text-xs sm:text-sm leading-relaxed">
-              From 12 products in 2019 to India's most trusted fashion destination — every thread of our journey
-              is woven with purpose, people, and the colours of the Bhagirathi.
+          <div className="max-w-xl mx-auto space-y-2">
+            <p className="text-stone-300 text-xs sm:text-sm leading-snug font-light">
+              Born in Shantipur, Bengal — PGmart delivers authentic Indian craftsmanship & luxury ethnic wear at direct-from-weaver fair pricing.
             </p>
           </div>
 
           {/* Stats Row */}
-          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-12 py-4 border-y border-stone-800/60">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 py-2 border-y border-stone-800/60">
             {[
               { value: '1,200+', label: 'Artisan Partners' },
               { value: '400+', label: 'Curated Products' },
@@ -79,20 +66,22 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
               { value: '2019', label: 'Founded' },
             ].map(stat => (
               <div key={stat.label} className="text-center">
-                <p className="text-2xl sm:text-3xl font-extrabold text-white font-serif">{stat.value}</p>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mt-0.5">{stat.label}</p>
+                <p className="text-sm sm:text-base font-extrabold text-white font-serif">{stat.value}</p>
+                <p className="text-[9px] font-bold text-stone-400 uppercase tracking-wider">{stat.label}</p>
               </div>
             ))}
           </div>
 
           {/* CTA Button */}
-          <button
-            onClick={() => onNavigate('/blog/our-story')}
-            className="inline-flex items-center gap-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-sm px-8 py-3.5 rounded-full transition-all shadow-lg hover:shadow-[#C0654B]/30 hover:shadow-xl group cursor-pointer"
-          >
-            <span>Read Our Full Story</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </button>
+          <div>
+            <button
+              onClick={() => onNavigate('/blog/our-story')}
+              className="inline-flex items-center gap-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-xs px-5 py-2 rounded-full transition-all shadow-md hover:shadow-[#C0654B]/30 group cursor-pointer"
+            >
+              <span>Read Our Story</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
 
         </div>
       </div>
