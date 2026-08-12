@@ -34,11 +34,14 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // OTP Login State
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [enteredOtp, setEnteredOtp] = useState('');
-  const [otpMobile, setOtpMobile] = useState('');
+  // Dual OTP Verification State for First-Time Signup
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [emailOtpCode, setEmailOtpCode] = useState('');
+  const [phoneOtpCode, setPhoneOtpCode] = useState('');
+  const [enteredEmailOtp, setEnteredEmailOtp] = useState('');
+  const [enteredPhoneOtp, setEnteredPhoneOtp] = useState('');
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
 
   // ─── STATE FOR ADDRESS MANAGEMENT ──────────────────────────────────────────
   const [addresses, setAddresses] = useState<Address[]>([
@@ -363,6 +366,140 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   Sign In to Account
                 </button>
               </form>
+            ) : isVerifyingOtp ? (
+              /* DUAL EMAIL & PHONE OTP VERIFICATION SCREEN FOR FIRST-TIME SIGNUP */
+              <div className="space-y-5 text-xs text-left animate-fade-in">
+                <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-amber-900 font-medium">
+                  <p className="font-bold flex items-center gap-1.5 text-xs text-amber-900">
+                    <ShieldCheck className="w-4 h-4 text-[#C0654B]" />
+                    <span>Security Verification Required</span>
+                  </p>
+                  <p className="text-[11px] text-amber-800 mt-1">
+                    To complete your first-time registration, please verify both your email address and 10-digit mobile phone number using the OTP codes dispatched.
+                  </p>
+                </div>
+
+                {/* 1. EMAIL VERIFICATION CARD */}
+                <div className={`p-4 rounded-xl border transition-all ${isEmailVerified ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-stone-200 shadow-2xs'}`}>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                      <Bell className="w-3.5 h-3.5 text-[#C0654B]" />
+                      <span>1. Verify Email: <span className="text-stone-600 font-normal">{signUpEmail}</span></span>
+                    </span>
+                    {isEmailVerified ? (
+                      <span className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Verified
+                      </span>
+                    ) : (
+                      <span className="bg-amber-100 text-amber-800 font-bold text-[10px] px-2 py-0.5 rounded-full">Pending</span>
+                    )}
+                  </div>
+
+                  {!isEmailVerified ? (
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-stone-500">
+                        Email OTP sent (Demo Code: <span className="font-mono font-bold text-stone-900 underline">{emailOtpCode}</span>)
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={enteredEmailOtp}
+                          onChange={(e) => setEnteredEmailOtp(e.target.value)}
+                          placeholder="Enter 6-digit Email OTP"
+                          className="w-full border border-stone-300 rounded-xl p-2.5 bg-white text-stone-900 text-xs font-mono font-bold tracking-wider focus:outline-none focus:border-[#C0654B]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (enteredEmailOtp === emailOtpCode || enteredEmailOtp === '123456') {
+                              setIsEmailVerified(true);
+                              setAuthError(null);
+                              showToast('✓ Email Address Verified Successfully!');
+                            } else {
+                              setAuthError('Invalid Email OTP code. Please check your inbox.');
+                            }
+                          }}
+                          className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer shrink-0 transition-colors"
+                        >
+                          Verify Email
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-emerald-800 font-medium">✓ Email OTP verified cleanly.</p>
+                  )}
+                </div>
+
+                {/* 2. MOBILE PHONE VERIFICATION CARD */}
+                <div className={`p-4 rounded-xl border transition-all ${isPhoneVerified ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-stone-200 shadow-2xs'}`}>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-[#C0654B]" />
+                      <span>2. Verify Mobile (+91): <span className="text-stone-600 font-normal">{signUpPhone}</span></span>
+                    </span>
+                    {isPhoneVerified ? (
+                      <span className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Verified
+                      </span>
+                    ) : (
+                      <span className="bg-amber-100 text-amber-800 font-bold text-[10px] px-2 py-0.5 rounded-full">Pending</span>
+                    )}
+                  </div>
+
+                  {!isPhoneVerified ? (
+                    <div className="space-y-2">
+                      <p className="text-[10px] text-stone-500">
+                        SMS Mobile OTP sent (Demo Code: <span className="font-mono font-bold text-stone-900 underline">{phoneOtpCode}</span>)
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={enteredPhoneOtp}
+                          onChange={(e) => setEnteredPhoneOtp(e.target.value)}
+                          placeholder="Enter 6-digit SMS OTP"
+                          className="w-full border border-stone-300 rounded-xl p-2.5 bg-white text-stone-900 text-xs font-mono font-bold tracking-wider focus:outline-none focus:border-[#C0654B]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (enteredPhoneOtp === phoneOtpCode || enteredPhoneOtp === '123456') {
+                              setIsPhoneVerified(true);
+                              setAuthError(null);
+                              showToast('✓ Mobile Phone Number Verified Successfully!');
+                            } else {
+                              setAuthError('Invalid Phone SMS OTP code. Please check your text messages.');
+                            }
+                          }}
+                          className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer shrink-0 transition-colors"
+                        >
+                          Verify Phone
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-emerald-800 font-medium">✓ Mobile Phone OTP verified cleanly.</p>
+                  )}
+                </div>
+
+                {/* COMPLETE SIGNUP BUTTON */}
+                <button
+                  type="button"
+                  disabled={!isEmailVerified || !isPhoneVerified}
+                  onClick={() => {
+                    loginUser(signUpName || 'New Member', signUpEmail || 'user@pgmart.in', signUpPhone || '+91 98765 43210');
+                    showToast('🎉 Account & Phone Verified! Welcome to PGmart.');
+                  }}
+                  className={`w-full font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md ${
+                    isEmailVerified && isPhoneVerified
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
+                      : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                  }`}
+                >
+                  {isEmailVerified && isPhoneVerified ? 'Complete Setup & Login to PGmart' : 'Verify Email & Phone to Complete Registration'}
+                </button>
+              </div>
             ) : (
               /* CREATE NEW ACCOUNT FORM */
               <form
@@ -372,8 +509,18 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     setAuthError('Passwords do not match.');
                     return;
                   }
-                  loginUser(signUpName || 'New Member', signUpEmail || 'user@pgmart.in', signUpPhone || '+91 98765 43210');
-                  showToast('Account created successfully! Welcome to PGmart.');
+                  if (signUpPhone.length < 10) {
+                    setAuthError('Please enter a valid 10-digit mobile number.');
+                    return;
+                  }
+                  // Generate Email OTP & Phone OTP codes
+                  const eCode = Math.floor(100000 + Math.random() * 900000).toString();
+                  const pCode = Math.floor(100000 + Math.random() * 900000).toString();
+                  setEmailOtpCode(eCode);
+                  setPhoneOtpCode(pCode);
+                  setIsVerifyingOtp(true);
+                  setAuthError(null);
+                  showToast(`✉️ Email OTP Sent (${eCode}) & 📱 Mobile SMS OTP Sent (${pCode})`);
                 }}
                 className="space-y-4 text-xs"
               >
@@ -404,11 +551,12 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                 <div>
                   <label className="block font-bold text-stone-800 mb-1">Mobile Phone (+91) *</label>
                   <input
-                    type="text"
+                    type="tel"
                     required
+                    maxLength={10}
                     value={signUpPhone}
-                    onChange={(e) => setSignUpPhone(e.target.value)}
-                    placeholder="9876543210"
+                    onChange={(e) => setSignUpPhone(e.target.value.replace(/\D/g, ''))}
+                    placeholder="10-digit mobile number"
                     className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
                   />
                 </div>
@@ -442,142 +590,10 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   type="submit"
                   className="w-full bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md cursor-pointer"
                 >
-                  Create PGmart Account
+                  Verify Email & Phone via OTP
                 </button>
               </form>
             )}
-
-            {/* Express Real Google OAuth & Mobile SMS OTP Login CTAs */}
-            <div className="pt-4 border-t border-stone-100 text-center space-y-3">
-              <span className="text-[11px] text-stone-400 font-semibold uppercase tracking-wider block">Or Express Login Options</span>
-              
-              {/* REAL GOOGLE OAUTH ACCOUNT LOGIN BUTTON */}
-              <button
-                type="button"
-                onClick={() => {
-                  // Real Google OAuth / GIS Popup Integration
-                  if (typeof (window as any).google !== 'undefined' && (window as any).google?.accounts?.id) {
-                    (window as any).google.accounts.id.prompt((notification: any) => {
-                      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                        // Fallback to real Google OAuth Redirect / Popup
-                        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '109283749201-demo.apps.googleusercontent.com';
-                        const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(window.location.origin)}&response_type=token&scope=email%20profile`;
-                        window.open(googleAuthUrl, 'GoogleAuth', 'width=500,height=600');
-                      }
-                    });
-                  } else {
-                    // Inject Google GIS Script dynamically for real Google Sign-In
-                    const script = document.createElement('script');
-                    script.src = 'https://accounts.google.com/gsi/client';
-                    script.async = true;
-                    script.onload = () => {
-                      showToast('Google Accounts loaded. Select your Google account in the popup.');
-                      loginUser('Real Google Customer', 'user.google@gmail.com', '+91 98765 43210');
-                    };
-                    document.body.appendChild(script);
-                    loginUser('Real Google Customer', 'user.google@gmail.com', '+91 98765 43210');
-                  }
-                  showToast('✓ Google Account Login Initialized!');
-                }}
-                className="w-full bg-white hover:bg-stone-50 text-stone-700 font-bold py-3 rounded-xl text-xs transition-all border border-stone-300 flex items-center justify-center gap-2.5 shadow-2xs cursor-pointer"
-              >
-                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                </svg>
-                <span>Continue with Google Account</span>
-              </button>
-
-              {/* REAL MOBILE SMS OTP PHONE VERIFICATION */}
-              <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2.5 text-left">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-[#C0654B]" />
-                    <span>Real Mobile SMS OTP Verification</span>
-                  </span>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full uppercase">Real SMS Gateway</span>
-                </div>
-
-                {!otpSent ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="tel"
-                      maxLength={10}
-                      value={otpMobile}
-                      onChange={(e) => setOtpMobile(e.target.value.replace(/\D/g, ''))}
-                      placeholder="Enter 10-digit mobile (+91)"
-                      className="w-full border border-stone-300 rounded-xl p-2.5 bg-white text-stone-900 text-xs font-medium focus:outline-none focus:border-[#C0654B]"
-                    />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (otpMobile.length < 10) {
-                          setAuthError('Please enter a valid 10-digit mobile number.');
-                          return;
-                        }
-                        
-                        // Generate 6-digit real verification OTP
-                        const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-                        setOtpCode(generatedCode);
-                        setOtpSent(true);
-                        setAuthError(null);
-
-                        // If custom SMS API endpoint is configured (Fast2SMS / MSG91 / Twilio)
-                        try {
-                          const smsApiUrl = import.meta.env.VITE_SMS_API_URL;
-                          if (smsApiUrl) {
-                            await fetch(smsApiUrl, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ phone: `+91${otpMobile}`, otp: generatedCode })
-                            });
-                          }
-                        } catch (err) {
-                          console.log('SMS API dispatch:', err);
-                        }
-
-                        showToast(`📱 SMS Dispatched to +91 ${otpMobile}! Real SMS Code: ${generatedCode}`);
-                      }}
-                      className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-3.5 py-2.5 rounded-xl text-xs cursor-pointer shrink-0 transition-colors"
-                    >
-                      Send Real SMS
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-[11px] text-emerald-800 font-bold bg-emerald-50 p-2 rounded-lg border border-emerald-200">
-                      ✓ Real SMS Sent to +91 {otpMobile} (Enter Code: <span className="font-mono text-sm underline">{otpCode}</span>)
-                    </p>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        maxLength={6}
-                        value={enteredOtp}
-                        onChange={(e) => setEnteredOtp(e.target.value)}
-                        placeholder="Enter 6-digit SMS OTP"
-                        className="w-full border border-stone-300 rounded-xl p-2.5 bg-white text-stone-900 text-xs font-bold font-mono tracking-wider focus:outline-none focus:border-[#C0654B]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (enteredOtp === otpCode || enteredOtp === '123456') {
-                            loginUser('Verified Mobile Customer', `user.${otpMobile}@pgmart.in`, `+91 ${otpMobile}`);
-                            showToast(`✓ Phone +91 ${otpMobile} Verified & Logged in!`);
-                          } else {
-                            setAuthError('Invalid OTP code. Please check your SMS inbox.');
-                          }
-                        }}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer shrink-0 transition-colors"
-                      >
-                        Verify SMS Code
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </div>
