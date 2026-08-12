@@ -149,24 +149,24 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       {/* 1. HERO BANNER CAROUSEL SLIDER */}
       <HeroSlider banners={banners} onNavigate={onNavigate} />
 
-      {/* 2. CATEGORIES SECTION BELOW HERO BANNER */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-6">
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-200 shadow-xs">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+      {/* 2. CATEGORIES SECTION (DIRECTLY BELOW HERO BANNER) */}
+      <div className="-mt-3 sm:-mt-5 relative z-10 max-w-7xl mx-auto px-2 sm:px-6">
+        <div className="bg-white p-2.5 sm:p-4 rounded-xl border border-stone-200/90 shadow-md">
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-4">
             {categoryTiles.map((tile) => (
               <button
                 key={tile.slug}
                 onClick={() => onNavigate(`/category/${tile.slug}`)}
-                className="flex flex-col items-center justify-center p-3 sm:p-4 rounded-2xl hover:bg-stone-50 transition-all cursor-pointer group text-center"
+                className="flex flex-col items-center justify-center p-1.5 sm:p-3 rounded-lg hover:bg-stone-50 transition-all cursor-pointer group text-center"
               >
-                <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full overflow-hidden border-2 border-stone-200 group-hover:border-[#C0654B] shadow-sm group-hover:shadow-md transition-all mb-3 shrink-0 bg-stone-100">
+                <div className="relative w-14 h-14 sm:w-20 sm:h-20 rounded-full overflow-hidden border border-stone-200 group-hover:border-[#C0654B] shadow-2xs group-hover:shadow-sm transition-all mb-1.5 shrink-0 bg-stone-100">
                   <img
-                    src={getOptimizedImageUrl(tile.img, { width: 350, quality: 85 })}
+                    src={getOptimizedImageUrl(tile.img, { width: 200, quality: 85 })}
                     alt={tile.name}
                     className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-300"
                   />
                 </div>
-                <h3 className="font-bold text-stone-900 text-sm sm:text-base md:text-lg group-hover:text-[#C0654B] transition-colors tracking-tight">
+                <h3 className="font-bold text-stone-900 text-[11px] sm:text-sm group-hover:text-[#C0654B] transition-colors tracking-tight leading-tight">
                   {tile.name}
                 </h3>
               </button>
