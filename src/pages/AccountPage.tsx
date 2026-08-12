@@ -17,7 +17,7 @@ interface AccountPageProps {
 type TabType = 'overview' | 'orders' | 'returns' | 'wishlist' | 'addresses' | 'profile' | 'payments' | 'settings' | 'logout';
 
 export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
-  const { user, setUser, orders, wishlist, products, showToast, addToCart, toggleWishlist, logoutUser, loginUser, requestOrderReturn } = useStore();
+  const { user, setUser, orders, wishlist, products, showToast, addToCart, toggleWishlist, logoutUser, loginUser, requestOrderReturn, updateOrderStatus } = useStore();
   
   // Read tab from query string if available (e.g. /account?tab=wishlist)
   const queryTab = new URLSearchParams(window.location.search).get('tab') as TabType | null;
@@ -759,39 +759,48 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                               {isExpanded ? 'Hide Details' : 'View Full Details & Address'}
                             </button>
                             <div className="flex flex-wrap items-center gap-2">
-                              {order.returnStatus && order.returnStatus !== 'none' ? (
-                                <span className="bg-amber-50 text-amber-900 border border-amber-300 font-bold px-3 py-1.5 rounded-xl text-[11px] flex items-center gap-1.5">
-                                  <RotateCcw className="w-3.5 h-3.5 text-[#C0654B]" />
-                                  <span>
-                                    {order.returnType === 'exchange' ? '🔂 Exchange Requested' : '↩ Return Requested'} ({order.returnStatus.replace('_', ' ').toUpperCase()})
+                              {/* AFTER PRODUCT IS DELIVERED: ONLY RETURN REQUEST OPTION OPENS */}
+                              {order.status === 'delivered' ? (
+                                order.returnStatus && order.returnStatus !== 'none' ? (
+                                  <span className={`font-bold px-3 py-1.5 rounded-xl text-[11px] flex items-center gap-1.5 border ${
+                                    order.returnStatus === 'approved' ? 'bg-emerald-50 text-emerald-800 border-emerald-300' :
+                                    order.returnStatus === 'rejected' ? 'bg-red-50 text-red-800 border-red-300' :
+                                    'bg-amber-50 text-amber-900 border-amber-300'
+                                  }`}>
+                                    <RotateCcw className="w-3.5 h-3.5 text-[#C0654B]" />
+                                    <span>
+                                      {order.returnType === 'exchange' ? '🔂 Exchange Requested' : '↩ Return Requested'} ({order.returnStatus.replace('_', ' ').toUpperCase()})
+                                    </span>
                                   </span>
-                                </span>
+                                ) : (
+                                  <button
+                                    onClick={() => setReturnModalOrder(order)}
+                                    className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5 text-xs"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    <span>Request Return / Exchange</span>
+                                  </button>
+                                )
                               ) : (
-                                <button
-                                  onClick={() => {
-                                    if (order.status !== 'delivered') {
-                                      showToast('⚠️ Return & Exchange requests start working once your package is delivered.');
-                                      return;
-                                    }
-                                    setReturnModalOrder(order);
-                                  }}
-                                  className={`font-bold px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                                    order.status === 'delivered'
-                                      ? 'bg-[#C0654B] hover:bg-[#8B4A38] text-white shadow-sm'
-                                      : 'bg-stone-100 text-stone-400 border border-stone-200 hover:bg-stone-200'
-                                  }`}
-                                  title={order.status === 'delivered' ? 'Request Return or Size Exchange' : 'Return & Exchange opens once product is delivered'}
-                                >
-                                  <RotateCcw className="w-3.5 h-3.5" />
-                                  <span>Request Return / Exchange</span>
-                                  {order.status !== 'delivered' && (
-                                    <span className="text-[9px] bg-stone-200 text-stone-600 px-1.5 py-0.5 rounded-md font-mono">Delivered Only</span>
-                                  )}
-                                </button>
+                                /* Pre-delivery orders (pending, confirmed, processing) allow cancellation */
+                                (order.status === 'pending' || order.status === 'confirmed' || order.status === 'processing') && (
+                                  <button
+                                    onClick={() => {
+                                      if (confirm(`Are you sure you want to cancel Order #${order.orderNumber}?`)) {
+                                        updateOrderStatus(order.id, 'cancelled');
+                                        showToast(`Order #${order.orderNumber} has been cancelled.`);
+                                      }
+                                    }}
+                                    className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold px-3.5 py-2 rounded-xl transition-colors cursor-pointer text-xs flex items-center gap-1"
+                                  >
+                                    <span>Cancel Order</span>
+                                  </button>
+                                )
                               )}
+
                               <button
                                 onClick={() => onNavigate(`/order-confirmation/${order.id}`)}
-                                className="bg-[#2B2620] hover:bg-[#C0654B] text-white font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer"
+                                className="bg-[#2B2620] hover:bg-[#C0654B] text-white font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer text-xs"
                               >
                                 View Tax Invoice
                               </button>
