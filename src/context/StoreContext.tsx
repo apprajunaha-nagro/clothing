@@ -899,7 +899,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       return updated;
     });
-    showToast(`${returnType === 'return' ? 'Return' : 'Exchange'} request submitted successfully! Pickup will be scheduled within 48h.`);
+    showToast(`Return request submitted successfully! Pickup will be scheduled within 48h.`);
   };
 
   const updateReturnStatus = (
@@ -916,7 +916,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             ...ord,
             returnStatus,
             status: isApproved ? 'returned' as const : isRejected ? ord.status : 'returned' as const,
-            paymentStatus: isApproved && ord.returnType === 'return' ? 'refunded' : ord.paymentStatus,
+            paymentStatus: isApproved ? 'refunded' : ord.paymentStatus,
             updatedAt: new Date().toISOString()
           };
         }
@@ -929,7 +929,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       return updated;
     });
-    showToast(`Return/Exchange claim #${orderId} marked as ${returnStatus.toUpperCase()}`);
+    showToast(`Return claim #${orderId} marked as ${returnStatus.toUpperCase()}`);
   };
 
   const resetFilters = () => {

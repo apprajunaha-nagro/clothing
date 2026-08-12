@@ -396,12 +396,12 @@ export const AdminOrdersView: React.FC = () => {
         </div>
       </div>
 
-      {/* RETURN & EXCHANGE MODERATION QUEUE */}
+      {/* RETURN MODERATION QUEUE */}
       <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm text-left space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-bold font-serif text-stone-900">Active Return & Exchange Approvals Queue</h3>
-            <p className="text-xs text-stone-400">Customer replacement & refund claims requesting style/size adjustments. Controlled by Admin Portal.</p>
+            <h3 className="text-sm font-bold font-serif text-stone-900">Active Return Approvals Queue</h3>
+            <p className="text-xs text-stone-400">Customer refund and return claims. Controlled by Admin Portal.</p>
           </div>
           <span className="bg-amber-100 text-amber-800 text-[11px] font-mono font-bold px-2.5 py-1 rounded-full">
             {orders.filter(o => o.returnStatus || o.returnType || o.status === 'returned').length} Active Claims
@@ -414,7 +414,7 @@ export const AdminOrdersView: React.FC = () => {
             if (claims.length === 0) {
               return (
                 <div className="p-6 text-center text-stone-400 font-medium">
-                  No active customer return or exchange claims currently pending review.
+                  No active customer return claims currently pending review.
                 </div>
               );
             }
@@ -428,10 +428,8 @@ export const AdminOrdersView: React.FC = () => {
                   <div className="space-y-1.5 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-stone-900 text-xs font-mono">#{claim.orderNumber}</span>
-                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                        claim.returnType === 'exchange' ? 'bg-indigo-100 text-indigo-800' : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {claim.returnType === 'exchange' ? '🔄 EXCHANGE CLAIM' : '📦 RETURN & REFUND'}
+                      <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider bg-purple-100 text-purple-800">
+                        📦 RETURN & REFUND CLAIM
                       </span>
                       <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
                         isApproved ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :

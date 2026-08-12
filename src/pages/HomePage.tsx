@@ -563,7 +563,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             </div>
             <div className="text-left">
               <h4 className="text-xs sm:text-sm font-extrabold text-stone-900 leading-tight">Easy 7-Day Returns</h4>
-              <p className="text-[11px] text-stone-500 font-medium mt-0.5">Hassle-free exchange policy</p>
+              <p className="text-[11px] text-stone-500 font-medium mt-0.5">Hassle-free 7-day return policy</p>
             </div>
           </div>
 

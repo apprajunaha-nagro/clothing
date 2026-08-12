@@ -224,7 +224,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
             <li><button onClick={() => onNavigate('/store-locator')} className="hover:text-[#C0654B] cursor-pointer">Find Nearest Store</button></li>
             <li><button onClick={() => onNavigate('/size-guide')} className="hover:text-[#C0654B] cursor-pointer">Size Guide & Chart</button></li>
             <li><button onClick={() => onNavigate('/faqs')} className="hover:text-[#C0654B] cursor-pointer">FAQs & Help Center</button></li>
-            <li><button onClick={() => onNavigate('/return-policy')} className="hover:text-[#C0654B] cursor-pointer">Returns & Exchanges</button></li>
+            <li><button onClick={() => onNavigate('/return-policy')} className="hover:text-[#C0654B] cursor-pointer">Return Policy</button></li>
           </ul>
         </div>
 

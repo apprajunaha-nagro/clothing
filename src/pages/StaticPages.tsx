@@ -70,7 +70,7 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
                 <div className="pt-4 space-y-2">
                   <h2 className="text-base font-bold text-stone-900 font-serif">3. Return & Refund Guidelines</h2>
                   <p className="text-stone-600">
-                    {settings.refundPolicy || 'Products are eligible for return/exchange within 7–15 days of delivery, provided they are unused and unwashed with tags intact. Innerwear is non-returnable for hygiene reasons.'}
+                    {settings.refundPolicy || 'Products are eligible for return within 7–15 days of delivery, provided they are unused and unwashed with tags intact. Innerwear is non-returnable for hygiene reasons.'}
                   </p>
                 </div>
 

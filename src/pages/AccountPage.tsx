@@ -244,7 +244,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard },
     { id: 'orders', label: `My Orders (${orders.length})`, icon: Package },
-    { id: 'returns', label: 'Returns & Exchanges', icon: RotateCcw },
+    { id: 'returns', label: 'Returns', icon: RotateCcw },
     { id: 'wishlist', label: `My Wishlist (${wishlist.length})`, icon: Heart },
     { id: 'addresses', label: 'Saved Addresses', icon: MapPin },
     { id: 'profile', label: 'Profile Details', icon: UserIcon },
@@ -769,7 +769,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                                   }`}>
                                     <RotateCcw className="w-3.5 h-3.5 text-[#C0654B]" />
                                     <span>
-                                      {order.returnType === 'exchange' ? '🔂 Exchange Requested' : '↩ Return Requested'} ({order.returnStatus.replace('_', ' ').toUpperCase()})
+                                      ↩ Return Requested ({order.returnStatus.replace('_', ' ').toUpperCase()})
                                     </span>
                                   </span>
                                 ) : (
@@ -778,7 +778,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                                     className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5 text-xs"
                                   >
                                     <RotateCcw className="w-3.5 h-3.5" />
-                                    <span>Request Return / Exchange</span>
+                                    <span>Request Return</span>
                                   </button>
                                 )
                               ) : (
@@ -834,7 +834,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-xl font-bold font-serif text-stone-900">Returns & Size Exchanges</h2>
+                      <h2 className="text-xl font-bold font-serif text-stone-900">Returns & Refund Requests</h2>
                       <p className="text-xs text-stone-500">Track active return requests and eligible delivered items (7-Day Hassle-Free Policy).</p>
                     </div>
                   </div>
@@ -847,7 +847,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                       </div>
                       <div>
                         <h4 className="font-bold text-sm">7-Day Free Pickup Guarantee</h4>
-                        <p className="text-[11px] text-stone-300">Easy size exchanges & instant refund directly to your original payment method or UPI.</p>
+                        <p className="text-[11px] text-stone-300">Instant refund directly to your original payment method or UPI bank account.</p>
                       </div>
                     </div>
                     <span className="hidden sm:inline-block text-[10px] bg-white/10 text-stone-200 font-bold px-3 py-1.5 rounded-full uppercase tracking-wider border border-white/10 shrink-0">
@@ -864,7 +864,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                       <div className="space-y-1">
                         <h3 className="font-bold text-stone-900 text-base">No Return Eligible Delivered Packages</h3>
                         <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                          Return and exchange requests become active once your package is delivered to your address.
+                          Return requests become active once your package is delivered to your address.
                         </p>
                       </div>
                       <button
@@ -886,11 +886,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
 
                             {order.returnStatus && order.returnStatus !== 'none' ? (
                               <span className="bg-amber-100 text-amber-900 border border-amber-300 font-bold px-3 py-1 rounded-full text-[10px] uppercase">
-                                {order.returnType === 'exchange' ? '🔂 Exchange Requested' : '↩ Return Requested'} ({order.returnStatus.replace('_', ' ')})
+                                ↩ Return Requested ({order.returnStatus.replace('_', ' ')})
                               </span>
                             ) : (
                               <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-3 py-1 rounded-full text-[10px] uppercase">
-                                ✓ Eligible for Return / Exchange
+                                ✓ Eligible for Return
                               </span>
                             )}
                           </div>
@@ -916,7 +916,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                               <div className="bg-stone-50 p-3 rounded-2xl border border-stone-200 text-stone-700 w-full text-left space-y-1">
                                 <p className="font-bold text-stone-900">Pickup Details:</p>
                                 <p className="text-stone-600">Reason: {order.returnReason}</p>
-                                {order.exchangeSize && <p className="text-[#C0654B] font-bold">Requested Size: {order.exchangeSize}</p>}
                                 <p className="text-emerald-700 font-medium pt-1">🚚 Our doorstep courier representative will arrive within 24-48 hours.</p>
                               </div>
                             ) : (
@@ -925,7 +924,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                                 className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-5 py-2.5 rounded-xl transition-all shadow-md cursor-pointer flex items-center gap-1.5"
                               >
                                 <RotateCcw className="w-4 h-4" />
-                                <span>Request Return or Size Exchange</span>
+                                <span>Request Return</span>
                               </button>
                             )}
                           </div>
@@ -1583,46 +1582,14 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                 <RotateCcw className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-serif font-bold text-base text-stone-900">Request Return or Size Exchange</h3>
+                <h3 className="font-serif font-bold text-base text-stone-900">Request Item Return</h3>
                 <p className="text-[11px] text-stone-500">Order #{returnModalOrder.orderNumber} • Delivered Item</p>
               </div>
             </div>
 
-            {/* Step 1: Select Request Type */}
-            <div className="space-y-2">
-              <label className="block font-bold text-stone-800">1. Select Request Type *</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setReturnType('return')}
-                  className={`p-3.5 rounded-2xl border font-bold text-left transition-all cursor-pointer flex flex-col gap-1 ${
-                    returnType === 'return'
-                      ? 'border-[#C0654B] bg-[#F3E9E4] text-[#C0654B] shadow-xs'
-                      : 'border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100'
-                  }`}
-                >
-                  <span className="text-xs font-bold">↩ Return & Refund</span>
-                  <span className="text-[10px] font-normal text-stone-500">Full refund to original payment method or Bank / UPI</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setReturnType('exchange')}
-                  className={`p-3.5 rounded-2xl border font-bold text-left transition-all cursor-pointer flex flex-col gap-1 ${
-                    returnType === 'exchange'
-                      ? 'border-[#C0654B] bg-[#F3E9E4] text-[#C0654B] shadow-xs'
-                      : 'border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100'
-                  }`}
-                >
-                  <span className="text-xs font-bold">🔂 Size / Color Exchange</span>
-                  <span className="text-[10px] font-normal text-stone-500">Free replacement delivered directly to your doorstep</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Step 2: Select Reason */}
+            {/* Select Reason */}
             <div className="space-y-1.5">
-              <label className="block font-bold text-stone-800">2. Reason for {returnType === 'return' ? 'Return' : 'Exchange'} *</label>
+              <label className="block font-bold text-stone-800">1. Reason for Return *</label>
               <select
                 value={returnReason}
                 onChange={(e) => setReturnReason(e.target.value)}
@@ -1635,29 +1602,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                 <option value="Changed mind / No longer needed">Changed mind / No longer needed</option>
               </select>
             </div>
-
-            {/* Step 3: If Exchange, Select New Size */}
-            {returnType === 'exchange' && (
-              <div className="space-y-2 bg-stone-50 p-3.5 rounded-2xl border border-stone-200">
-                <label className="block font-bold text-stone-800">3. Select Desired Replacement Size *</label>
-                <div className="flex flex-wrap gap-2">
-                  {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((sz) => (
-                    <button
-                      type="button"
-                      key={sz}
-                      onClick={() => setExchangeSize(sz)}
-                      className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                        exchangeSize === sz
-                          ? 'border-[#C0654B] bg-[#C0654B] text-white shadow-xs'
-                          : 'border-stone-300 bg-white text-stone-700 hover:border-stone-400'
-                      }`}
-                    >
-                      {sz}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Step 4: Additional Comments */}
             <div className="space-y-1.5">
