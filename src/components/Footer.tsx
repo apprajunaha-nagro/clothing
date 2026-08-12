@@ -189,11 +189,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
               <span>WhatsApp: +91 {settings.whatsappNumber || '9471155434'}</span>
             </a>
             <a
-              href={`mailto:${settings.supportEmail || settings.contactEmail || 'support@pgmart.in'}`}
+              href="mailto:support@pgmart.in"
               className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer"
             >
               <Mail className="w-4 h-4 text-[#C0654B] shrink-0" />
-              <span>{settings.supportEmail || settings.contactEmail || 'support@pgmart.in'}</span>
+              <span>support@pgmart.in</span>
             </a>
           </div>
         </div>
