@@ -382,9 +382,49 @@ export const AdminOrdersView: React.FC = () => {
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div>
                 <span className="text-[10px] font-bold text-stone-400 font-mono">Invoice reference #{activeOrder.orderNumber}</span>
-                <h3 className="text-base font-bold font-serif text-stone-900">Fulfillment Detail Sheet</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold font-serif text-stone-900">Fulfillment Detail Sheet</h3>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase font-mono tracking-wider ${
+                    activeOrder.status === 'delivered' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                    activeOrder.status === 'shipped' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
+                    activeOrder.status === 'cancelled' ? 'bg-red-100 text-red-800 border border-red-300' :
+                    'bg-amber-100 text-amber-800 border border-amber-300'
+                  }`}>
+                    {activeOrder.status}
+                  </span>
+                </div>
               </div>
-              <button onClick={() => setActiveOrder(null)} className="text-stone-400 hover:text-stone-800">✕</button>
+              <button onClick={() => setActiveOrder(null)} className="text-stone-400 hover:text-stone-800 font-bold text-base p-1">✕</button>
+            </div>
+
+            {/* Quick Dispatch Status Action Tab Bar */}
+            <div className="bg-stone-50 p-3 rounded-xl border border-stone-200 space-y-2">
+              <span className="font-bold text-stone-700 text-[11px] uppercase tracking-wider block">Update Dispatch Status & Trigger Customer Notification:</span>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: 'Pending', status: 'pending' as OrderStatus, color: 'bg-amber-500 hover:bg-amber-600' },
+                  { label: 'Confirm Order', status: 'confirmed' as OrderStatus, color: 'bg-blue-600 hover:bg-blue-700' },
+                  { label: 'Processing', status: 'processing' as OrderStatus, color: 'bg-indigo-600 hover:bg-indigo-700' },
+                  { label: 'Ship Order', status: 'shipped' as OrderStatus, color: 'bg-purple-600 hover:bg-purple-700' },
+                  { label: 'Mark Delivered', status: 'delivered' as OrderStatus, color: 'bg-emerald-600 hover:bg-emerald-700' },
+                  { label: 'Cancel Order', status: 'cancelled' as OrderStatus, color: 'bg-red-600 hover:bg-red-700' }
+                ].map(action => {
+                  const isActive = activeOrder.status === action.status;
+                  return (
+                    <button
+                      key={action.status}
+                      type="button"
+                      onClick={() => handleSimulateStatusAlert(activeOrder, action.status)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all cursor-pointer shadow-xs flex items-center gap-1 ${
+                        isActive ? 'ring-2 ring-offset-1 ring-stone-900 font-extrabold scale-105' : action.color
+                      }`}
+                    >
+                      {isActive && <Check className="w-3.5 h-3.5" />}
+                      <span>{action.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -442,9 +482,9 @@ export const AdminOrdersView: React.FC = () => {
                   <div className="pt-2">
                     <button
                       onClick={() => handleSimulateStatusAlert(activeOrder, 'shipped')}
-                      className="w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer"
+                      className="w-full px-4 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-sm text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer transition-colors"
                     >
-                      <Truck className="w-4 h-4" /> Save Dispatch & Trigger SMTP Alert
+                      <Truck className="w-4 h-4" /> Save Dispatch & Trigger Alert
                     </button>
                   </div>
                 </div>
