@@ -44,13 +44,17 @@ const DealCountdownTimer: React.FC<{ initialHours?: number; initialMinutes?: num
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const { banners, categories, brands, products, settings, showToast, setChatOpen } = useStore();
 
-  // Category Icon Strip tiles (Only 4 main departments)
-  const categoryTiles = [
-    { name: "Women's Fashion", slug: 'women', img: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=250&q=80' },
-    { name: "Men's Fashion", slug: 'men', img: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=250&q=80' },
-    { name: "Kids' Fashion", slug: 'kids', img: '/images/kids_department_nano_banana.png' },
-    { name: "Innerwear & Lingerie", slug: 'undergarments', img: '/images/innerwear_department_new.png' },
-  ];
+  // Category Icon Strip tiles under hero banner (Dynamically controlled from Admin Portal Category Page)
+  const categoryTiles = React.useMemo(() => {
+    if (!categories || categories.length === 0) return [];
+    return categories
+      .filter(c => c.status !== 'inactive')
+      .map(c => ({
+        name: c.name,
+        slug: c.slug || c.id,
+        img: c.image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=250&q=80'
+      }));
+  }, [categories]);
 
   // Scroll refs for horizontal product rails
   const dealsScrollRef = useRef<HTMLDivElement>(null);

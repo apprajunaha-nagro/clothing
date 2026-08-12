@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useStore } from '../../context/StoreContext';
-import { Search, ChevronRight, ChevronDown, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, ArrowRight, HelpCircle } from 'lucide-react';
+import { Search, ChevronRight, ChevronDown, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, ArrowRight, HelpCircle, Upload, Image as ImageIcon } from 'lucide-react';
 import { Category, Subcategory, CategoryType, Product } from '../../types';
 
 export const AdminCatalogView: React.FC = () => {
@@ -14,8 +14,9 @@ export const AdminCatalogView: React.FC = () => {
   const [expandedSubs, setExpandedSubs] = useState<{ [id: string]: boolean }>({});
 
   // Modal forms
-  const [activeModal, setActiveModal] = useState<'subcategory' | 'type' | null>(null);
+  const [activeModal, setActiveModal] = useState<'category' | 'subcategory' | 'type' | null>(null);
   const [editTarget, setEditTarget] = useState<{ type: 'category' | 'subcategory' | 'type'; item: any } | null>(null);
+  const categoryPhotoRef = useRef<HTMLInputElement>(null);
   
   // Form fields
   const [parentCatId, setParentCatId] = useState('');
@@ -219,7 +220,68 @@ export const AdminCatalogView: React.FC = () => {
     resetForm();
   };
 
+  // Handle Save Main Category
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+
+    if (editTarget && editTarget.type === 'category') {
+      const catId = editTarget.item.id;
+      const updatedCategories = categories.map(cat => {
+        if (cat.id !== catId) return cat;
+        return {
+          ...cat,
+          name,
+          slug,
+          image: image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80',
+          banner: banner || undefined,
+          status
+        };
+      });
+      setCategories(updatedCategories);
+
+      try {
+        await fetch(`/api/categories/${catId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, slug, image, banner, status })
+        });
+      } catch (err) {
+        console.error('Failed to update category on server:', err);
+      }
+
+      showToast(`Category "${name}" updated successfully! Homepage tiles updated.`);
+    }
+
+    setActiveModal(null);
+    resetForm();
+  };
+
+  // Device Photo Upload Handler for Category Image
+  const handleCategoryPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setImage(event.target.result as string);
+        showToast('Category photo uploaded from device!');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Trigger edit for items
+  const startEditCategory = (cat: Category) => {
+    setEditTarget({ type: 'category', item: cat });
+    setName(cat.name);
+    setSlug(cat.slug);
+    setDescription('');
+    setImage(cat.image || '');
+    setBanner(cat.banner || '');
+    setStatus(cat.status);
+    setActiveModal('category');
+  };
   const startEditSubcategory = (sub: Subcategory) => {
     setEditTarget({ type: 'subcategory', item: sub });
     setName(sub.name);
@@ -463,20 +525,38 @@ export const AdminCatalogView: React.FC = () => {
               <div key={cat.id} className="select-none">
                 {/* 1. Category Row (Fixed Parent) */}
                 <div className="flex items-center justify-between p-4 bg-stone-50/40 hover:bg-stone-50 transition-colors">
-                  <div className="flex items-center gap-2 cursor-pointer flex-1" onClick={() => toggleCategory(cat.id)}>
+                  <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => toggleCategory(cat.id)}>
                     {isCatExpanded ? (
                       <ChevronDown className="w-5 h-5 text-[#C0654B]" />
                     ) : (
                       <ChevronRight className="w-5 h-5 text-stone-400" />
                     )}
-                    <span className="text-sm font-bold font-serif text-stone-900">{cat.name}</span>
-                    <span className="text-[10px] uppercase font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded">Core Parent</span>
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-stone-300 shrink-0 bg-stone-100 shadow-xs">
+                      <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold font-serif text-stone-900">{cat.name}</span>
+                        <span className="text-[10px] uppercase font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded">Core Category</span>
+                      </div>
+                      <span className="text-[10px] text-stone-400 font-mono">Homepage photo under hero banner</span>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <span className="font-mono text-xs font-bold text-stone-500 bg-stone-100/80 px-2 py-1 rounded-lg border border-stone-200/60">
                       {catProdCount} Products
                     </span>
+
+                    {/* Edit Category Button */}
+                    <button
+                      onClick={() => startEditCategory(cat)}
+                      className="px-3 py-1.5 bg-stone-800 hover:bg-stone-900 text-white text-[10px] font-bold rounded-lg cursor-pointer transition-colors flex items-center gap-1 shadow-xs"
+                      title="Edit Category Name & Homepage Photo"
+                    >
+                      <Edit2 className="w-3 h-3 text-amber-300" /> Edit Category Image
+                    </button>
+
                     <button
                       onClick={() => openAddSubcategory(cat.id)}
                       className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-[10px] font-bold rounded-lg cursor-pointer transition-colors flex items-center gap-1"
@@ -636,14 +716,14 @@ export const AdminCatalogView: React.FC = () => {
           <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200 p-4 sm:p-6 space-y-4 animate-scale-in text-left">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <h3 className="text-base font-bold font-serif text-stone-900">
-                {editTarget ? 'Edit' : 'Create New'} {activeModal === 'subcategory' ? 'Subcategory' : 'Style/Type'}
+                {editTarget ? 'Edit' : 'Create New'} {activeModal === 'category' ? 'Core Category' : activeModal === 'subcategory' ? 'Subcategory' : 'Style/Type'}
               </h3>
               <button onClick={() => { setActiveModal(null); resetForm(); }} className="text-stone-400 hover:text-stone-800 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={activeModal === 'subcategory' ? handleSaveSubcategory : handleSaveType} className="space-y-4 text-xs">
+            <form onSubmit={activeModal === 'category' ? handleSaveCategory : activeModal === 'subcategory' ? handleSaveSubcategory : handleSaveType} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block font-bold text-stone-700 mb-1">Name (Required)</label>
@@ -652,7 +732,7 @@ export const AdminCatalogView: React.FC = () => {
                     required
                     value={name}
                     onChange={(e) => handleNameChange(e.target.value)}
-                    placeholder={activeModal === 'subcategory' ? "e.g., Casual Shirts" : "e.g., Slim-Fit Linens"}
+                    placeholder={activeModal === 'category' ? "e.g., Women's Fashion" : activeModal === 'subcategory' ? "e.g., Casual Shirts" : "e.g., Slim-Fit Linens"}
                     className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B]"
                   />
                 </div>
@@ -668,37 +748,75 @@ export const AdminCatalogView: React.FC = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">Description (Optional)</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe this category branch (useful for store layout descriptions and SEO)..."
-                  rows={2}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              {activeModal !== 'category' && (
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">Thumbnail Image URL</label>
-                  <input
-                    type="text"
-                    value={image}
-                    onChange={(e) => setImage(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
+                  <label className="block font-bold text-stone-700 mb-1">Description (Optional)</label>
+                  <textarea
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Describe this category branch (useful for store layout descriptions and SEO)..."
+                    rows={2}
                     className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B]"
                   />
                 </div>
-                <div>
-                  <label className="block font-bold text-stone-700 mb-1">Optional Banner Image URL</label>
-                  <input
-                    type="text"
-                    value={banner}
-                    onChange={(e) => setBanner(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B]"
-                  />
+              )}
+
+              {/* IMAGE UPLOAD & URL SECTION */}
+              <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-3">
+                <span className="font-bold text-stone-900 block text-xs">Category Display Photo (Homepage Tile under Hero Banner)</span>
+                
+                <div className="flex items-center gap-4">
+                  {image ? (
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#C0654B] bg-stone-100 shrink-0 shadow-sm">
+                      <img src={image} alt="Preview" className="w-full h-full object-cover" />
+                    </div>
+                  ) : (
+                    <div className="w-16 h-16 rounded-full border-2 border-dashed border-stone-300 flex items-center justify-center bg-stone-100 shrink-0 text-stone-400">
+                      <ImageIcon className="w-6 h-6" />
+                    </div>
+                  )}
+
+                  <div className="space-y-2 flex-1">
+                    <input
+                      type="file"
+                      ref={categoryPhotoRef}
+                      accept="image/*"
+                      onChange={handleCategoryPhotoUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => categoryPhotoRef.current?.click()}
+                      className="px-3.5 py-1.5 bg-stone-900 hover:bg-black text-white font-bold rounded-lg text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-[#C0654B]" />
+                      Upload Photo from Device
+                    </button>
+                    <p className="text-[10px] text-stone-400">Upload custom round category photo directly from your device</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Or Image URL</label>
+                    <input
+                      type="text"
+                      value={image}
+                      onChange={(e) => setImage(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full px-3 py-2 border border-stone-300 bg-white rounded-lg outline-none focus:border-[#C0654B]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Optional Banner Image URL</label>
+                    <input
+                      type="text"
+                      value={banner}
+                      onChange={(e) => setBanner(e.target.value)}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full px-3 py-2 border border-stone-300 bg-white rounded-lg outline-none focus:border-[#C0654B]"
+                    />
+                  </div>
                 </div>
               </div>
 
