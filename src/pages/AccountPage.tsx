@@ -713,10 +713,20 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                               <Truck className="w-3.5 h-3.5 text-[#C0654B]" /> Courier Tracking Timeline
                             </p>
 
-                            <div className="grid grid-cols-5 gap-1 text-center relative py-2">
-                              {['Placed', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered'].map((step, idx) => {
-                                const activeIndex = order.status === 'delivered' ? 4 : order.status === 'shipped' ? 2 : 1;
-                                const isDone = idx <= activeIndex;
+                            <div className="grid grid-cols-6 gap-1 text-center relative py-2">
+                              {['Placed', 'Confirmed', 'Processing', 'Shipped', 'Out for Delivery', 'Delivered'].map((step, idx) => {
+                                const getActiveIndex = (status: string) => {
+                                  switch (status) {
+                                    case 'delivered': return 5;
+                                    case 'shipped': return 3;
+                                    case 'processing': return 2;
+                                    case 'confirmed': return 1;
+                                    case 'pending': return 0;
+                                    default: return 0;
+                                  }
+                                };
+                                const activeIndex = getActiveIndex(order.status);
+                                const isDone = order.status !== 'cancelled' && idx <= activeIndex;
 
                                 return (
                                   <div key={step} className="flex flex-col items-center gap-1.5 z-10">
