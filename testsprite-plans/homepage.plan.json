@@ -1,0 +1,23 @@
+{
+  "projectId": "pgmart-clothing",
+  "type": "frontend",
+  "name": "Homepage - Category navigation and product browsing",
+  "planSteps": [
+    {
+      "type": "action",
+      "description": "Navigate to the homepage at http://localhost:3000"
+    },
+    {
+      "type": "assertion",
+      "description": "The page displays the PGmart header, hero carousel, and the 4 category tiles: Women, Men, Kids, Innerwear & Lingerie"
+    },
+    {
+      "type": "action",
+      "description": "Click on the 'Women' category tile directly under the hero banner"
+    },
+    {
+      "type": "assertion",
+      "description": "The application navigates to /category/women and displays product listings for Women"
+    }
+  ]
+}

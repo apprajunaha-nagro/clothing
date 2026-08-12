@@ -192,6 +192,32 @@ export interface Order {
   returnComments?: string;
   exchangeSize?: string;
   exchangeColor?: string;
+  isStockDeducted?: boolean;
+}
+
+export interface UserActivity {
+  id: string;
+  timestamp: string;
+  type: 'order' | 'login' | 'review' | 'return' | 'address_update' | 'wishlist' | 'note';
+  description: string;
+  details?: any;
+}
+
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  addresses?: Address[];
+  createdAt: string;
+  ordersCount: number;
+  totalSpent: number;
+  lastOrderDate?: string;
+  status: 'active' | 'vip' | 'flagged' | 'inactive';
+  notes?: string;
+  loyaltyPoints?: number;
+  loyaltyTier?: 'Silver' | 'Gold' | 'Platinum' | 'Diamond';
+  activities?: UserActivity[];
 }
 
 export interface Review {

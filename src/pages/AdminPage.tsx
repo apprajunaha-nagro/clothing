@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { 
-  Sparkles, LayoutDashboard, FolderTree, Shirt, ShoppingCart, Megaphone, 
+  Sparkles, LayoutDashboard, FolderTree, Shirt, ShoppingCart, Users, Megaphone, 
   BarChart3, MessageSquare, Settings as SettingsIcon, Bell, Search, 
   Sun, Moon, LogOut, ExternalLink, ShieldCheck, AlertCircle, BookOpen, X, Grid, LayoutGrid, ChevronDown
 } from 'lucide-react';
@@ -11,6 +11,7 @@ import { AdminDashboardView } from '../components/admin/AdminDashboardView';
 import { AdminCatalogView } from '../components/admin/AdminCatalogView';
 import { AdminProductsView } from '../components/admin/AdminProductsView';
 import { AdminOrdersView } from '../components/admin/AdminOrdersView';
+import { AdminUserAccountsView } from '../components/admin/AdminUserAccountsView';
 import { AdminMarketingView } from '../components/admin/AdminMarketingView';
 import { AdminAnalyticsView } from '../components/admin/AdminAnalyticsView';
 import { AdminReviewsView } from '../components/admin/AdminReviewsView';
@@ -34,7 +35,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   // Active module view
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'products' | 'orders' | 'marketing' | 'analytics' | 'reviews' | 'blog' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'catalog' | 'products' | 'orders' | 'user_accounts' | 'marketing' | 'analytics' | 'reviews' | 'blog' | 'settings'>('dashboard');
 
   // Dark mode simulation
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -139,6 +140,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         return <AdminProductsView />;
       case 'orders':
         return <AdminOrdersView />;
+      case 'user_accounts':
+        return <AdminUserAccountsView />;
       case 'marketing':
         return <AdminMarketingView />;
       case 'analytics':
@@ -159,6 +162,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     { id: 'catalog', label: 'Category', icon: FolderTree },
     { id: 'products', label: 'Product / Add Product', icon: Shirt },
     { id: 'orders', label: 'Orders', icon: ShoppingCart },
+    { id: 'user_accounts', label: 'User Accounts', icon: Users },
     { id: 'marketing', label: 'Marketing and Promotion', icon: Megaphone },
     { id: 'analytics', label: 'Sales Intelligence', icon: BarChart3 },
     { id: 'reviews', label: 'Customer Reviews', icon: MessageSquare },

@@ -841,8 +841,86 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateOrderStatus = async (orderId: string, status: Order['status'], trackingNum?: string) => {
     const isDelivered = status === 'delivered';
+    const isConfirmedOrBeyond = ['confirmed', 'processing', 'shipped', 'delivered'].includes(status);
+    const targetOrder = orders.find(o => o.id === orderId);
 
-    // 1. Instant local state update for zero latency reflection across Admin & Storefront
+    let stockDeductedNow = false;
+    let stockRestoredNow = false;
+
+    // 1. DEDUCT QUANTITY FROM PRODUCT LIST IF ORDER IS CONFIRMED BY ADMIN
+    if (isConfirmedOrBeyond && targetOrder && !targetOrder.isStockDeducted) {
+      stockDeductedNow = true;
+      setProducts(prevProducts => {
+        const updated = [...prevProducts];
+        targetOrder.items.forEach(item => {
+          const pIndex = updated.findIndex(p => p.id === item.productId);
+          if (pIndex !== -1) {
+            const prod = updated[pIndex];
+            // Calculate new stock quantity
+            const currentStock = (prod as any).stockQuantity ?? 100;
+            const newStock = Math.max(0, currentStock - item.quantity);
+
+            // Deduct variant stock if variantId matches
+            let updatedVariants = prod.variants;
+            if (item.variantId && Array.isArray(prod.variants)) {
+              updatedVariants = prod.variants.map(v => {
+                if (v.id === item.variantId || v.size === item.size) {
+                  return { ...v, stockQuantity: Math.max(0, (v.stockQuantity ?? 50) - item.quantity) };
+                }
+                return v;
+              });
+            }
+
+            updated[pIndex] = {
+              ...prod,
+              stockQuantity: newStock,
+              inStock: newStock > 0,
+              status: newStock === 0 ? 'out_of_stock' : prod.status,
+              variants: updatedVariants
+            };
+
+            // Sync updated stock to backend API
+            adminFetch(`/api/products/${prod.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ stockQuantity: newStock, inStock: newStock > 0 })
+            }).catch(() => {});
+          }
+        });
+        return updated;
+      });
+    }
+
+    // 2. RESTORE QUANTITY IF CONFIRMED ORDER IS LATER CANCELLED OR RETURNED
+    if ((status === 'cancelled' || status === 'returned') && targetOrder && targetOrder.isStockDeducted) {
+      stockRestoredNow = true;
+      setProducts(prevProducts => {
+        const updated = [...prevProducts];
+        targetOrder.items.forEach(item => {
+          const pIndex = updated.findIndex(p => p.id === item.productId);
+          if (pIndex !== -1) {
+            const prod = updated[pIndex];
+            const currentStock = (prod as any).stockQuantity ?? 0;
+            const newStock = currentStock + item.quantity;
+            updated[pIndex] = {
+              ...prod,
+              stockQuantity: newStock,
+              inStock: true,
+              status: prod.status === 'out_of_stock' ? 'published' : prod.status
+            };
+
+            adminFetch(`/api/products/${prod.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ stockQuantity: newStock, inStock: true })
+            }).catch(() => {});
+          }
+        });
+        return updated;
+      });
+    }
+
+    // 3. Instant local state update for zero latency reflection across Admin & Storefront
     setOrders(prev => prev.map(o => {
       if (o.id === orderId) {
         return {
@@ -850,20 +928,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           status,
           trackingNumber: trackingNum || o.trackingNumber,
           paymentStatus: isDelivered ? 'paid' : o.paymentStatus,
+          isStockDeducted: stockDeductedNow ? true : (stockRestoredNow ? false : o.isStockDeducted),
           updatedAt: new Date().toISOString()
         };
       }
       return o;
     }));
 
-    showToast(`Order #${orderId} dispatch status updated to "${status.toUpperCase()}"`);
+    const toastMsg = stockDeductedNow
+      ? `Order #${orderId} status updated to "${status.toUpperCase()}" & Quantity Deducted from Product List!`
+      : `Order #${orderId} status updated to "${status.toUpperCase()}"`;
+    showToast(toastMsg);
 
-    // 2. Sync updated status to backend API
+    // 4. Sync updated status to backend API
     try {
       await fetch(`/api/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, trackingNumber: trackingNum })
+        body: JSON.stringify({ status, trackingNumber: trackingNum, isStockDeducted: stockDeductedNow ? true : undefined })
       });
     } catch (e) {
       console.warn('Backend sync for status update failed, local state updated successfully', e);
