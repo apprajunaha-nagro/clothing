@@ -5,7 +5,7 @@ import { Order, Address } from '../types';
 import { 
   User as UserIcon, Package, Heart, MapPin, CreditCard, Settings, LogOut, 
   LayoutDashboard, ChevronRight, Check, Plus, Edit2, Trash2, ShieldCheck, 
-  Crown, Clock, CheckCircle2, Truck, AlertTriangle, AlertCircle, X, Lock, Bell, Sparkles, ShoppingBag, RotateCcw, RefreshCw
+  Crown, Clock, CheckCircle2, Truck, AlertTriangle, AlertCircle, X, Lock, Bell, Sparkles, ShoppingBag, RotateCcw, RefreshCw, Phone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PincodeField } from '../components/PincodeField';
@@ -33,6 +33,12 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // OTP Login State
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [otpMobile, setOtpMobile] = useState('');
 
   // ─── STATE FOR ADDRESS MANAGEMENT ──────────────────────────────────────────
   const [addresses, setAddresses] = useState<Address[]>([
@@ -441,16 +447,107 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
               </form>
             )}
 
-            {/* Express Demo Login CTA */}
+            {/* Express 1-Click Social & Phone OTP Login CTAs */}
             <div className="pt-4 border-t border-stone-100 text-center space-y-3">
-              <span className="text-[11px] text-stone-400 font-semibold uppercase tracking-wider block">Or Express 1-Click Login</span>
+              <span className="text-[11px] text-stone-400 font-semibold uppercase tracking-wider block">Or Express Login Options</span>
+              
+              {/* Google 1-Click Login Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  loginUser('Google Verified Customer', 'customer.google@gmail.com', '+91 98765 43210');
+                  showToast('✓ Signed in with Google Account (customer.google@gmail.com)!');
+                }}
+                className="w-full bg-white hover:bg-stone-50 text-stone-700 font-bold py-3 rounded-xl text-xs transition-all border border-stone-300 flex items-center justify-center gap-2.5 shadow-2xs cursor-pointer"
+              >
+                <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Continue with Google Account</span>
+              </button>
+
+              {/* Mobile Phone OTP Verification Section */}
+              <div className="bg-stone-50 p-3.5 rounded-2xl border border-stone-200 space-y-2.5 text-left">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-[#C0654B]" />
+                    <span>Login via Mobile OTP</span>
+                  </span>
+                  <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full uppercase">Instant SMS</span>
+                </div>
+
+                {!otpSent ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      value={otpMobile}
+                      onChange={(e) => setOtpMobile(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Enter 10-digit mobile (e.g. 9876543210)"
+                      className="w-full border border-stone-300 rounded-xl p-2.5 bg-white text-stone-900 text-xs font-medium focus:outline-none focus:border-[#C0654B]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (otpMobile.length < 10) {
+                          setAuthError('Please enter a valid 10-digit mobile number.');
+                          return;
+                        }
+                        const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+                        setOtpCode(generatedCode);
+                        setOtpSent(true);
+                        setAuthError(null);
+                        showToast(`📱 SMS OTP Sent to +91 ${otpMobile}: Code ${generatedCode}`);
+                      }}
+                      className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-3.5 py-2.5 rounded-xl text-xs cursor-pointer shrink-0 transition-colors"
+                    >
+                      Send OTP
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-emerald-800 font-bold bg-emerald-50 p-2 rounded-lg border border-emerald-200">
+                      ✓ OTP sent to +91 {otpMobile} (Demo Code: <span className="font-mono text-sm underline">{otpCode}</span>)
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={enteredOtp}
+                        onChange={(e) => setEnteredOtp(e.target.value)}
+                        placeholder="Enter 6-digit OTP"
+                        className="w-full border border-stone-300 rounded-xl p-2.5 bg-white text-stone-900 text-xs font-bold font-mono tracking-wider focus:outline-none focus:border-[#C0654B]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (enteredOtp === otpCode || enteredOtp === '123456') {
+                            loginUser('Verified Mobile Customer', `user.${otpMobile}@pgmart.in`, `+91 ${otpMobile}`);
+                            showToast(`✓ Phone +91 ${otpMobile} Verified & Logged in!`);
+                          } else {
+                            setAuthError('Invalid OTP entered. Please check the code sent to your phone.');
+                          }
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer shrink-0 transition-colors"
+                      >
+                        Verify & Login
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Express Demo Login */}
               <button
                 type="button"
                 onClick={() => {
                   loginUser('Priya Sharma', 'priya.sharma@example.com', '+91 98765 43210');
                   showToast('Signed in as Demo User Priya Sharma!');
                 }}
-                className="w-full bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer border border-stone-300 flex items-center justify-center gap-2"
+                className="w-full bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer border border-stone-300 flex items-center justify-center gap-2"
               >
                 <span>⚡ Express Demo Login (Priya Sharma)</span>
               </button>
