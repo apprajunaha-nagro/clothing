@@ -6,6 +6,62 @@ import {
 } from 'lucide-react';
 import { Order, OrderItem, OrderStatus, Product, ProductVariant, Address } from '../../types';
 
+// Status Color mapping helper for unified color coding across tabs, selects & badges
+const getStatusColorStyle = (status: OrderStatus) => {
+  switch (status) {
+    case 'delivered':
+      return {
+        badge: 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold',
+        select: 'bg-emerald-50 text-emerald-700 border-emerald-300 font-bold',
+        buttonActive: 'bg-emerald-600 text-white border-emerald-600 shadow-md font-black',
+        buttonHover: 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold'
+      };
+    case 'shipped':
+      return {
+        badge: 'bg-sky-100 text-sky-800 border-sky-300 font-extrabold',
+        select: 'bg-sky-50 text-sky-700 border-sky-300 font-bold',
+        buttonActive: 'bg-sky-600 text-white border-sky-600 shadow-md font-black',
+        buttonHover: 'bg-sky-600 hover:bg-sky-700 text-white font-bold'
+      };
+    case 'processing':
+      return {
+        badge: 'bg-indigo-100 text-indigo-800 border-indigo-300 font-extrabold',
+        select: 'bg-indigo-50 text-indigo-700 border-indigo-300 font-bold',
+        buttonActive: 'bg-indigo-600 text-white border-indigo-600 shadow-md font-black',
+        buttonHover: 'bg-indigo-600 hover:bg-indigo-700 text-white font-bold'
+      };
+    case 'confirmed':
+      return {
+        badge: 'bg-blue-100 text-blue-800 border-blue-300 font-extrabold',
+        select: 'bg-blue-50 text-blue-700 border-blue-300 font-bold',
+        buttonActive: 'bg-blue-600 text-white border-blue-600 shadow-md font-black',
+        buttonHover: 'bg-blue-600 hover:bg-blue-700 text-white font-bold'
+      };
+    case 'cancelled':
+      return {
+        badge: 'bg-red-100 text-red-800 border-red-300 font-extrabold',
+        select: 'bg-red-50 text-red-700 border-red-300 font-bold',
+        buttonActive: 'bg-red-600 text-white border-red-600 shadow-md font-black',
+        buttonHover: 'bg-red-600 hover:bg-red-700 text-white font-bold'
+      };
+    case 'returned':
+      return {
+        badge: 'bg-orange-100 text-orange-800 border-orange-300 font-extrabold',
+        select: 'bg-orange-50 text-orange-700 border-orange-300 font-bold',
+        buttonActive: 'bg-orange-600 text-white border-orange-600 shadow-md font-black',
+        buttonHover: 'bg-orange-600 hover:bg-orange-700 text-white font-bold'
+      };
+    case 'pending':
+    default:
+      return {
+        badge: 'bg-amber-100 text-amber-800 border-amber-300 font-extrabold',
+        select: 'bg-amber-50 text-amber-800 border-amber-300 font-bold',
+        buttonActive: 'bg-amber-500 text-white border-amber-500 shadow-md font-black',
+        buttonHover: 'bg-amber-500 hover:bg-amber-600 text-white font-bold'
+      };
+  }
+};
+
 export const AdminOrdersView: React.FC = () => {
   const { orders, createOrder, updateOrderStatus, products, setProducts, showToast, settings } = useStore();
 
@@ -186,32 +242,36 @@ export const AdminOrdersView: React.FC = () => {
       {/* QUICK ORDER STATUS FILTER TABS BAR */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
         {[
-          { label: 'All Orders', value: '', count: orders.length },
-          { label: 'Pending', value: 'pending', count: orders.filter(o => o.status === 'pending').length },
-          { label: 'Confirmed', value: 'confirmed', count: orders.filter(o => o.status === 'confirmed').length },
-          { label: 'Processing', value: 'processing', count: orders.filter(o => o.status === 'processing').length },
-          { label: 'Shipped', value: 'shipped', count: orders.filter(o => o.status === 'shipped').length },
-          { label: 'Delivered', value: 'delivered', count: orders.filter(o => o.status === 'delivered').length },
-          { label: 'Cancelled', value: 'cancelled', count: orders.filter(o => o.status === 'cancelled').length },
-          { label: 'Returned', value: 'returned', count: orders.filter(o => o.status === 'returned').length },
-        ].map(tab => (
-          <button
-            key={tab.label}
-            onClick={() => setFilterStatus(tab.value as any)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 transition-all cursor-pointer border ${
-              filterStatus === tab.value
-                ? 'bg-[#C0654B] text-white border-[#C0654B] shadow-sm'
-                : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
-            }`}
-          >
-            <span>{tab.label}</span>
-            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
-              filterStatus === tab.value ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-600'
-            }`}>
-              {tab.count}
-            </span>
-          </button>
-        ))}
+          { label: 'All Orders', value: '' as OrderStatus | '', count: orders.length },
+          { label: 'Pending', value: 'pending' as OrderStatus, count: orders.filter(o => o.status === 'pending').length },
+          { label: 'Confirmed', value: 'confirmed' as OrderStatus, count: orders.filter(o => o.status === 'confirmed').length },
+          { label: 'Processing', value: 'processing' as OrderStatus, count: orders.filter(o => o.status === 'processing').length },
+          { label: 'Shipped', value: 'shipped' as OrderStatus, count: orders.filter(o => o.status === 'shipped').length },
+          { label: 'Delivered', value: 'delivered' as OrderStatus, count: orders.filter(o => o.status === 'delivered').length },
+          { label: 'Cancelled', value: 'cancelled' as OrderStatus, count: orders.filter(o => o.status === 'cancelled').length },
+          { label: 'Returned', value: 'returned' as OrderStatus, count: orders.filter(o => o.status === 'returned').length },
+        ].map(tab => {
+          const isActive = filterStatus === tab.value;
+          const statusStyle = tab.value ? getStatusColorStyle(tab.value) : null;
+          return (
+            <button
+              key={tab.label}
+              onClick={() => setFilterStatus(tab.value)}
+              className={`px-3.5 py-2 rounded-xl text-xs whitespace-nowrap flex items-center gap-2 transition-all cursor-pointer border ${
+                isActive
+                  ? tab.value ? statusStyle?.buttonActive : 'bg-[#C0654B] text-white border-[#C0654B] shadow-sm font-extrabold'
+                  : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50 font-bold'
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                isActive ? 'bg-white/25 text-white font-bold' : 'bg-stone-100 text-stone-600 font-semibold'
+              }`}>
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
       <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-sm flex flex-wrap items-center gap-3 text-xs font-medium text-stone-500">
         <div className="relative flex-1 min-w-[200px]">
@@ -309,12 +369,7 @@ export const AdminOrdersView: React.FC = () => {
                       <select
                         value={order.status}
                         onChange={(e) => handleSimulateStatusAlert(order, e.target.value as any)}
-                        className={`px-2 py-1 rounded-lg border text-[11px] font-bold cursor-pointer outline-none ${
-                          order.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                          order.status === 'shipped' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                          order.status === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
-                          'bg-amber-50 text-amber-700 border-amber-200'
-                        }`}
+                        className={`px-2.5 py-1 rounded-lg border text-[11px] font-extrabold cursor-pointer outline-none transition-colors ${getStatusColorStyle(order.status).select}`}
                       >
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
@@ -384,12 +439,7 @@ export const AdminOrdersView: React.FC = () => {
                 <span className="text-[10px] font-bold text-stone-400 font-mono">Invoice reference #{activeOrder.orderNumber}</span>
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-bold font-serif text-stone-900">Fulfillment Detail Sheet</h3>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase font-mono tracking-wider ${
-                    activeOrder.status === 'delivered' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
-                    activeOrder.status === 'shipped' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
-                    activeOrder.status === 'cancelled' ? 'bg-red-100 text-red-800 border border-red-300' :
-                    'bg-amber-100 text-amber-800 border border-amber-300'
-                  }`}>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-mono tracking-wider transition-colors ${getStatusColorStyle(activeOrder.status).badge}`}>
                     {activeOrder.status}
                   </span>
                 </div>
@@ -402,21 +452,24 @@ export const AdminOrdersView: React.FC = () => {
               <span className="font-bold text-stone-700 text-[11px] uppercase tracking-wider block">Update Dispatch Status & Trigger Customer Notification:</span>
               <div className="flex flex-wrap gap-2">
                 {[
-                  { label: 'Pending', status: 'pending' as OrderStatus, color: 'bg-amber-500 hover:bg-amber-600' },
-                  { label: 'Confirm Order', status: 'confirmed' as OrderStatus, color: 'bg-blue-600 hover:bg-blue-700' },
-                  { label: 'Processing', status: 'processing' as OrderStatus, color: 'bg-indigo-600 hover:bg-indigo-700' },
-                  { label: 'Ship Order', status: 'shipped' as OrderStatus, color: 'bg-purple-600 hover:bg-purple-700' },
-                  { label: 'Mark Delivered', status: 'delivered' as OrderStatus, color: 'bg-emerald-600 hover:bg-emerald-700' },
-                  { label: 'Cancel Order', status: 'cancelled' as OrderStatus, color: 'bg-red-600 hover:bg-red-700' }
+                  { label: 'Pending', status: 'pending' as OrderStatus },
+                  { label: 'Confirm Order', status: 'confirmed' as OrderStatus },
+                  { label: 'Processing', status: 'processing' as OrderStatus },
+                  { label: 'Ship Order', status: 'shipped' as OrderStatus },
+                  { label: 'Mark Delivered', status: 'delivered' as OrderStatus },
+                  { label: 'Cancel Order', status: 'cancelled' as OrderStatus }
                 ].map(action => {
                   const isActive = activeOrder.status === action.status;
+                  const style = getStatusColorStyle(action.status);
                   return (
                     <button
                       key={action.status}
                       type="button"
                       onClick={() => handleSimulateStatusAlert(activeOrder, action.status)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-all cursor-pointer shadow-xs flex items-center gap-1 ${
-                        isActive ? 'ring-2 ring-offset-1 ring-stone-900 font-extrabold scale-105' : action.color
+                      className={`px-3 py-1.5 rounded-lg text-xs transition-all cursor-pointer shadow-xs flex items-center gap-1 border ${
+                        isActive 
+                          ? `${style.buttonActive} ring-2 ring-offset-1 ring-stone-900 scale-105` 
+                          : `${style.buttonHover} opacity-90 hover:opacity-100`
                       }`}
                     >
                       {isActive && <Check className="w-3.5 h-3.5" />}
@@ -482,7 +535,7 @@ export const AdminOrdersView: React.FC = () => {
                   <div className="pt-2">
                     <button
                       onClick={() => handleSimulateStatusAlert(activeOrder, 'shipped')}
-                      className="w-full px-4 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-sm text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                      className="w-full px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow-sm text-[10px] uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer transition-colors"
                     >
                       <Truck className="w-4 h-4" /> Save Dispatch & Trigger Alert
                     </button>
