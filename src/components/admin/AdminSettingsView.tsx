@@ -38,9 +38,9 @@ export const AdminSettingsView: React.FC = () => {
 
   // Admin logins and roles states
   const adminUsers = [
-    { name: 'Priyam Ghoshal', email: 'priyam@pgmart.com', role: 'Super Admin', lastLogin: 'Today, 09:12 AM', ip: '192.168.1.14' },
-    { name: 'Swarnali Sen', email: 'logistics@pgmart.com', role: 'Logistics Manager', lastLogin: 'Yesterday, 04:30 PM', ip: '103.45.2.89' },
-    { name: 'Rahul Dev', email: 'support@pgmart.com', role: 'Support Agent', lastLogin: '3 days ago', ip: '122.10.85.12' },
+    { name: 'Priyam Ghoshal', email: 'priyam@pgmart.in', role: 'Super Admin', lastLogin: 'Today, 09:12 AM', ip: '192.168.1.14' },
+    { name: 'Swarnali Sen', email: 'logistics@pgmart.in', role: 'Logistics Manager', lastLogin: 'Yesterday, 04:30 PM', ip: '103.45.2.89' },
+    { name: 'Rahul Dev', email: 'support@pgmart.in', role: 'Support Agent', lastLogin: '3 days ago', ip: '122.10.85.12' },
   ];
 
   // System Audit Logs states

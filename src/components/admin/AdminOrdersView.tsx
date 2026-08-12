@@ -118,7 +118,7 @@ export const AdminOrdersView: React.FC = () => {
       orderNumber: `PGM-${Math.floor(100000 + Math.random() * 900000)}`,
       customerId: 'manual-customer-id',
       customerName: mCustomerName,
-      customerEmail: mEmail || 'walkin.customer@pgmart.com',
+      customerEmail: mEmail || 'walkin.customer@pgmart.in',
       customerPhone: mPhone,
       shippingAddress: {
         id: `addr-${Date.now()}`,
