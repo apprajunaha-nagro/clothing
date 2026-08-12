@@ -3,7 +3,7 @@ import { useStore } from '../context/StoreContext';
 import { 
   Sparkles, LayoutDashboard, FolderTree, Shirt, ShoppingCart, Megaphone, 
   BarChart3, MessageSquare, Settings as SettingsIcon, Bell, Search, 
-  Sun, Moon, LogOut, ExternalLink, ShieldCheck, AlertCircle, BookOpen
+  Sun, Moon, LogOut, ExternalLink, ShieldCheck, AlertCircle, BookOpen, X, Grid, LayoutGrid, ChevronDown
 } from 'lucide-react';
 
 // Import Admin Sub-Views
@@ -323,8 +323,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           </div>
 
           {/* User controls triggers */}
-          <div className="flex items-center gap-4 ml-auto">
+          <div className="flex items-center gap-3 ml-auto">
             
+            {/* Desktop Modules Quick Switcher Button */}
+            <button
+              onClick={() => setMobileAdminMenuOpen(!mobileAdminMenuOpen)}
+              className="px-3.5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+              title="Open Modules Switcher"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span>Modules</span>
+            </button>
+
             {/* Dark mode toggle */}
             <button
               onClick={() => {
@@ -409,6 +419,115 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         </div>
 
       </main>
+
+      {/* ── MODULES QUICK SWITCHER MODAL / DRAWER ── */}
+      {mobileAdminMenuOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/70 backdrop-blur-xs animate-fade-in select-none">
+          {/* Backdrop click to close */}
+          <div 
+            className="absolute inset-0 cursor-pointer" 
+            onClick={() => setMobileAdminMenuOpen(false)}
+          />
+
+          <div className="relative w-full max-w-2xl bg-[#2B2620] border border-stone-800 text-stone-100 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] z-10">
+            
+            {/* Header */}
+            <div className="p-5 bg-[#1E1A16] border-b border-stone-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#C0654B] text-white rounded-2xl flex items-center justify-center font-black text-lg shadow-md">
+                  P
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base text-white">PGmart Admin Control Modules</h3>
+                  <p className="text-xs text-stone-400 font-mono">Select administrative view module to jump instantly</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setMobileAdminMenuOpen(false)}
+                className="p-2 text-stone-400 hover:text-white rounded-xl bg-stone-800 hover:bg-stone-700 cursor-pointer transition-colors"
+                title="Close Modules Menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modules Grid */}
+            <div className="p-5 flex-1 overflow-y-auto space-y-3 bg-[#1A1612]">
+              <div className="flex items-center justify-between text-[11px] font-mono uppercase font-bold text-stone-400 tracking-wider px-1">
+                <span>Available Administrative Modules ({sidebarItems.length})</span>
+                <span className="text-[#C0654B]">Click to Navigate</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {sidebarItems.map(item => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        setMobileAdminMenuOpen(false);
+                        showToast(`Switched to ${item.label} module view`);
+                      }}
+                      className={`p-4 rounded-2xl border text-left flex items-center justify-between transition-all cursor-pointer group ${
+                        isActive
+                          ? 'bg-[#C0654B] text-white border-[#C0654B] font-bold shadow-lg scale-[1.01]'
+                          : 'bg-[#2B2620] text-stone-300 border-stone-800/80 hover:bg-stone-800 hover:text-white hover:border-stone-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <div className={`p-2.5 rounded-xl transition-colors ${
+                          isActive ? 'bg-black/20 text-white' : 'bg-stone-800 group-hover:bg-[#C0654B] group-hover:text-white text-[#C0654B]'
+                        }`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-sm leading-tight">{item.label}</p>
+                          <p className="text-[11px] opacity-70 font-mono mt-0.5">Module ID: {item.id}</p>
+                        </div>
+                      </div>
+
+                      {isActive ? (
+                        <span className="text-[10px] bg-white text-[#C0654B] font-black px-2.5 py-1 rounded-full uppercase font-mono shadow-xs">
+                          ACTIVE
+                        </span>
+                      ) : (
+                        <span className="text-stone-500 group-hover:text-stone-300 text-xs font-bold transition-colors">
+                          Open →
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Footer controls */}
+            <div className="p-4 bg-[#1E1A16] border-t border-stone-800 flex justify-between items-center text-xs">
+              <button
+                onClick={() => {
+                  setMobileAdminMenuOpen(false);
+                  onNavigate('/');
+                }}
+                className="px-4 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold rounded-xl flex items-center gap-2 cursor-pointer transition-colors"
+              >
+                <ExternalLink className="w-4 h-4 text-[#C0654B]" />
+                <span>Exit to Customer Storefront</span>
+              </button>
+
+              <button
+                onClick={() => setMobileAdminMenuOpen(false)}
+                className="px-5 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-sm transition-colors"
+              >
+                Done
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
