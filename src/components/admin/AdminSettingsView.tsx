@@ -13,7 +13,7 @@ export const AdminSettingsView: React.FC = () => {
 
   // Form states initialized from settings context
   const [sName, setSName] = useState(settings.storeName || 'PGmart');
-  const [sEmail, setSEmail] = useState(settings.supportEmail || settings.contactEmail || 'suppport@pgmart.in');
+  const [sEmail, setSEmail] = useState(settings.supportEmail || settings.contactEmail || 'support@pgmart.in');
   const [sPhone, setSPhone] = useState(settings.supportPhone || settings.contactPhone || '+91 94711 55434');
   const [sAddress, setSAddress] = useState(settings.address || '');
   const [sGst, setSGst] = useState(settings.gstNumber || '');
@@ -187,7 +187,17 @@ export const AdminSettingsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block font-bold text-stone-600 mb-1">Fulfillment Support Email</label>
+              <input
+                type="email"
+                required
+                value={sEmail}
+                onChange={(e) => setSEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg"
+              />
+            </div>
             <div>
               <label className="block font-bold text-stone-600 mb-1">Fulfillment Support Phone</label>
               <input
