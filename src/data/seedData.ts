@@ -15,9 +15,9 @@ export const initialSiteSettings: SiteSettings = {
   bgMutedColor: "#F3E9E4", // Soft Rose Tint
   secondaryDarkColor: "#2B2620",
   fontFamily: "Poppins, sans-serif",
-  contactEmail: "suppport@pgmart.in",
+  contactEmail: "",
   contactPhone: "+91 94711 55434",
-  supportEmail: "suppport@pgmart.in",
+  supportEmail: "",
   supportPhone: "+91 94711 55434",
   whatsappNumber: "9471155434",
   address: "Kapda Patti, Jharia, Dhanbad, Jharkhand 828111",

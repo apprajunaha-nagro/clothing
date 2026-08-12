@@ -160,7 +160,6 @@ export const StaticPages: React.FC<StaticPagesProps> = ({ pageType, onNavigate }
                   <p className="text-stone-600">For any questions regarding these Terms, please contact:</p>
                   <div className="bg-stone-50 p-4 rounded-xl border border-stone-200 space-y-1 text-xs text-stone-700">
                     <p className="font-bold text-stone-900">{settings.storeName || 'PGmart Customer Care'}</p>
-                    <p><strong>Email:</strong> {settings.supportEmail || settings.contactEmail || 'support@pgmart.in'}</p>
                     <p><strong>Phone:</strong> {settings.supportPhone || settings.contactPhone || '+91 94711 55434'}</p>
                     <p><strong>Address:</strong> {settings.address || 'Kapda Patti, Jharia, Dhanbad, Jharkhand 828111'}</p>
                   </div>

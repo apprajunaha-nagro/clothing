@@ -187,17 +187,7 @@ export const AdminSettingsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block font-bold text-stone-600 mb-1">Fulfillment Support Email</label>
-              <input
-                type="email"
-                required
-                value={sEmail}
-                onChange={(e) => setSEmail(e.target.value)}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg"
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block font-bold text-stone-600 mb-1">Fulfillment Support Phone</label>
               <input
