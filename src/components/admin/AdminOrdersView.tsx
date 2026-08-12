@@ -63,7 +63,7 @@ const getStatusColorStyle = (status: OrderStatus) => {
 };
 
 export const AdminOrdersView: React.FC = () => {
-  const { orders, createOrder, updateOrderStatus, products, setProducts, showToast, settings } = useStore();
+  const { orders, createOrder, updateOrderStatus, updateReturnStatus, products, setProducts, showToast, settings } = useStore();
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -396,37 +396,96 @@ export const AdminOrdersView: React.FC = () => {
         </div>
       </div>
 
-      {/* RETURN MODERATION QUEUE */}
+      {/* RETURN & EXCHANGE MODERATION QUEUE */}
       <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm text-left space-y-4">
-        <h3 className="text-sm font-bold font-serif text-stone-900">Active Return & Exchange Approvals queue</h3>
-        <p className="text-xs text-stone-400">Customers requesting style or size adjustments. Review claims before refund authorization</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-bold font-serif text-stone-900">Active Return & Exchange Approvals Queue</h3>
+            <p className="text-xs text-stone-400">Customer replacement & refund claims requesting style/size adjustments. Controlled by Admin Portal.</p>
+          </div>
+          <span className="bg-amber-100 text-amber-800 text-[11px] font-mono font-bold px-2.5 py-1 rounded-full">
+            {orders.filter(o => o.returnStatus || o.returnType || o.status === 'returned').length} Active Claims
+          </span>
+        </div>
 
         <div className="border border-stone-200 rounded-xl divide-y divide-stone-100 text-xs">
-          <div className="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/55 font-semibold text-stone-700">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-stone-900">Exchange Claim #EX-1049</span>
-                <span className="bg-amber-100 text-amber-800 text-[9px] font-bold px-2 py-0.5 rounded-full">PENDING RE-INSPECTION</span>
-              </div>
-              <p className="text-stone-500">Priya Sharma wants to exchange "Ethnic Kurta Set" from Size M to L because of fit preference.</p>
-              <p className="text-[10px] text-stone-400">Order ID: #PGM-5201 | UPI Payment</p>
-            </div>
+          {(() => {
+            const claims = orders.filter(o => o.returnStatus || o.returnType || o.status === 'returned');
+            if (claims.length === 0) {
+              return (
+                <div className="p-6 text-center text-stone-400 font-medium">
+                  No active customer return or exchange claims currently pending review.
+                </div>
+              );
+            }
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => showToast('Approved return. Dispatched pickup crew Delhivery.')}
-                className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-lg cursor-pointer"
-              >
-                Approve Exchange & Pickup
-              </button>
-              <button
-                onClick={() => showToast('Exchange request rejected.')}
-                className="px-3 py-1.5 border border-stone-200 hover:bg-stone-50 text-stone-600 font-bold rounded-lg cursor-pointer"
-              >
-                Reject Request
-              </button>
-            </div>
-          </div>
+            return claims.map(claim => {
+              const isApproved = claim.returnStatus === 'approved' || claim.status === 'returned';
+              const isRejected = claim.returnStatus === 'rejected';
+
+              return (
+                <div key={claim.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-stone-50/50 hover:bg-stone-50 transition-colors font-semibold text-stone-700">
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-stone-900 text-xs font-mono">#{claim.orderNumber}</span>
+                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                        claim.returnType === 'exchange' ? 'bg-indigo-100 text-indigo-800' : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {claim.returnType === 'exchange' ? '🔄 EXCHANGE CLAIM' : '📦 RETURN & REFUND'}
+                      </span>
+                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                        isApproved ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                        isRejected ? 'bg-red-100 text-red-800 border border-red-300' :
+                        'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}>
+                        {isApproved ? '✅ APPROVED & PICKUP DISPATCHED' : isRejected ? '❌ CLAIM REJECTED' : '⏳ PENDING RE-INSPECTION'}
+                      </span>
+                    </div>
+
+                    <p className="text-stone-800 text-xs font-bold">
+                      Customer: {claim.customerName} ({claim.customerPhone}) &bull; Email: {claim.customerEmail}
+                    </p>
+
+                    <div className="text-stone-600 text-xs font-medium space-y-0.5 bg-white p-2.5 rounded-lg border border-stone-200/80">
+                      <p><span className="font-bold text-stone-700">Reason:</span> {claim.returnReason || 'Fit/Size Adjustment'}</p>
+                      {claim.exchangeSize && <p><span className="font-bold text-indigo-700">Requested Replacement Size:</span> {claim.exchangeSize} {claim.exchangeColor ? `| Color: ${claim.exchangeColor}` : ''}</p>}
+                      {claim.returnComments && <p><span className="font-bold text-stone-500">Customer Note:</span> "{claim.returnComments}"</p>}
+                    </div>
+
+                    <p className="text-[10px] text-stone-400 font-mono">
+                      Invoice Total: ₹{claim.total.toLocaleString()} | Payment: {claim.paymentMethod.toUpperCase()} ({claim.paymentStatus.toUpperCase()})
+                    </p>
+                  </div>
+
+                  <div className="flex sm:flex-col gap-2 shrink-0">
+                    <button
+                      disabled={isApproved}
+                      onClick={() => updateReturnStatus(claim.id, 'approved')}
+                      className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                        isApproved 
+                          ? 'bg-emerald-100 text-emerald-800 cursor-default opacity-80' 
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                      }`}
+                    >
+                      {isApproved ? '✓ Pickup Approved' : 'Approve & Schedule Pickup'}
+                    </button>
+
+                    <button
+                      disabled={isRejected}
+                      onClick={() => updateReturnStatus(claim.id, 'rejected')}
+                      className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                        isRejected 
+                          ? 'bg-red-50 text-red-700 border-red-200 cursor-default' 
+                          : 'border-stone-300 hover:bg-red-50 text-stone-700 hover:text-red-700 hover:border-red-300'
+                      }`}
+                    >
+                      {isRejected ? '✕ Claim Rejected' : 'Reject Claim'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          })()}
         </div>
       </div>
 

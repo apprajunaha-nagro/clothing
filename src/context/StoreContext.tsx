@@ -60,6 +60,7 @@ interface StoreContextType {
   createOrder: (orderData: Partial<Order>) => Promise<Order | null>;
   updateOrderStatus: (orderId: string, status: Order['status'], trackingNum?: string) => Promise<void>;
   requestOrderReturn: (orderId: string, returnType: 'return' | 'exchange', reason: string, details?: { exchangeSize?: string; exchangeColor?: string; comments?: string }) => void;
+  updateReturnStatus: (orderId: string, returnStatus: 'approved' | 'rejected' | 'completed', adminNotes?: string) => void;
   filters: FilterState;
   setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   resetFilters: () => void;
@@ -901,6 +902,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     showToast(`${returnType === 'return' ? 'Return' : 'Exchange'} request submitted successfully! Pickup will be scheduled within 48h.`);
   };
 
+  const updateReturnStatus = (
+    orderId: string,
+    returnStatus: 'approved' | 'rejected' | 'completed',
+    adminNotes?: string
+  ) => {
+    setOrders(prev => {
+      const updated = prev.map(ord => {
+        if (ord.id === orderId) {
+          const isApproved = returnStatus === 'approved';
+          const isRejected = returnStatus === 'rejected';
+          return {
+            ...ord,
+            returnStatus,
+            status: isApproved ? 'returned' as const : isRejected ? ord.status : 'returned' as const,
+            paymentStatus: isApproved && ord.returnType === 'return' ? 'refunded' : ord.paymentStatus,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return ord;
+      });
+      try {
+        localStorage.setItem('terra_orders_v2', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+    showToast(`Return/Exchange claim #${orderId} marked as ${returnStatus.toUpperCase()}`);
+  };
+
   const resetFilters = () => {
     setFilters(defaultFilters);
   };
@@ -952,6 +983,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         createOrder,
         updateOrderStatus,
         requestOrderReturn,
+        updateReturnStatus,
         filters,
         setFilters,
         resetFilters,
