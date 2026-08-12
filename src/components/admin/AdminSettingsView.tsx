@@ -13,7 +13,7 @@ export const AdminSettingsView: React.FC = () => {
 
   // Form states initialized from settings context
   const [sName, setSName] = useState(settings.storeName || 'PGmart');
-  const [sEmail, setSEmail] = useState(settings.supportEmail || settings.contactEmail || 'support@pgmart.com');
+  const [sEmail, setSEmail] = useState(settings.supportEmail || settings.contactEmail || 'suppport@pgmart.in');
   const [sPhone, setSPhone] = useState(settings.supportPhone || settings.contactPhone || '+91 94711 55434');
   const [sAddress, setSAddress] = useState(settings.address || '');
   const [sGst, setSGst] = useState(settings.gstNumber || '');
