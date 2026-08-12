@@ -577,18 +577,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   </div>
                 )}
               </div>
-
-              {/* Express Demo Login */}
-              <button
-                type="button"
-                onClick={() => {
-                  loginUser('Priya Sharma', 'priya.sharma@example.com', '+91 98765 43210');
-                  showToast('Signed in as Demo User Priya Sharma!');
-                }}
-                className="w-full bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer border border-stone-300 flex items-center justify-center gap-2"
-              >
-                <span>⚡ Express Demo Login (Priya Sharma)</span>
-              </button>
             </div>
           </div>
         </div>
