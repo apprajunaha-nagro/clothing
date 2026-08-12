@@ -1636,8 +1636,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
               <button
                 type="button"
                 onClick={() => {
-                  requestOrderReturn(returnModalOrder.id, returnType, returnReason, {
-                    exchangeSize,
+                  const confirmed = window.confirm(`CONFIRM RETURN REQUEST:\n\nAre you sure you want to submit a RETURN request for Order #${returnModalOrder.orderNumber}? Doorstep pickup will be scheduled within 24-48 hours.`);
+                  if (!confirmed) return;
+                  requestOrderReturn(returnModalOrder.id, 'return', returnReason, {
                     comments: returnComments
                   });
                   setReturnModalOrder(null);

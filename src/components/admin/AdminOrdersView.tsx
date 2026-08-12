@@ -212,8 +212,12 @@ export const AdminOrdersView: React.FC = () => {
     setMSelectedItems([]);
   };
 
-  // Trigger simulated customer tracking alerts
+  // Trigger simulated customer tracking alerts with double confirmation on cancellation
   const handleSimulateStatusAlert = (order: Order, nextStatus: OrderStatus) => {
+    if (nextStatus === 'cancelled') {
+      const confirmed = window.confirm(`CONFIRM CANCELLATION:\n\nAre you sure you want to CANCEL Order #${order.orderNumber}? This will mark the order as cancelled.`);
+      if (!confirmed) return;
+    }
     updateOrderStatus(order.id, nextStatus, trackingNo);
     setActiveOrder(prev => prev ? { ...prev, status: nextStatus, trackingNumber: trackingNo || prev.trackingNumber } : null);
     
@@ -456,29 +460,41 @@ export const AdminOrdersView: React.FC = () => {
                   </div>
 
                   <div className="flex sm:flex-col gap-2 shrink-0">
-                    <button
-                      disabled={isApproved}
-                      onClick={() => updateReturnStatus(claim.id, 'approved')}
-                      className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-                        isApproved 
-                          ? 'bg-emerald-100 text-emerald-800 cursor-default opacity-80' 
-                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
-                      }`}
-                    >
-                      {isApproved ? '✓ Pickup Approved' : 'Approve & Schedule Pickup'}
-                    </button>
+                    {!isRejected && (
+                      <button
+                        disabled={isApproved}
+                        onClick={() => {
+                          if (window.confirm(`CONFIRM RETURN APPROVAL:\n\nAre you sure you want to APPROVE the return claim for Order #${claim.orderNumber} and schedule doorstep pickup?`)) {
+                            updateReturnStatus(claim.id, 'approved');
+                          }
+                        }}
+                        className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                          isApproved 
+                            ? 'bg-emerald-600 text-white shadow-sm cursor-default font-extrabold flex items-center gap-1' 
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+                        }`}
+                      >
+                        {isApproved ? '✅ Pickup Approved & Scheduled' : 'Approve & Schedule Pickup'}
+                      </button>
+                    )}
 
-                    <button
-                      disabled={isRejected}
-                      onClick={() => updateReturnStatus(claim.id, 'rejected')}
-                      className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
-                        isRejected 
-                          ? 'bg-red-50 text-red-700 border-red-200 cursor-default' 
-                          : 'border-stone-300 hover:bg-red-50 text-stone-700 hover:text-red-700 hover:border-red-300'
-                      }`}
-                    >
-                      {isRejected ? '✕ Claim Rejected' : 'Reject Claim'}
-                    </button>
+                    {!isApproved && (
+                      <button
+                        disabled={isRejected}
+                        onClick={() => {
+                          if (window.confirm(`CONFIRM RETURN REJECTION:\n\nAre you sure you want to REJECT the return claim for Order #${claim.orderNumber}?`)) {
+                            updateReturnStatus(claim.id, 'rejected');
+                          }
+                        }}
+                        className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer border ${
+                          isRejected 
+                            ? 'bg-red-600 text-white border-red-600 shadow-sm cursor-default font-extrabold flex items-center gap-1' 
+                            : 'border-stone-300 hover:bg-red-50 text-stone-700 hover:text-red-700 hover:border-red-300'
+                        }`}
+                      >
+                        {isRejected ? '❌ Claim Rejected' : 'Reject Claim'}
+                      </button>
+                    )}
                   </div>
                 </div>
               );
