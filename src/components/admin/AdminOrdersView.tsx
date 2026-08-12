@@ -7,7 +7,7 @@ import {
 import { Order, OrderItem, OrderStatus, Product, ProductVariant, Address } from '../../types';
 
 export const AdminOrdersView: React.FC = () => {
-  const { orders, updateOrderStatus, products, setProducts, showToast, settings } = useStore();
+  const { orders, createOrder, updateOrderStatus, products, setProducts, showToast, settings } = useStore();
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -101,7 +101,7 @@ export const AdminOrdersView: React.FC = () => {
   };
 
   // Submit manual order
-  const handleSaveManualOrder = (e: React.FormEvent) => {
+  const handleSaveManualOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mSelectedItems.length === 0) {
       alert('Please add at least one product item to create order.');
@@ -113,7 +113,7 @@ export const AdminOrdersView: React.FC = () => {
     const shippingFee = subtotal > 999 ? 0 : 79;
     const total = subtotal + tax + shippingFee;
 
-    const newOrder: Order = {
+    const newOrderData: Partial<Order> = {
       id: `ord-${Date.now()}`,
       orderNumber: `PGM-${Math.floor(100000 + Math.random() * 900000)}`,
       customerId: 'manual-customer-id',
@@ -143,8 +143,7 @@ export const AdminOrdersView: React.FC = () => {
       updatedAt: new Date().toISOString()
     };
 
-    // Push back into orders local store via direct mutation / mock API
-    orders.unshift(newOrder); // Since it's mutated, the store reacts or syncs
+    await createOrder(newOrderData);
     setIsManualOrderOpen(false);
     // Reset states
     setMCustomerName('');
@@ -155,7 +154,6 @@ export const AdminOrdersView: React.FC = () => {
     setMState('');
     setMPincode('');
     setMSelectedItems([]);
-    showToast(`Manual order placed successfully under ID #${newOrder.orderNumber}`);
   };
 
   // Trigger simulated customer tracking alerts
@@ -185,7 +183,36 @@ export const AdminOrdersView: React.FC = () => {
         </button>
       </div>
 
-      {/* FILTER SEARCH DRAWER */}
+      {/* QUICK ORDER STATUS FILTER TABS BAR */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        {[
+          { label: 'All Orders', value: '', count: orders.length },
+          { label: 'Pending', value: 'pending', count: orders.filter(o => o.status === 'pending').length },
+          { label: 'Confirmed', value: 'confirmed', count: orders.filter(o => o.status === 'confirmed').length },
+          { label: 'Processing', value: 'processing', count: orders.filter(o => o.status === 'processing').length },
+          { label: 'Shipped', value: 'shipped', count: orders.filter(o => o.status === 'shipped').length },
+          { label: 'Delivered', value: 'delivered', count: orders.filter(o => o.status === 'delivered').length },
+          { label: 'Cancelled', value: 'cancelled', count: orders.filter(o => o.status === 'cancelled').length },
+          { label: 'Returned', value: 'returned', count: orders.filter(o => o.status === 'returned').length },
+        ].map(tab => (
+          <button
+            key={tab.label}
+            onClick={() => setFilterStatus(tab.value as any)}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 transition-all cursor-pointer border ${
+              filterStatus === tab.value
+                ? 'bg-[#C0654B] text-white border-[#C0654B] shadow-sm'
+                : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
+            }`}
+          >
+            <span>{tab.label}</span>
+            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+              filterStatus === tab.value ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-600'
+            }`}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
+      </div>
       <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-sm flex flex-wrap items-center gap-3 text-xs font-medium text-stone-500">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-2.5 w-4 h-4 text-stone-400" />
