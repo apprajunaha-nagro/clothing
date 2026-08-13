@@ -414,9 +414,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const dbOrders = await res.json();
           if (Array.isArray(dbOrders) && dbOrders.length > 0) {
             setOrders(prev => {
+              const prevMap = new Map(prev.map(o => [o.id, o]));
+              const merged = dbOrders.map((dbOrd: Order) => {
+                const localOrd = prevMap.get(dbOrd.id);
+                // Keep local status if local status was updated more recently
+                if (localOrd && localOrd.updatedAt && new Date(localOrd.updatedAt) >= new Date(dbOrd.updatedAt || 0)) {
+                  return { ...dbOrd, status: localOrd.status, isStockDeducted: localOrd.isStockDeducted || dbOrd.isStockDeducted, updatedAt: localOrd.updatedAt };
+                }
+                return dbOrd;
+              });
               const dbIds = new Set(dbOrders.map((o: Order) => o.id));
               const localOnly = prev.filter(o => !dbIds.has(o.id));
-              return [...dbOrders, ...localOnly];
+              return [...merged, ...localOnly];
             });
           }
         }
@@ -942,7 +951,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // 4. Sync updated status to backend API
     try {
-      await fetch(`/api/orders/${orderId}/status`, {
+      await adminFetch(`/api/orders/${orderId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, trackingNumber: trackingNum, isStockDeducted: stockDeductedNow ? true : undefined })
