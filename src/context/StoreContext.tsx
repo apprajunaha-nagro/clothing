@@ -414,7 +414,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           const dbOrders = await res.json();
           if (Array.isArray(dbOrders) && dbOrders.length > 0) {
             setOrders(prev => {
-              const prevMap = new Map(prev.map(o => [o.id, o]));
+              const prevMap = new Map<string, Order>(prev.map(o => [o.id, o]));
               const merged = dbOrders.map((dbOrd: Order) => {
                 const localOrd = prevMap.get(dbOrd.id);
                 // Keep local status if local status was updated more recently
