@@ -258,6 +258,38 @@ function formatOrderResponse(order: any) {
   };
 }
 
+// ---------------- API HELPER FOR PRODUCTS ----------------
+function formatProductResponse(prod: any) {
+  let parsedTags = prod.tags;
+  if (typeof prod.tags === 'string') {
+    try { parsedTags = JSON.parse(prod.tags); } catch (e) {}
+  }
+  let parsedVariants = prod.variants;
+  if (typeof prod.variants === 'string') {
+    try { parsedVariants = JSON.parse(prod.variants); } catch (e) {}
+  }
+  let parsedColors = prod.colors;
+  if (typeof prod.colors === 'string') {
+    try { parsedColors = JSON.parse(prod.colors); } catch (e) {}
+  }
+  let parsedSizes = prod.availableSizes;
+  if (typeof prod.availableSizes === 'string') {
+    try { parsedSizes = JSON.parse(prod.availableSizes); } catch (e) {}
+  }
+  let parsedKidsSizes = prod.kidsSizes;
+  if (typeof prod.kidsSizes === 'string') {
+    try { parsedKidsSizes = JSON.parse(prod.kidsSizes); } catch (e) {}
+  }
+  return {
+    ...prod,
+    tags: Array.isArray(parsedTags) ? parsedTags : [],
+    variants: Array.isArray(parsedVariants) ? parsedVariants : [],
+    colors: Array.isArray(parsedColors) ? parsedColors : [],
+    availableSizes: Array.isArray(parsedSizes) ? parsedSizes : [],
+    kidsSizes: Array.isArray(parsedKidsSizes) ? parsedKidsSizes : []
+  };
+}
+
 // GET /api/settings
 app.get('/api/settings', async (req, res) => {
   try {
@@ -267,6 +299,22 @@ app.get('/api/settings', async (req, res) => {
     console.warn('[GET /api/settings Error]:', e);
   }
   return res.json(null);
+});
+
+// POST /api/settings
+app.post('/api/settings', async (req, res) => {
+  try {
+    const s = req.body;
+    const updated = await prisma.siteSettings.upsert({
+      where: { id: 'default' },
+      update: s,
+      create: { id: 'default', ...s }
+    });
+    return res.json({ success: true, settings: updated });
+  } catch (e: any) {
+    console.error('[POST /api/settings Error]:', e);
+    return res.status(500).json({ error: e?.message || 'Failed to save settings' });
+  }
 });
 
 // GET /api/categories
@@ -283,6 +331,43 @@ app.get('/api/categories', async (req, res) => {
   return res.json([]);
 });
 
+// POST /api/categories
+app.post('/api/categories', async (req, res) => {
+  try {
+    const c = req.body;
+    const id = c.id || `cat-${Date.now()}`;
+    const slug = c.slug || c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const created = await prisma.category.upsert({
+      where: { id },
+      update: {
+        name: c.name,
+        slug,
+        image: c.image || '',
+        banner: c.banner || null,
+        status: c.status || 'active',
+        sortOrder: Number(c.sortOrder) || 1,
+        metaTitle: c.metaTitle || null,
+        metaDesc: c.metaDesc || null
+      },
+      create: {
+        id,
+        name: c.name,
+        slug,
+        image: c.image || '',
+        banner: c.banner || null,
+        status: c.status || 'active',
+        sortOrder: Number(c.sortOrder) || 1,
+        metaTitle: c.metaTitle || null,
+        metaDesc: c.metaDesc || null
+      }
+    });
+    return res.json({ success: true, category: created });
+  } catch (e: any) {
+    console.error('[POST /api/categories Error]:', e);
+    return res.status(500).json({ error: e?.message || 'Failed to save category' });
+  }
+});
+
 // GET /api/brands
 app.get('/api/brands', async (req, res) => {
   try {
@@ -292,6 +377,184 @@ app.get('/api/brands', async (req, res) => {
     console.warn('[GET /api/brands Error]:', e);
   }
   return res.json([]);
+});
+
+// POST /api/brands
+app.post('/api/brands', async (req, res) => {
+  try {
+    const b = req.body;
+    const id = b.id || `brand-${Date.now()}`;
+    const slug = b.slug || b.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const created = await prisma.brand.upsert({
+      where: { id },
+      update: {
+        name: b.name,
+        slug,
+        logo: b.logo || '',
+        description: b.description || '',
+        isFeatured: b.isFeatured ?? true
+      },
+      create: {
+        id,
+        name: b.name,
+        slug,
+        logo: b.logo || '',
+        description: b.description || '',
+        isFeatured: b.isFeatured ?? true
+      }
+    });
+    return res.json({ success: true, brand: created });
+  } catch (e: any) {
+    console.error('[POST /api/brands Error]:', e);
+    return res.status(500).json({ error: e?.message || 'Failed to save brand' });
+  }
+});
+
+// DELETE /api/brands/:id
+app.delete('/api/brands/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.brand.delete({ where: { id } });
+    return res.json({ success: true });
+  } catch (e: any) {
+    console.error('[DELETE /api/brands Error]:', e);
+    return res.status(500).json({ error: 'Failed to delete brand' });
+  }
+});
+
+// GET /api/products
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await prisma.product.findMany({
+      orderBy: { created_at: 'desc' }
+    });
+    const formatted = products.map(formatProductResponse);
+    return res.json(formatted);
+  } catch (err: any) {
+    console.error('[GET /api/products Error]:', err);
+    return res.status(500).json({ error: 'Failed to fetch products' });
+  }
+});
+
+// POST /api/products
+app.post('/api/products', async (req, res) => {
+  try {
+    const p = req.body;
+    if (!p.name) return res.status(400).json({ error: 'Product name is required' });
+
+    const id = p.id || `prod-${Date.now()}`;
+    const slug = p.slug || `${p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${id}`;
+    const categoryId = p.categoryId || 'women';
+    const subcategoryId = p.subcategoryId || 'women-ethnic';
+
+    const created = await prisma.product.create({
+      data: {
+        id,
+        name: p.name,
+        slug,
+        categoryId,
+        subcategoryId,
+        typeId: p.typeId || null,
+        brandId: p.brandId || null,
+        brandName: p.brandName || null,
+        description: p.description || '',
+        fabric: p.fabric || 'Cotton Blend',
+        fit: p.fit || 'Regular Fit',
+        sleeve: p.sleeve || null,
+        neck: p.neck || null,
+        pattern: p.pattern || null,
+        occasion: p.occasion || 'Casual',
+        hsnCode: p.hsnCode || '6204',
+        gstPercent: Number(p.gstPercent) || 5,
+        basePrice: Number(p.basePrice) || 999,
+        discountPrice: p.discountPrice !== undefined && p.discountPrice !== null ? Number(p.discountPrice) : null,
+        discountPercent: p.discountPercent !== undefined && p.discountPercent !== null ? Number(p.discountPercent) : null,
+        tags: typeof p.tags === 'string' ? p.tags : JSON.stringify(p.tags || []),
+        isDealOfTheDay: Boolean(p.isDealOfTheDay),
+        status: p.status || 'published',
+        variants: typeof p.variants === 'string' ? p.variants : JSON.stringify(p.variants || []),
+        colors: typeof p.colors === 'string' ? p.colors : JSON.stringify(p.colors || []),
+        availableSizes: typeof p.availableSizes === 'string' ? p.availableSizes : JSON.stringify(p.availableSizes || []),
+        kidsSizes: typeof p.kidsSizes === 'string' ? p.kidsSizes : JSON.stringify(p.kidsSizes || []),
+        rating: Number(p.rating) || 4.5,
+        reviewCount: Number(p.reviewCount) || 0,
+        metaTitle: p.metaTitle || null,
+        metaDesc: p.metaDesc || null,
+        aiImagePrompt: p.aiImagePrompt || null
+      }
+    });
+
+    const formatted = formatProductResponse(created);
+    return res.json({ success: true, product: formatted });
+  } catch (err: any) {
+    console.error('[POST /api/products Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to create product' });
+  }
+});
+
+// PUT /api/products/:id
+app.put('/api/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const p = req.body;
+
+    const existing = await prisma.product.findUnique({ where: { id } });
+    if (!existing) return res.status(404).json({ error: 'Product not found' });
+
+    const dataPayload: any = {};
+    if (p.name !== undefined) dataPayload.name = p.name;
+    if (p.slug !== undefined) dataPayload.slug = p.slug;
+    if (p.categoryId !== undefined) dataPayload.categoryId = p.categoryId;
+    if (p.subcategoryId !== undefined) dataPayload.subcategoryId = p.subcategoryId;
+    if (p.typeId !== undefined) dataPayload.typeId = p.typeId;
+    if (p.brandId !== undefined) dataPayload.brandId = p.brandId;
+    if (p.brandName !== undefined) dataPayload.brandName = p.brandName;
+    if (p.description !== undefined) dataPayload.description = p.description;
+    if (p.fabric !== undefined) dataPayload.fabric = p.fabric;
+    if (p.fit !== undefined) dataPayload.fit = p.fit;
+    if (p.sleeve !== undefined) dataPayload.sleeve = p.sleeve;
+    if (p.neck !== undefined) dataPayload.neck = p.neck;
+    if (p.pattern !== undefined) dataPayload.pattern = p.pattern;
+    if (p.occasion !== undefined) dataPayload.occasion = p.occasion;
+    if (p.hsnCode !== undefined) dataPayload.hsnCode = p.hsnCode;
+    if (p.gstPercent !== undefined) dataPayload.gstPercent = Number(p.gstPercent);
+    if (p.basePrice !== undefined) dataPayload.basePrice = Number(p.basePrice);
+    if (p.discountPrice !== undefined) dataPayload.discountPrice = p.discountPrice !== null ? Number(p.discountPrice) : null;
+    if (p.discountPercent !== undefined) dataPayload.discountPercent = p.discountPercent !== null ? Number(p.discountPercent) : null;
+    if (p.tags !== undefined) dataPayload.tags = typeof p.tags === 'string' ? p.tags : JSON.stringify(p.tags);
+    if (p.isDealOfTheDay !== undefined) dataPayload.isDealOfTheDay = Boolean(p.isDealOfTheDay);
+    if (p.status !== undefined) dataPayload.status = p.status;
+    if (p.variants !== undefined) dataPayload.variants = typeof p.variants === 'string' ? p.variants : JSON.stringify(p.variants);
+    if (p.colors !== undefined) dataPayload.colors = typeof p.colors === 'string' ? p.colors : JSON.stringify(p.colors);
+    if (p.availableSizes !== undefined) dataPayload.availableSizes = typeof p.availableSizes === 'string' ? p.availableSizes : JSON.stringify(p.availableSizes);
+    if (p.kidsSizes !== undefined) dataPayload.kidsSizes = typeof p.kidsSizes === 'string' ? p.kidsSizes : JSON.stringify(p.kidsSizes);
+    if (p.metaTitle !== undefined) dataPayload.metaTitle = p.metaTitle;
+    if (p.metaDesc !== undefined) dataPayload.metaDesc = p.metaDesc;
+    if (p.aiImagePrompt !== undefined) dataPayload.aiImagePrompt = p.aiImagePrompt;
+
+    const updated = await prisma.product.update({
+      where: { id },
+      data: dataPayload
+    });
+
+    const formatted = formatProductResponse(updated);
+    return res.json({ success: true, product: formatted });
+  } catch (err: any) {
+    console.error('[PUT /api/products Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to update product' });
+  }
+});
+
+// DELETE /api/products/:id
+app.delete('/api/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.product.delete({ where: { id } });
+    return res.json({ success: true, message: 'Product deleted successfully' });
+  } catch (err: any) {
+    console.error('[DELETE /api/products Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to delete product' });
+  }
 });
 
 // GET /api/orders (Optionally filter by customer email)

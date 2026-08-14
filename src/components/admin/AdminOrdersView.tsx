@@ -86,7 +86,7 @@ export const AdminOrdersView: React.FC = () => {
     fetchAllDatabaseOrders();
   }, []);
 
-  const ordersListToDisplay = allDbOrders.length > 0 ? allDbOrders : orders;
+  const ordersListToDisplay = allDbOrders;
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');

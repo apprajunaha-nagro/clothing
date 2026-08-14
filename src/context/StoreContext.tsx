@@ -753,40 +753,74 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
 
     try {
-      await adminFetch('/api/products', {
+      const res = await adminFetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProduct)
       });
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.success && data.product) {
+          const savedProd = data.product;
+          setProducts(prev => {
+            if (prev.some(p => p.id === savedProd.id)) {
+              return prev.map(p => p.id === savedProd.id ? savedProd : p);
+            }
+            return [savedProd, ...prev];
+          });
+          showToast('Product created successfully');
+          return;
+        }
+      }
     } catch (e) {
       console.warn('Backend sync failed for product creation', e);
     }
+    setProducts(prev => {
+      if (prev.some(p => p.id === newProduct.id)) {
+        return prev.map(p => p.id === newProduct.id ? newProduct : p);
+      }
+      return [newProduct, ...prev];
+    });
   };
 
   const updateProduct = async (id: string, productData: Partial<Product>) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...productData } : p));
-    showToast('Product updated successfully');
     try {
-      await adminFetch(`/api/products/${id}`, {
+      const res = await adminFetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData)
       });
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.success && data.product) {
+          const updatedProd = data.product;
+          setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updatedProd } : p));
+          showToast('Product updated successfully');
+          return;
+        }
+      }
     } catch (e) {
       console.warn('Backend sync failed for product update', e);
     }
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...productData } : p));
+    showToast('Product updated successfully');
   };
 
   const deleteProduct = async (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
-    showToast('Product deleted');
     try {
-      await adminFetch(`/api/products/${id}`, {
+      const res = await adminFetch(`/api/products/${id}`, {
         method: 'DELETE'
       });
+      if (res && res.ok) {
+        setProducts(prev => prev.filter(p => p.id !== id));
+        showToast('Product deleted from database');
+        return;
+      }
     } catch (e) {
       console.warn('Backend sync failed for product deletion', e);
     }
+    setProducts(prev => prev.filter(p => p.id !== id));
+    showToast('Product deleted');
   };
 
   const createOrder = async (orderData: Partial<Order>): Promise<Order | null> => {
