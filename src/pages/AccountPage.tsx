@@ -9,8 +9,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PincodeField } from '../components/PincodeField';
-import { setupRecaptcha, sendPhoneOtp } from '../lib/firebase';
-import { ConfirmationResult } from 'firebase/auth';
 
 interface AccountPageProps {
   onNavigate: (path: string) => void;
@@ -49,7 +47,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   const [enteredPhoneOtp, setEnteredPhoneOtp] = useState('');
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
-  const [firebaseConfirmationResult, setFirebaseConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [isSendingPhoneOtp, setIsSendingPhoneOtp] = useState(false);
   const [isVerifyingPhoneOtp, setIsVerifyingPhoneOtp] = useState(false);
   const [isVerifyingEmailOtp, setIsVerifyingEmailOtp] = useState(false);
@@ -289,8 +286,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
 
           {/* Auth Card Box */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6 relative">
-            {/* Hidden Firebase Invisible Recaptcha Container */}
-            <div id="recaptcha-container"></div>
             {/* Mode Toggle Tabs */}
             <div className="grid grid-cols-2 p-1 bg-stone-100 rounded-2xl text-xs font-bold">
               <button

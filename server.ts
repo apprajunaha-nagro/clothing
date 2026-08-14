@@ -110,7 +110,7 @@ async function handleSendOtp(req: express.Request, res: express.Response) {
       }
     });
 
-    // 4. Send email via cPanel SMTP (noreply@pgmart.in) using mailer module
+    // 4. Send email via SMTP (noreply@pgmart.in) using mailer module
     const emailSent = await sendOtpEmail(cleanEmail, plainCode);
     if (!emailSent) {
       return res.status(500).json({ error: 'Failed to send verification email. Please check your email address or try again.' });

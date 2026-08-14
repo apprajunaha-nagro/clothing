@@ -1,8 +1,0 @@
----
-deployment:
-  tasks:
-    - export DEPLOYPATH=/home/$USER/public_html
-    - npm install --production=false
-    - node scripts/copy-assets.js
-    - npx vite build
-    - /bin/cp -R dist/* $DEPLOYPATH
