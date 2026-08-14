@@ -129,12 +129,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           id: 'ord-101',
           orderNumber: 'PGM-89201',
           customerId: 'u-101',
-          customerName: 'Priya Sharma',
-          customerEmail: 'priya.sharma@example.com',
+          customerName: 'Ananya Sen',
+          customerEmail: 'ananya.sen@example.com',
           customerPhone: '+91 98765 43210',
           shippingAddress: {
             id: 'addr-1',
-            fullName: 'Priya Sharma',
+            fullName: 'Ananya Sen',
             phone: '+91 98765 43210',
             street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
             city: 'Kolkata',
@@ -173,12 +173,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           id: 'ord-102',
           orderNumber: 'PGM-89202',
           customerId: 'u-101',
-          customerName: 'Priya Sharma',
-          customerEmail: 'priya.sharma@example.com',
+          customerName: 'Ananya Sen',
+          customerEmail: 'ananya.sen@example.com',
           customerPhone: '+91 98765 43210',
           shippingAddress: {
             id: 'addr-1',
-            fullName: 'Priya Sharma',
+            fullName: 'Ananya Sen',
             phone: '+91 98765 43210',
             street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
             city: 'Kolkata',
@@ -243,44 +243,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const saved = localStorage.getItem('terra_user');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (!parsed.addresses || parsed.addresses.length === 0) {
-          parsed.addresses = [
-            {
-              id: 'addr-1',
-              fullName: parsed.name || 'Priya Sharma',
-              phone: parsed.phone || '+91 98765 43210',
-              street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
-              city: 'Kolkata',
-              state: 'West Bengal',
-              pincode: '700091',
-              type: 'home',
-              isDefault: true
-            }
-          ];
+        if (parsed && parsed.name !== 'Priya Sharma') {
+          return parsed;
         }
-        return parsed;
       }
-      return {
-        id: 'u-101',
-        name: 'Priya Sharma',
-        email: 'priya.sharma@example.com',
-        phone: '+91 98765 43210',
-        points: 350,
-        createdAt: '2026-01-01',
-        addresses: [
-          {
-            id: 'addr-1',
-            fullName: 'Priya Sharma',
-            phone: '+91 98765 43210',
-            street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
-            city: 'Kolkata',
-            state: 'West Bengal',
-            pincode: '700091',
-            type: 'home',
-            isDefault: true
-          }
-        ]
-      };
+      return null;
     } catch {
       return null;
     }

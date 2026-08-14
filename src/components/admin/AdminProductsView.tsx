@@ -4,7 +4,7 @@ import {
   Plus, Search, Edit3, Trash2, Copy, Eye, SlidersHorizontal, Check, X, 
   ArrowLeft, ArrowRight, Download, Upload, RefreshCw, Archive, Sparkles, Image as ImageIcon
 } from 'lucide-react';
-import { Product, ProductVariant, ColorVariant, ProductTag, Category } from '../../types';
+import { Product, ProductVariant, ColorVariant, ProductTag, Category, KidsSizeVariant } from '../../types';
 import * as XLSX from 'xlsx';
 
 export const AdminProductsView: React.FC = () => {
@@ -62,6 +62,20 @@ export const AdminProductsView: React.FC = () => {
 
   // Multi-variant selection state
   const [selectedSizes, setSelectedSizes] = useState<string[]>(['S', 'M', 'L', 'XL']);
+  
+  // Kids Category Sizing state
+  const [kidsSizeRows, setKidsSizeRows] = useState<KidsSizeVariant[]>([
+    { ageLabel: '2-3 Years', measurement: 54, unit: 'cm', stock: 15 },
+    { ageLabel: '4-5 Years', measurement: 60, unit: 'cm', stock: 20 }
+  ]);
+
+  const isKidsCategory = React.useMemo(() => {
+    if (!pCategoryId) return false;
+    const cat = categories.find(c => c.id === pCategoryId);
+    const catSlug = cat ? cat.slug.toLowerCase() : pCategoryId.toLowerCase();
+    const catName = cat ? cat.name.toLowerCase() : '';
+    return catSlug === 'kids' || catSlug.includes('kids') || catName.includes('kids');
+  }, [pCategoryId, categories]);
   
   // Custom expandable colors selection list
   const [availableColors, setAvailableColors] = useState<{ name: string; hex: string }[]>([
@@ -129,28 +143,51 @@ export const AdminProductsView: React.FC = () => {
     if (formStep === 3 && variantsMatrix.length === 0) {
       const rows: ProductVariant[] = [];
       selectedColors.forEach(color => {
-        selectedSizes.forEach(size => {
-          rows.push({
-            id: `v-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-            productId: editProduct?.id || 'new-product-id',
-            size,
-            color: color.name,
-            colorHex: color.hex,
-            sku: `${pName.slice(0, 3).toUpperCase()}-${color.name.slice(0, 2).toUpperCase()}-${size}`,
-            price: pBasePrice,
-            discountPrice: pDiscPrice || undefined,
-            stock: 25,
-            images: [
-              color.hex === '#C0654B' 
-                ? 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80'
-                : 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80'
-            ]
+        if (isKidsCategory) {
+          kidsSizeRows.forEach(ks => {
+            const sizeLabel = `${ks.ageLabel} (${ks.measurement} ${ks.unit})`;
+            rows.push({
+              id: `v-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+              productId: editProduct?.id || 'new-product-id',
+              size: sizeLabel,
+              color: color.name,
+              colorHex: color.hex,
+              sku: `${(pName || 'KID').slice(0, 3).toUpperCase()}-${color.name.slice(0, 2).toUpperCase()}-${ks.ageLabel.replace(/[^a-zA-Z0-9]/g, '')}`,
+              price: pBasePrice,
+              discountPrice: pDiscPrice || undefined,
+              stock: ks.stock || 15,
+              kidsSize: ks,
+              images: [
+                color.hex === '#C0654B' 
+                  ? 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80'
+                  : 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80'
+              ]
+            });
           });
-        });
+        } else {
+          selectedSizes.forEach(size => {
+            rows.push({
+              id: `v-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+              productId: editProduct?.id || 'new-product-id',
+              size,
+              color: color.name,
+              colorHex: color.hex,
+              sku: `${(pName || 'PROD').slice(0, 3).toUpperCase()}-${color.name.slice(0, 2).toUpperCase()}-${size}`,
+              price: pBasePrice,
+              discountPrice: pDiscPrice || undefined,
+              stock: 25,
+              images: [
+                color.hex === '#C0654B' 
+                  ? 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80'
+                  : 'https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=600&q=80'
+              ]
+            });
+          });
+        }
       });
       setVariantsMatrix(rows);
     }
-  }, [formStep, selectedSizes, selectedColors]);
+  }, [formStep, selectedSizes, selectedColors, isKidsCategory, kidsSizeRows]);
 
   // Synchronize available colors if editing a product with custom variants
   useEffect(() => {
@@ -373,6 +410,10 @@ export const AdminProductsView: React.FC = () => {
     setPTags(['new_arrival']);
     setPStatus('published');
     setSelectedSizes(['S', 'M', 'L', 'XL']);
+    setKidsSizeRows([
+      { ageLabel: '2-3 Years', measurement: 54, unit: 'cm', stock: 15 },
+      { ageLabel: '4-5 Years', measurement: 60, unit: 'cm', stock: 20 }
+    ]);
     setSelectedColors([
       { name: 'Teal Green', hex: '#005F54' },
       { name: 'Rose Clay', hex: '#C0654B' }
@@ -403,6 +444,14 @@ export const AdminProductsView: React.FC = () => {
     setPTags(prod.tags);
     setPStatus(prod.status === 'published' ? 'published' : 'draft');
     setSelectedSizes(prod.availableSizes || ['S', 'M', 'L', 'XL']);
+    if (prod.kidsSizes && prod.kidsSizes.length > 0) {
+      setKidsSizeRows(prod.kidsSizes);
+    } else {
+      setKidsSizeRows([
+        { ageLabel: '2-3 Years', measurement: 54, unit: 'cm', stock: 15 },
+        { ageLabel: '4-5 Years', measurement: 60, unit: 'cm', stock: 20 }
+      ]);
+    }
     setSelectedColors(prod.colors || [
       { name: 'Teal Green', hex: '#005F54' },
       { name: 'Rose Clay', hex: '#C0654B' }
@@ -434,6 +483,27 @@ export const AdminProductsView: React.FC = () => {
       return;
     }
 
+    if (isKidsCategory) {
+      if (!kidsSizeRows || kidsSizeRows.length === 0) {
+        showToast('At least one Kids size row is required for Kids category.');
+        setFormStep(3);
+        return;
+      }
+      for (let i = 0; i < kidsSizeRows.length; i++) {
+        const row = kidsSizeRows[i];
+        if (!row.ageLabel || !row.ageLabel.trim()) {
+          showToast(`Kids Size Row ${i + 1}: Please enter an Age Range label (e.g. 2-3 Years).`);
+          setFormStep(3);
+          return;
+        }
+        if (!row.measurement || Number(row.measurement) <= 0) {
+          showToast(`Kids Size Row ${i + 1}: Measurement value must be a positive number.`);
+          setFormStep(3);
+          return;
+        }
+      }
+    }
+
     const savedColors: ColorVariant[] = selectedColors.map(c => ({
       name: c.name,
       hex: c.hex,
@@ -441,6 +511,10 @@ export const AdminProductsView: React.FC = () => {
         'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80'
       ]
     }));
+
+    const finalAvailableSizes = isKidsCategory
+      ? kidsSizeRows.map(k => `${k.ageLabel} (${k.measurement} ${k.unit})`)
+      : selectedSizes;
 
     if (editProduct) {
       // Edit save
@@ -463,7 +537,8 @@ export const AdminProductsView: React.FC = () => {
         status: pStatus as any,
         variants: variantsMatrix,
         colors: savedColors,
-        availableSizes: selectedSizes
+        availableSizes: finalAvailableSizes,
+        kidsSizes: isKidsCategory ? kidsSizeRows : undefined
       };
 
       setProducts(prev => prev.map(p => p.id === editProduct.id ? updated : p));
@@ -491,7 +566,8 @@ export const AdminProductsView: React.FC = () => {
         status: pStatus as any,
         variants: variantsMatrix,
         colors: savedColors,
-        availableSizes: selectedSizes,
+        availableSizes: finalAvailableSizes,
+        kidsSizes: isKidsCategory ? kidsSizeRows : undefined,
         rating: 5,
         reviewCount: 0,
         created_at: new Date().toISOString()
@@ -1376,32 +1452,152 @@ export const AdminProductsView: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Sizes Selection */}
-                  <div className="space-y-2">
-                    <span className="font-bold text-stone-700 block">Select Available Sizes:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'].map(sz => {
-                        const hasSz = selectedSizes.includes(sz);
-                        return (
-                          <button
-                            key={sz}
-                            type="button"
-                            onClick={() => {
-                              setSelectedSizes(prev => hasSz ? prev.filter(s => s !== sz) : [...prev, sz]);
-                              setVariantsMatrix([]); // reset so auto-regenerates
-                            }}
-                            className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                              hasSz 
-                                ? 'bg-[#C0654B] text-white shadow-sm' 
-                                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                            }`}
-                          >
-                            {sz}
-                          </button>
-                        );
-                      })}
+                  {/* Sizes Selection: Conditional Rendering for Kids vs Standard */}
+                  {isKidsCategory ? (
+                    <div className="space-y-3 p-4 bg-amber-50/70 rounded-xl border border-amber-200/80">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="font-bold text-amber-900 block text-xs">Kids Custom Sizing Matrix</span>
+                          <p className="text-[10px] text-amber-700">Enter age range, measurement value, unit (cm/inch), and stock per size variant.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setKidsSizeRows(prev => [...prev, { ageLabel: '', measurement: 50, unit: 'cm', stock: 10 }]);
+                            setVariantsMatrix([]);
+                          }}
+                          className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                        >
+                          + Add Size Row
+                        </button>
+                      </div>
+
+                      <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                        {kidsSizeRows.map((row, idx) => (
+                          <div key={idx} className="flex flex-wrap items-center gap-2 p-2.5 bg-white rounded-xl border border-stone-200 shadow-2xs">
+                            <div className="flex-1 min-w-[120px]">
+                              <label className="text-[9px] font-bold text-stone-500 block uppercase">Age Range Label</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. 2-3 Years"
+                                value={row.ageLabel}
+                                onChange={(e) => {
+                                  const updated = [...kidsSizeRows];
+                                  updated[idx].ageLabel = e.target.value;
+                                  setKidsSizeRows(updated);
+                                  setVariantsMatrix([]);
+                                }}
+                                className="w-full px-2.5 py-1.5 border border-stone-300 rounded-lg text-xs font-bold text-stone-800 outline-none focus:border-[#C0654B]"
+                              />
+                            </div>
+
+                            <div className="w-24">
+                              <label className="text-[9px] font-bold text-stone-500 block uppercase">Chest/Height</label>
+                              <input
+                                type="number"
+                                min={1}
+                                placeholder="54"
+                                value={row.measurement || ''}
+                                onChange={(e) => {
+                                  const updated = [...kidsSizeRows];
+                                  updated[idx].measurement = Math.max(1, Number(e.target.value));
+                                  setKidsSizeRows(updated);
+                                  setVariantsMatrix([]);
+                                }}
+                                className="w-full px-2.5 py-1.5 border border-stone-300 rounded-lg text-xs font-mono font-bold text-stone-800 text-center outline-none focus:border-[#C0654B]"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="text-[9px] font-bold text-stone-500 block uppercase">Unit</label>
+                              <div className="flex border border-stone-300 rounded-lg overflow-hidden font-bold text-[10px]">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = [...kidsSizeRows];
+                                    updated[idx].unit = 'cm';
+                                    setKidsSizeRows(updated);
+                                    setVariantsMatrix([]);
+                                  }}
+                                  className={`px-2.5 py-1.5 cursor-pointer ${row.unit === 'cm' ? 'bg-[#C0654B] text-white' : 'bg-stone-100 text-stone-600'}`}
+                                >
+                                  cm
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updated = [...kidsSizeRows];
+                                    updated[idx].unit = 'inch';
+                                    setKidsSizeRows(updated);
+                                    setVariantsMatrix([]);
+                                  }}
+                                  className={`px-2.5 py-1.5 cursor-pointer ${row.unit === 'inch' ? 'bg-[#C0654B] text-white' : 'bg-stone-100 text-stone-600'}`}
+                                >
+                                  inch
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="w-20">
+                              <label className="text-[9px] font-bold text-stone-500 block uppercase">Stock</label>
+                              <input
+                                type="number"
+                                min={0}
+                                value={row.stock}
+                                onChange={(e) => {
+                                  const updated = [...kidsSizeRows];
+                                  updated[idx].stock = Math.max(0, Number(e.target.value));
+                                  setKidsSizeRows(updated);
+                                  setVariantsMatrix([]);
+                                }}
+                                className="w-full px-2 py-1.5 border border-stone-300 rounded-lg text-xs font-mono text-center font-bold text-stone-800 outline-none"
+                              />
+                            </div>
+
+                            {kidsSizeRows.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setKidsSizeRows(prev => prev.filter((_, i) => i !== idx));
+                                  setVariantsMatrix([]);
+                                }}
+                                className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg cursor-pointer mt-3"
+                                title="Remove Size Row"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <span className="font-bold text-stone-700 block">Select Available Sizes:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'].map(sz => {
+                          const hasSz = selectedSizes.includes(sz);
+                          return (
+                            <button
+                              key={sz}
+                              type="button"
+                              onClick={() => {
+                                setSelectedSizes(prev => hasSz ? prev.filter(s => s !== sz) : [...prev, sz]);
+                                setVariantsMatrix([]); // reset so auto-regenerates
+                              }}
+                              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                hasSz 
+                                  ? 'bg-[#C0654B] text-white shadow-sm' 
+                                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                              }`}
+                            >
+                              {sz}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Colors selection */}
                   <div className="space-y-3">

@@ -46,7 +46,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   // Notification Bell States
   const [isBellOpen, setIsBellOpen] = useState(false);
   const [notifications, setNotifications] = useState([
-    { id: 1, text: 'New High-Value order #PGM-5201 placed by Priya Sharma', read: false, time: '3 mins ago' },
+    { id: 1, text: 'New High-Value order #PGM-5201 placed by Ananya Sen', read: false, time: '3 mins ago' },
     { id: 2, text: 'Banarasi Silk Saree stock is low (< 5 left)', read: false, time: '1 hour ago' },
     { id: 3, text: 'New product exchange claim EX-1049 received', read: true, time: '5 hours ago' }
   ]);

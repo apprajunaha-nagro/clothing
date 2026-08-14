@@ -19,27 +19,63 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
     const { wishlist, toggleWishlist, addToCart, setQuickViewProduct } = useStore();
     const reducedMotion = useReducedMotion();
 
+    const safeColors = React.useMemo(() => {
+      if (!product || !product.colors) return [{ name: 'Default', hex: '#C0654B', images: ['https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=600&q=80'] }];
+      if (Array.isArray(product.colors)) return product.colors;
+      if (typeof product.colors === 'string') {
+        try {
+          const parsed = JSON.parse(product.colors);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {}
+      }
+      return [{ name: 'Default', hex: '#C0654B', images: ['https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=600&q=80'] }];
+    }, [product]);
+
+    const safeVariants = React.useMemo(() => {
+      if (!product || !product.variants) return [];
+      if (Array.isArray(product.variants)) return product.variants;
+      if (typeof product.variants === 'string') {
+        try {
+          const parsed = JSON.parse(product.variants);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+      }
+      return [];
+    }, [product]);
+
+    const safeAvailableSizes = React.useMemo(() => {
+      if (!product || !product.availableSizes) return ['Free Size'];
+      if (Array.isArray(product.availableSizes)) return product.availableSizes;
+      if (typeof product.availableSizes === 'string') {
+        try {
+          const parsed = JSON.parse(product.availableSizes);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+      }
+      return ['Free Size'];
+    }, [product]);
+
     const [selectedColorIndex, setSelectedColorIndex] = useState(0);
-    const [selectedSize, setSelectedSize] = useState<string>(product.availableSizes[0] || 'M');
+    const [selectedSize, setSelectedSize] = useState<string>(safeAvailableSizes[0] || 'M');
     const [addedToCart, setAddedToCart] = useState(false);
     const [wishlistPulse, setWishlistPulse] = useState(false);
 
-    const currentColor = product.colors[selectedColorIndex] || product.colors[0];
+    const currentColor = safeColors[selectedColorIndex] || safeColors[0];
     const primaryImage =
-      currentColor?.images[0] ||
-      product.colors[0]?.images[0] ||
+      (currentColor?.images && Array.isArray(currentColor.images) ? currentColor.images[0] : null) ||
+      (safeColors[0]?.images && Array.isArray(safeColors[0].images) ? safeColors[0].images[0] : null) ||
       'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=600&q=80';
 
     const isWishlisted = wishlist.includes(product.id);
 
     // Find matching variant
     const currentVariant: ProductVariant =
-      product.variants.find(
+      safeVariants.find(
         v =>
-          v.color.toLowerCase() === currentColor?.name.toLowerCase() &&
+          v.color?.toLowerCase() === currentColor?.name?.toLowerCase() &&
           v.size === selectedSize
       ) ||
-      product.variants[0] || {
+      safeVariants[0] || {
         id: `${product.id}-default`,
         productId: product.id,
         size: selectedSize,
@@ -188,11 +224,11 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
             {/* RATING BADGE (Signature Flipkart Green Pill) */}
             <div className="flex items-center gap-1.5 mb-2">
               <span className="rating-pill-green">
-                <span>{product.rating.toFixed(1)}</span>
+                <span>{(Number(product.rating) || 5).toFixed(1)}</span>
                 <Star className="w-2.5 h-2.5 fill-white text-white" />
               </span>
               <span className="text-[11px] font-semibold text-stone-400">
-                ({product.reviewCount.toLocaleString()})
+                ({(Number(product.reviewCount) || 0).toLocaleString()})
               </span>
             </div>
           </div>

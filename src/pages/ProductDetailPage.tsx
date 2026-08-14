@@ -21,6 +21,8 @@ import {
   MessageSquare
 } from 'lucide-react';
 
+import { initialProducts } from '../data/seedData';
+
 interface ProductDetailPageProps {
   onNavigate: (path: string) => void;
   productId: string;
@@ -29,23 +31,159 @@ interface ProductDetailPageProps {
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate, productId }) => {
   const { products, addToCart, wishlist, toggleWishlist, setSizeChartCategory, showToast, setChatOpen } = useStore();
 
-  const product = products.find(p => p.id === productId || p.slug === productId) || products[0];
+  const cleanId = React.useMemo(() => {
+    if (!productId) return '';
+    return productId.split('?')[0].split('#')[0].trim();
+  }, [productId]);
+
+  const [fetchedProduct, setFetchedProduct] = useState<Product | null>(null);
+  const [isFetching, setIsFetching] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const matchedProduct = React.useMemo(() => {
+    if (!cleanId) return null;
+    const cleanLower = cleanId.toLowerCase();
+    
+    // 1. Search in store products array
+    const inStore = products.find(p => 
+      (p.id && p.id.toLowerCase() === cleanLower) || 
+      (p.slug && p.slug.toLowerCase() === cleanLower)
+    );
+    if (inStore) return inStore;
+
+    // 2. Search in seed catalog data fallback
+    const inSeed = initialProducts.find(p => 
+      (p.id && p.id.toLowerCase() === cleanLower) || 
+      (p.slug && p.slug.toLowerCase() === cleanLower)
+    );
+    if (inSeed) return inSeed;
+
+    return null;
+  }, [products, cleanId]);
+
+  const product = matchedProduct || fetchedProduct || (products.length > 0 ? products[0] : initialProducts[0]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!matchedProduct && cleanId) {
+      setIsFetching(true);
+      setFetchError(null);
+      
+      const loadProduct = async () => {
+        try {
+          const res = await fetch(`/api/products/${encodeURIComponent(cleanId)}`);
+          const contentType = res.headers.get('content-type') || '';
+          if (!res.ok || contentType.includes('text/html')) {
+            throw new Error(`API returned invalid data format.`);
+          }
+          const data = await res.json();
+          if (isMounted) {
+            if (data && data.id) {
+              setFetchedProduct(data);
+            } else {
+              setFetchError('Product data is empty or invalid.');
+            }
+          }
+        } catch (err: any) {
+          if (isMounted) {
+            setFetchError(err.message || 'Couldn\'t load this product — try again.');
+          }
+        } finally {
+          if (isMounted) {
+            setIsFetching(false);
+          }
+        }
+      };
+
+      loadProduct();
+    } else {
+      setIsFetching(false);
+      setFetchError(null);
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cleanId, matchedProduct]);
 
   const [colorIndex, setColorIndex] = useState(0);
-  const [selectedSize, setSelectedSize] = useState<string>(product?.availableSizes?.[0] || 'M');
+  const [selectedSize, setSelectedSize] = useState<string>('M');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [displayUnit, setDisplayUnit] = useState<'cm' | 'inch'>('cm');
   const [pincode, setPincode] = useState('');
   const [pincodeResult, setPincodeResult] = useState<string | null>(null);
+
+  const safeColors = React.useMemo(() => {
+    if (!product || !product.colors) return [{ name: 'Default', hex: '#C0654B', images: ['https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80'] }];
+    if (Array.isArray(product.colors)) return product.colors;
+    if (typeof product.colors === 'string') {
+      try {
+        const parsed = JSON.parse(product.colors);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    return [{ name: 'Default', hex: '#C0654B', images: ['https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80'] }];
+  }, [product]);
+
+  const safeVariants = React.useMemo(() => {
+    if (!product || !product.variants) return [];
+    if (Array.isArray(product.variants)) return product.variants;
+    if (typeof product.variants === 'string') {
+      try {
+        const parsed = JSON.parse(product.variants);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {}
+    }
+    return [];
+  }, [product]);
+
+  const safeKidsSizes = React.useMemo(() => {
+    if (!product || !product.kidsSizes) return [];
+    if (Array.isArray(product.kidsSizes)) return product.kidsSizes;
+    if (typeof product.kidsSizes === 'string') {
+      try {
+        const parsed = JSON.parse(product.kidsSizes);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {}
+    }
+    return [];
+  }, [product]);
+
+  const safeAvailableSizes = React.useMemo(() => {
+    if (!product || !product.availableSizes) return ['Free Size'];
+    if (Array.isArray(product.availableSizes)) return product.availableSizes;
+    if (typeof product.availableSizes === 'string') {
+      try {
+        const parsed = JSON.parse(product.availableSizes);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {}
+    }
+    return ['Free Size'];
+  }, [product]);
+
+  const isKidsProduct = (product?.categoryId?.toLowerCase() === 'kids' || product?.subcategoryId?.toLowerCase().includes('kids')) || (safeKidsSizes.length > 0);
+
+  const formatKidsSize = (ks: { ageLabel: string; measurement: number; unit: 'cm' | 'inch' }, targetUnit: 'cm' | 'inch') => {
+    let val = ks.measurement;
+    if (ks.unit === 'cm' && targetUnit === 'inch') {
+      val = Math.round((ks.measurement / 2.54) * 10) / 10;
+    } else if (ks.unit === 'inch' && targetUnit === 'cm') {
+      val = Math.round(ks.measurement * 2.54 * 10) / 10;
+    }
+    return `${ks.ageLabel} (${val} ${targetUnit})`;
+  };
 
   useEffect(() => {
     setColorIndex(0);
     setActiveImageIndex(0);
-    if (product?.availableSizes?.[0]) {
-      setSelectedSize(product.availableSizes[0]);
+    if (isKidsProduct && safeKidsSizes.length > 0) {
+      setSelectedSize(formatKidsSize(safeKidsSizes[0], displayUnit));
+    } else if (safeAvailableSizes[0]) {
+      setSelectedSize(safeAvailableSizes[0]);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [productId, product?.id]);
+  }, [productId, product?.id, displayUnit]);
 
   // Accordion Toggles
   const [specsOpen, setSpecsOpen] = useState(true);
@@ -57,19 +195,50 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
+  if (!product) {
+    if (!fetchError) {
+      return (
+        <div className="max-w-7xl mx-auto px-4 py-24 flex flex-col items-center justify-center min-h-[50vh]">
+          <div className="w-10 h-10 border-4 border-[#C0654B] border-t-transparent rounded-full animate-spin mb-3" />
+          <p className="text-stone-600 font-bold text-xs">Loading product details...</p>
+        </div>
+      );
+    }
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center space-y-4">
+        <h2 className="text-xl font-bold text-stone-800">Couldn't load this product</h2>
+        <p className="text-xs text-stone-600 max-w-md mx-auto">
+          {fetchError}
+        </p>
+        <div className="flex items-center justify-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 border border-stone-300 text-stone-700 text-xs font-bold rounded-xl hover:bg-stone-100 transition-colors cursor-pointer"
+          >
+            Try Again
+          </button>
+          <button
+            type="button"
+            onClick={() => onNavigate('/')}
+            className="px-5 py-2.5 bg-[#C0654B] text-white text-xs font-bold rounded-xl hover:bg-[#8B4A38] transition-colors cursor-pointer"
+          >
+            Return to Storefront
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-
-  if (!product) return null;
-
-  const currentColor = product.colors[colorIndex] || product.colors[0];
-  const galleryImages = currentColor?.images && currentColor.images.length > 0 ? currentColor.images : [
+  const currentColor = safeColors[colorIndex] || safeColors[0];
+  const galleryImages = currentColor?.images && Array.isArray(currentColor.images) && currentColor.images.length > 0 ? currentColor.images : [
     'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80'
   ];
   const activeImage = galleryImages[activeImageIndex] || galleryImages[0];
 
-  const currentVariant: ProductVariant = product.variants.find(
-    v => v.color.toLowerCase() === currentColor?.name.toLowerCase() && v.size === selectedSize
-  ) || product.variants[0] || {
+  const currentVariant: ProductVariant = safeVariants.find(
+    v => v.color?.toLowerCase() === currentColor?.name?.toLowerCase() && v.size === selectedSize
+  ) || safeVariants[0] || {
     id: `${product.id}-v`,
     productId: product.id,
     size: selectedSize,
@@ -174,11 +343,11 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             <div className="flex items-center gap-2 mb-1">
               <span className="font-extrabold text-stone-400 text-xs uppercase tracking-wider">{product.brandName || 'PGmart Classic'}</span>
               <span className="rating-pill-green">
-                <span>{product.rating.toFixed(1)}</span>
+                <span>{(Number(product.rating) || 5).toFixed(1)}</span>
                 <Star className="w-2.5 h-2.5 fill-white text-white" />
               </span>
               <a href="#reviews-section" className="text-xs font-bold text-stone-500 hover:text-[#C0654B]">
-                {product.reviewCount.toLocaleString()} Ratings & Reviews
+                {(Number(product.reviewCount) || 0).toLocaleString()} Ratings & Reviews
               </a>
             </div>
 
@@ -240,9 +409,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
               Color: <span className="text-[#C0654B]">{currentColor?.name}</span>
             </label>
             <div className="flex flex-wrap gap-2">
-              {(product.colors || []).map((c, idx) => (
+              {safeColors.map((c, idx) => (
                 <button
-                  key={c.name}
+                  key={c.name || idx}
                   onClick={() => {
                     setColorIndex(idx);
                     setActiveImageIndex(0);
@@ -262,9 +431,32 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
           </div>
 
           {/* SIZE SELECTOR */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-stone-800">Select Size</label>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-bold text-stone-800">
+                  {isKidsProduct ? 'Select Age & Fit' : 'Select Size'}
+                </label>
+                {isKidsProduct && (
+                  <div className="flex items-center bg-stone-100 p-0.5 rounded-lg text-[10px] font-bold border border-stone-200">
+                    <button
+                      type="button"
+                      onClick={() => setDisplayUnit('cm')}
+                      className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${displayUnit === 'cm' ? 'bg-[#C0654B] text-white' : 'text-stone-600'}`}
+                    >
+                      cm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDisplayUnit('inch')}
+                      className={`px-2 py-0.5 rounded-md transition-colors cursor-pointer ${displayUnit === 'inch' ? 'bg-[#C0654B] text-white' : 'text-stone-600'}`}
+                    >
+                      inch
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => setSizeChartCategory(product.categoryId)}
                 className="text-xs font-bold text-[#C0654B] hover:underline flex items-center gap-1 cursor-pointer min-h-[44px] px-2"
@@ -275,19 +467,43 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {(product.availableSizes || []).map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  className={`min-w-[44px] min-h-[44px] text-xs px-3.5 py-2 rounded border font-bold cursor-pointer flex items-center justify-center transition-all ${
-                    selectedSize === size
-                      ? 'border-[#C0654B] bg-[#C0654B]/10 text-[#C0654B]'
-                      : 'border-stone-300 text-stone-700 hover:border-stone-500'
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+              {isKidsProduct && safeKidsSizes && safeKidsSizes.length > 0 ? (
+                safeKidsSizes.map((ks) => {
+                  const displayLabel = formatKidsSize(ks, displayUnit);
+                  const rawLabel = `${ks.ageLabel} (${ks.measurement} ${ks.unit})`;
+                  const isSelected = selectedSize === displayLabel || selectedSize === rawLabel || selectedSize.startsWith(ks.ageLabel);
+
+                  return (
+                    <button
+                      key={ks.ageLabel}
+                      type="button"
+                      onClick={() => setSelectedSize(displayLabel)}
+                      className={`min-h-[44px] text-xs px-3.5 py-2 rounded-xl border font-bold cursor-pointer flex items-center justify-center transition-all ${
+                        isSelected
+                          ? 'border-[#C0654B] bg-[#C0654B]/10 text-[#C0654B] shadow-2xs ring-1 ring-[#C0654B]'
+                          : 'border-stone-300 text-stone-700 hover:border-stone-500 bg-white'
+                      }`}
+                    >
+                      {displayLabel}
+                    </button>
+                  );
+                })
+              ) : (
+                safeAvailableSizes.map((size) => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => setSelectedSize(size)}
+                    className={`min-w-[44px] min-h-[44px] text-xs px-3.5 py-2 rounded border font-bold cursor-pointer flex items-center justify-center transition-all ${
+                      selectedSize === size
+                        ? 'border-[#C0654B] bg-[#C0654B]/10 text-[#C0654B]'
+                        : 'border-stone-300 text-stone-700 hover:border-stone-500'
+                    }`}
+                  >
+                    {size}
+                  </button>
+                ))
+              )}
             </div>
           </div>
 
@@ -387,8 +603,8 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
 
           <div className="flex items-center gap-6 bg-stone-50 p-3 rounded border border-stone-200 w-full md:w-auto">
             <div className="text-center">
-              <span className="text-3xl font-extrabold text-stone-900">{product.rating.toFixed(1)} ★</span>
-              <p className="text-[10px] text-stone-500 font-semibold">{product.reviewCount} Ratings & 18 Reviews</p>
+              <span className="text-3xl font-extrabold text-stone-900">{(Number(product.rating) || 5).toFixed(1)} ★</span>
+              <p className="text-[10px] text-stone-500 font-semibold">{(Number(product.reviewCount) || 0).toLocaleString()} Ratings & 18 Reviews</p>
             </div>
 
             {/* Rating Bar Chart 5★ to 1★ */}

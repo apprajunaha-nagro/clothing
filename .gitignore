@@ -6,3 +6,14 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Large deployment artifacts
+*.zip
+pgmart-cpanel-deployment.zip
+
+# Local database
+prisma/dev.db
+prisma/*.db
+
+# Scratch files
+scratch/

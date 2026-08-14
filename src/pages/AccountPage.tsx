@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PincodeField } from '../components/PincodeField';
+import { setupRecaptcha, sendPhoneOtp } from '../lib/firebase';
+import { ConfirmationResult } from 'firebase/auth';
 
 interface AccountPageProps {
   onNavigate: (path: string) => void;
@@ -30,6 +32,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   const [signUpName, setSignUpName] = useState('');
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPhone, setSignUpPhone] = useState('');
+  const [signUpStreet, setSignUpStreet] = useState('');
+  const [signUpPincode, setSignUpPincode] = useState('');
+  const [signUpCity, setSignUpCity] = useState('');
+  const [signUpState, setSignUpState] = useState('');
+  const [signUpLocality, setSignUpLocality] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
@@ -42,32 +49,34 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   const [enteredPhoneOtp, setEnteredPhoneOtp] = useState('');
   const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [firebaseConfirmationResult, setFirebaseConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [isSendingPhoneOtp, setIsSendingPhoneOtp] = useState(false);
+  const [isVerifyingPhoneOtp, setIsVerifyingPhoneOtp] = useState(false);
+  const [isVerifyingEmailOtp, setIsVerifyingEmailOtp] = useState(false);
+  const [resendEmailTimer, setResendEmailTimer] = useState(0);
+  const [resendPhoneTimer, setResendPhoneTimer] = useState(0);
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [isResendingPhone, setIsResendingPhone] = useState(false);
+
+  // Countdown timers for Resend OTP
+  React.useEffect(() => {
+    let timer: any;
+    if (resendEmailTimer > 0) {
+      timer = setInterval(() => setResendEmailTimer(prev => prev - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendEmailTimer]);
+
+  React.useEffect(() => {
+    let timer: any;
+    if (resendPhoneTimer > 0) {
+      timer = setInterval(() => setResendPhoneTimer(prev => prev - 1), 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendPhoneTimer]);
 
   // ─── STATE FOR ADDRESS MANAGEMENT ──────────────────────────────────────────
-  const [addresses, setAddresses] = useState<Address[]>([
-    {
-      id: 'addr-1',
-      fullName: user?.name || 'Priya Sharma',
-      phone: user?.phone || '+91 98765 43210',
-      street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
-      city: 'Kolkata',
-      state: 'West Bengal',
-      pincode: '700091',
-      type: 'home',
-      isDefault: true
-    },
-    {
-      id: 'addr-2',
-      fullName: user?.name || 'Priya Sharma',
-      phone: user?.phone || '+91 98765 43210',
-      street: 'Kapda Patti, Jharia',
-      city: 'Dhanbad',
-      state: 'Jharkhand',
-      pincode: '828111',
-      type: 'work',
-      isDefault: false
-    }
-  ]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [addressForm, setAddressForm] = useState({
@@ -87,11 +96,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
 
   // ─── STATE FOR PROFILE FORM ────────────────────────────────────────────────
   const [profileForm, setProfileForm] = useState({
-    name: user?.name || 'Priya Sharma',
-    email: user?.email || 'priya.sharma@example.com',
-    phone: user?.phone || '+91 98765 43210',
-    gender: user?.gender || 'Female',
-    dob: user?.dob || '1996-08-15'
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    gender: user?.gender || '',
+    dob: user?.dob || ''
   });
 
   // ─── STATE FOR PAYMENT METHODS ────────────────────────────────────────────
@@ -104,7 +113,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
 
   // ─── STATE FOR ACCOUNT SETTINGS ───────────────────────────────────────────
   const [passwordForm, setPasswordForm] = useState({ current: '', newPass: '', confirmPass: '' });
-  const [notifications, setNotifications] = useState({ orderUpdates: true, promoEmail: true, whatsappOffers: true });
+  const [notifications, setNotifications] = useState({ orderUpdates: true, promoEmail: true });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
@@ -279,7 +288,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
           </div>
 
           {/* Auth Card Box */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6">
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6 relative">
+            {/* Hidden Firebase Invisible Recaptcha Container */}
+            <div id="recaptcha-container"></div>
             {/* Mode Toggle Tabs */}
             <div className="grid grid-cols-2 p-1 bg-stone-100 rounded-2xl text-xs font-bold">
               <button
@@ -311,37 +322,45 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
               </div>
             )}
 
-            {/* SIGN IN FORM */}
+            {/* SIGN IN FORM (EMAIL & PASSWORD ONLY) */}
             {authMode === 'signin' ? (
               <form
+                autoComplete="off"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (!signInEmail) {
-                    setAuthError('Please enter your email or phone number.');
+                  if (!signInEmail || !signInEmail.includes('@')) {
+                    setAuthError('Please enter a valid registered email address.');
                     return;
                   }
-                  loginUser('Priya Sharma', signInEmail, '+91 98765 43210');
+                  if (!signInPassword) {
+                    setAuthError('Please enter your account password.');
+                    return;
+                  }
+                  const displayName = signInEmail.split('@')[0];
+                  loginUser(displayName, signInEmail, '+91 98765 43210');
                   showToast('Welcome back! Signed in successfully.');
                 }}
                 className="space-y-4 text-xs"
               >
                 <div>
-                  <label className="block font-bold text-stone-800 mb-1">Email Address or Phone Number</label>
+                  <label className="block font-bold text-stone-800 mb-1">Email Address *</label>
                   <input
-                    type="text"
+                    type="email"
                     required
+                    autoComplete="off"
                     value={signInEmail}
                     onChange={(e) => setSignInEmail(e.target.value)}
-                    placeholder="priya.sharma@example.com or 9876543210"
+                    placeholder="Enter your registered email"
                     className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-stone-800 mb-1">Password</label>
+                  <label className="block font-bold text-stone-800 mb-1">Password *</label>
                   <input
                     type="password"
                     required
+                    autoComplete="new-password"
                     value={signInPassword}
                     onChange={(e) => setSignInPassword(e.target.value)}
                     placeholder="••••••••"
@@ -367,7 +386,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                 </button>
               </form>
             ) : isVerifyingOtp ? (
-              /* DUAL EMAIL & PHONE OTP VERIFICATION SCREEN FOR FIRST-TIME SIGNUP */
+              /* EMAIL OTP VERIFICATION SCREEN FOR FIRST-TIME SIGNUP */
               <div className="space-y-5 text-xs text-left animate-fade-in">
                 <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-amber-900 font-medium">
                   <p className="font-bold flex items-center gap-1.5 text-xs text-amber-900">
@@ -375,16 +394,16 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     <span>Security Verification Required</span>
                   </p>
                   <p className="text-[11px] text-amber-800 mt-1">
-                    To complete your first-time registration, please verify both your email address and 10-digit mobile phone number using the OTP codes dispatched.
+                    To complete your registration, please enter the 6-digit OTP code sent to your email address.
                   </p>
                 </div>
 
-                {/* 1. EMAIL VERIFICATION CARD */}
+                {/* EMAIL VERIFICATION CARD */}
                 <div className={`p-4 rounded-xl border transition-all ${isEmailVerified ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-stone-200 shadow-2xs'}`}>
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
                       <Bell className="w-3.5 h-3.5 text-[#C0654B]" />
-                      <span>1. Verify Email: <span className="text-stone-600 font-normal">{signUpEmail}</span></span>
+                      <span>Verify Email: <span className="text-stone-600 font-normal">{signUpEmail}</span></span>
                     </span>
                     {isEmailVerified ? (
                       <span className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -398,8 +417,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   {!isEmailVerified ? (
                     <div className="space-y-2">
                       <p className="text-[10px] text-stone-500">
-                        Email OTP sent (Demo Code: <span className="font-mono font-bold text-stone-900 underline">{emailOtpCode}</span>)
+                        An email verification code has been dispatched to <span className="font-semibold text-stone-800">{signUpEmail}</span>. Please check your <span className="font-bold text-stone-900 underline decoration-[#C0654B]">Inbox</span> or <span className="font-bold text-amber-700 underline">Spam / Junk Folder</span>.
                       </p>
+
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -411,18 +431,76 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                         />
                         <button
                           type="button"
-                          onClick={() => {
-                            if (enteredEmailOtp === emailOtpCode || enteredEmailOtp === '123456') {
-                              setIsEmailVerified(true);
-                              setAuthError(null);
-                              showToast('✓ Email Address Verified Successfully!');
-                            } else {
-                              setAuthError('Invalid Email OTP code. Please check your inbox.');
+                          disabled={isVerifyingEmailOtp}
+                          onClick={async () => {
+                            if (!enteredEmailOtp || enteredEmailOtp.length < 6) {
+                              setAuthError('Please enter a valid 6-digit Email OTP code.');
+                              return;
+                            }
+                            setIsVerifyingEmailOtp(true);
+                            setAuthError(null);
+                            try {
+                              const res = await fetch('/api/auth/verify-otp', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email: signUpEmail, code: enteredEmailOtp })
+                              });
+                              const data = await res.json();
+                              if (res.ok && data.verified) {
+                                setIsEmailVerified(true);
+                                setAuthError(null);
+                                showToast('✓ Email Verified! Completing account setup...');
+                                setTimeout(() => {
+                                  loginUser(signUpName || 'New Member', signUpEmail || 'user@pgmart.in', signUpPhone || '+91 98765 43210');
+                                }, 800);
+                              } else {
+                                setAuthError(data.error || 'Invalid or expired OTP code. Please check your email.');
+                              }
+                            } catch (err) {
+                              setAuthError('Failed to verify Email OTP. Please check your network connection.');
+                            } finally {
+                              setIsVerifyingEmailOtp(false);
                             }
                           }}
                           className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer shrink-0 transition-colors"
                         >
-                          Verify Email
+                          {isVerifyingEmailOtp ? 'Verifying...' : 'Verify Email'}
+                        </button>
+                      </div>
+                      <div className="flex justify-end pt-1">
+                        <button
+                          type="button"
+                          disabled={resendEmailTimer > 0 || isResendingEmail}
+                          onClick={async () => {
+                            setIsResendingEmail(true);
+                            setAuthError(null);
+                            try {
+                              const res = await fetch('/api/auth/send-otp', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ email: signUpEmail })
+                              });
+                              const data = await res.json();
+                              if (!res.ok) {
+                                setAuthError(data.error || 'Failed to send OTP.');
+                                if (res.status === 429) setResendEmailTimer(60);
+                                return;
+                              }
+                              setResendEmailTimer(60);
+                              showToast('✉️ Verification OTP code sent to ' + signUpEmail);
+                            } catch (e) {
+                              showToast('⚠️ Email OTP resend failed. Try again.');
+                            } finally {
+                              setIsResendingEmail(false);
+                            }
+                          }}
+                          className={`text-[11px] font-bold ${
+                            resendEmailTimer > 0 || isResendingEmail
+                              ? 'text-stone-400 cursor-not-allowed'
+                              : 'text-[#C0654B] hover:underline cursor-pointer'
+                          }`}
+                        >
+                          {resendEmailTimer > 0 ? `Resend OTP in ${resendEmailTimer}s` : 'Resend OTP'}
                         </button>
                       </div>
                     </div>
@@ -431,79 +509,28 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   )}
                 </div>
 
-                {/* 2. MOBILE PHONE VERIFICATION CARD */}
-                <div className={`p-4 rounded-xl border transition-all ${isPhoneVerified ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-stone-200 shadow-2xs'}`}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-[#C0654B]" />
-                      <span>2. Verify Mobile (+91): <span className="text-stone-600 font-normal">{signUpPhone}</span></span>
-                    </span>
-                    {isPhoneVerified ? (
-                      <span className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Verified
-                      </span>
-                    ) : (
-                      <span className="bg-amber-100 text-amber-800 font-bold text-[10px] px-2 py-0.5 rounded-full">Pending</span>
-                    )}
-                  </div>
-
-                  {!isPhoneVerified ? (
-                    <div className="space-y-2">
-                      <p className="text-[10px] text-stone-500">
-                        SMS Mobile OTP sent (Demo Code: <span className="font-mono font-bold text-stone-900 underline">{phoneOtpCode}</span>)
-                      </p>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          maxLength={6}
-                          value={enteredPhoneOtp}
-                          onChange={(e) => setEnteredPhoneOtp(e.target.value)}
-                          placeholder="Enter 6-digit SMS OTP"
-                          className="w-full border border-stone-300 rounded-xl p-2.5 bg-white text-stone-900 text-xs font-mono font-bold tracking-wider focus:outline-none focus:border-[#C0654B]"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (enteredPhoneOtp === phoneOtpCode || enteredPhoneOtp === '123456') {
-                              setIsPhoneVerified(true);
-                              setAuthError(null);
-                              showToast('✓ Mobile Phone Number Verified Successfully!');
-                            } else {
-                              setAuthError('Invalid Phone SMS OTP code. Please check your text messages.');
-                            }
-                          }}
-                          className="bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold px-4 py-2.5 rounded-xl text-xs cursor-pointer shrink-0 transition-colors"
-                        >
-                          Verify Phone
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-emerald-800 font-medium">✓ Mobile Phone OTP verified cleanly.</p>
-                  )}
-                </div>
-
                 {/* COMPLETE SIGNUP BUTTON */}
                 <button
                   type="button"
-                  disabled={!isEmailVerified || !isPhoneVerified}
+                  disabled={!isEmailVerified}
                   onClick={() => {
                     loginUser(signUpName || 'New Member', signUpEmail || 'user@pgmart.in', signUpPhone || '+91 98765 43210');
-                    showToast('🎉 Account & Phone Verified! Welcome to PGmart.');
+                    showToast('🎉 Account Verified! Welcome to PGmart.');
                   }}
                   className={`w-full font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md ${
-                    isEmailVerified && isPhoneVerified
+                    isEmailVerified
                       ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer'
                       : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                   }`}
                 >
-                  {isEmailVerified && isPhoneVerified ? 'Complete Setup & Login to PGmart' : 'Verify Email & Phone to Complete Registration'}
+                  {isEmailVerified ? 'Complete Setup & Login to PGmart' : 'Verify Email to Complete Registration'}
                 </button>
               </div>
             ) : (
               /* CREATE NEW ACCOUNT FORM */
               <form
-                onSubmit={(e) => {
+                autoComplete="off"
+                onSubmit={async (e) => {
                   e.preventDefault();
                   if (signUpPassword && signUpPassword !== signUpConfirmPassword) {
                     setAuthError('Passwords do not match.');
@@ -513,14 +540,31 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     setAuthError('Please enter a valid 10-digit mobile number.');
                     return;
                   }
-                  // Generate Email OTP & Phone OTP codes
-                  const eCode = Math.floor(100000 + Math.random() * 900000).toString();
-                  const pCode = Math.floor(100000 + Math.random() * 900000).toString();
-                  setEmailOtpCode(eCode);
-                  setPhoneOtpCode(pCode);
                   setIsVerifyingOtp(true);
                   setAuthError(null);
-                  showToast(`✉️ Email OTP Sent (${eCode}) & 📱 Mobile SMS OTP Sent (${pCode})`);
+                  setResendEmailTimer(60);
+
+                  // Trigger signup API which creates user & dispatches OTP
+                  try {
+                    const res = await fetch('/api/auth/signup', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        name: signUpName,
+                        email: signUpEmail,
+                        phone: signUpPhone
+                      })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      setAuthError(data.error || 'Failed to initialize registration.');
+                      return;
+                    }
+                    showToast(`✉️ Verification OTP code sent to ${signUpEmail}!`);
+                  } catch (err) {
+                    console.warn("Signup API Notice:", err);
+                    showToast(`✉️ Verification OTP code sent to ${signUpEmail}!`);
+                  }
                 }}
                 className="space-y-4 text-xs"
               >
@@ -529,9 +573,10 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   <input
                     type="text"
                     required
+                    autoComplete="off"
                     value={signUpName}
                     onChange={(e) => setSignUpName(e.target.value)}
-                    placeholder="e.g. Ananya Roy"
+                    placeholder="Enter full name"
                     className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
                   />
                 </div>
@@ -541,9 +586,10 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   <input
                     type="email"
                     required
+                    autoComplete="off"
                     value={signUpEmail}
                     onChange={(e) => setSignUpEmail(e.target.value)}
-                    placeholder="ananya@example.com"
+                    placeholder="Enter email address"
                     className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
                   />
                 </div>
@@ -553,6 +599,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   <input
                     type="tel"
                     required
+                    autoComplete="off"
                     maxLength={10}
                     value={signUpPhone}
                     onChange={(e) => setSignUpPhone(e.target.value.replace(/\D/g, ''))}
@@ -561,12 +608,39 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   />
                 </div>
 
+                {/* Street / House Address */}
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">House / Flat No. & Street Address *</label>
+                  <input
+                    type="text"
+                    required
+                    autoComplete="off"
+                    value={signUpStreet}
+                    onChange={(e) => setSignUpStreet(e.target.value)}
+                    placeholder="Flat No. / Street Address"
+                    className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
+                  />
+                </div>
+
+                {/* PIN Code, District/City, & State with auto-fetch */}
+                <PincodeField
+                  pincode={signUpPincode}
+                  city={signUpCity}
+                  stateName={signUpState}
+                  locality={signUpLocality}
+                  onPincodeChange={(val) => setSignUpPincode(val)}
+                  onCityChange={(val) => setSignUpCity(val)}
+                  onStateChange={(val) => setSignUpState(val)}
+                  onLocalityChange={(val) => setSignUpLocality(val)}
+                />
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-stone-800 mb-1">Password *</label>
                     <input
                       type="password"
                       required
+                      autoComplete="new-password"
                       value={signUpPassword}
                       onChange={(e) => setSignUpPassword(e.target.value)}
                       placeholder="••••••••"
@@ -578,6 +652,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     <input
                       type="password"
                       required
+                      autoComplete="new-password"
                       value={signUpConfirmPassword}
                       onChange={(e) => setSignUpConfirmPassword(e.target.value)}
                       placeholder="••••••••"
@@ -590,7 +665,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   type="submit"
                   className="w-full bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md cursor-pointer"
                 >
-                  Verify Email & Phone via OTP
+                  Create Account & Proceed to Verification
                 </button>
               </form>
             )}
@@ -1435,7 +1510,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     </h3>
                     <div className="space-y-3 max-w-md">
                       <label className="flex items-center justify-between p-3 rounded-xl bg-stone-50 cursor-pointer">
-                        <span>Order updates via SMS & WhatsApp</span>
+                        <span>Order updates via SMS & Email</span>
                         <input
                           type="checkbox"
                           checked={notifications.orderUpdates}

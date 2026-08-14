@@ -8,6 +8,7 @@ import { SearchModal } from './components/SearchModal';
 import { QuickViewModal } from './components/QuickViewModal';
 import { SizeChartModal } from './components/SizeChartModal';
 import { ChatbotWidget } from './components/ChatbotWidget';
+import { TawkToWidget } from './components/TawkToWidget';
 import { Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { PageLoadingSkeleton } from './components/skeletons/PageLoadingSkeleton';
@@ -189,6 +190,7 @@ function AppContent() {
 
       {/* FLOATING CUSTOMER SUPPORT CHATBOT WIDGET */}
       {!isAdminRoute && <ChatbotWidget onNavigate={navigateTo} />}
+      {!isAdminRoute && <TawkToWidget />}
     </div>
   );
 }

@@ -9,6 +9,17 @@ interface ChatMessage {
   text: string;
   timestamp: string;
   isAi?: boolean;
+  products?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    imageUrl?: string;
+    url: string;
+  }>;
+  categoryLink?: {
+    name: string;
+    url: string;
+  };
   actionButton?: {
     label: string;
     path?: string;
@@ -20,7 +31,7 @@ interface ChatbotWidgetProps {
 }
 
 export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
-  const { chatOpen, setChatOpen, settings } = useStore();
+  const { chatOpen, setChatOpen, settings, products } = useStore();
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -28,11 +39,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
       sender: 'bot',
       text: 'Hello 👋 Welcome to PGmart AI Assistant!\n\nI am your dedicated AI Fashion & Shopping Assistant. Ask me anything about outfit matching, sizing recommendations, live order tracking, or today\'s best discount codes!',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isAi: true,
-      actionButton: {
-        label: '✨ Explore Women\'s Collection',
-        path: '/category/women'
-      }
+      isAi: true
     }
   ]);
   const [input, setInput] = useState('');
@@ -58,12 +65,50 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
     { label: '✨ Recommend Saree Outfits', query: 'Can you recommend Banarasi sarees?' }
   ];
 
-  const generateLocalBotReply = (userQuery: string): { text: string; actionButton?: { label: string; path?: string } } => {
+  // Search store products to find exact matching product for the query
+  const findMatchingProduct = (queryStr: string) => {
+    if (!products || products.length === 0) return null;
+    const q = queryStr.toLowerCase().trim();
+
+    // 1. Direct ID or slug check
+    const byId = products.find(p => p.id === q || p.slug.toLowerCase() === q);
+    if (byId) return byId;
+
+    // 2. Direct name match
+    const byName = products.find(p => p.name.toLowerCase().includes(q) || q.includes(p.name.toLowerCase()));
+    if (byName) return byName;
+
+    // 3. Keyword matching across name, description, fabric, category, subcategory, occasion, tags
+    const words = q.split(/\s+/).filter(w => w.length > 2);
+    let bestMatch = null;
+    let maxScore = 0;
+
+    for (const p of products) {
+      const haystack = `${p.name} ${p.description} ${p.fabric} ${p.categoryId} ${p.subcategoryId} ${p.typeId || ''} ${p.occasion || ''} ${p.tags || ''}`.toLowerCase();
+      let score = 0;
+      for (const w of words) {
+        if (haystack.includes(w)) score += 2;
+      }
+      if (score > maxScore) {
+        maxScore = score;
+        bestMatch = p;
+      }
+    }
+
+    return maxScore > 0 ? bestMatch : null;
+  };
+
+  const generateLocalBotReply = (userQuery: string): {
+    text: string;
+    products?: any[];
+    categoryLink?: any;
+    actionButton?: { label: string; path?: string };
+  } => {
     const q = userQuery.toLowerCase();
 
     if (q.includes('track') || q.includes('order') || q.includes('status') || q.includes('delivery')) {
       return {
-        text: '📦 You can track your live shipment anytime! Visit your Account dashboard or click below to enter your order number.',
+        text: '📦 You can track your live shipment anytime! Visit your Account dashboard to view real-time tracking.',
         actionButton: { label: 'Track Shipment Now', path: '/account' }
       };
     }
@@ -71,14 +116,14 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
     if (q.includes('size') || q.includes('fit') || q.includes('measurement') || q.includes('chart')) {
       return {
         text: '👗 All PGmart apparel is crafted to standard Indian size specifications. For ethnic sarees, kurtis, and men\'s formals, choose your regular standard size.',
-        actionButton: { label: 'View Women\'s Catalog', path: '/category/women' }
+        actionButton: { label: 'View Size Guide', path: '/size-guide' }
       };
     }
 
     if (q.includes('coupon') || q.includes('discount') || q.includes('offer') || q.includes('promo') || q.includes('code')) {
       return {
         text: '🏷️ Exclusive Offers Active Today:\n• Code WELCOME100: Flat ₹200 OFF on orders > ₹999\n• Free Express Shipping on orders over ₹999\n• Additional 10% instant discount on UPI payments!',
-        actionButton: { label: 'Explore Festive Sale', path: '/category/women?tag=sale' }
+        actionButton: { label: 'Explore Today\'s Deals', path: '/' }
       };
     }
 
@@ -95,16 +140,40 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
       };
     }
 
-    if (q.includes('saree') || q.includes('lehenga') || q.includes('kurta') || q.includes('ethnic')) {
+    // Product search / recommendation query -> link directly to exact product page
+    const matched = findMatchingProduct(userQuery);
+    if (matched) {
+      const price = matched.discountPrice || matched.basePrice;
+      let imageUrl = '';
+      try {
+        const colors = JSON.parse(matched.colors || '[]');
+        if (colors.length > 0 && colors[0].image) imageUrl = colors[0].image;
+      } catch (e) {}
+
       return {
-        text: '✨ Our Ethnic Heritage Collection features pure Banarasi silk sarees, zari-embroidered anarkalis, chikankari kurtis, and designer lehengas.',
-        actionButton: { label: 'Browse Ethnic Wear', path: '/category/women?sub=w-ethnic' }
+        text: `✨ Here are matching products found in the PGmart catalog for your query:`,
+        products: [{
+          id: matched.id,
+          name: matched.name,
+          price,
+          imageUrl,
+          url: `/product/${matched.id}`
+        }],
+        categoryLink: {
+          name: `${matched.categoryId.toUpperCase()} Collection`,
+          url: `/category/${matched.categoryId}`
+        },
+        actionButton: {
+          label: `🛍️ View Product: ${matched.name}`,
+          path: `/product/${matched.id}`
+        }
       };
     }
 
+    const firstProd = products && products.length > 0 ? products[0] : null;
     return {
-      text: "Thanks for asking! As PGmart AI Assistant, I can help you find trending sarees, kurtas, shirts, innerwear, and track live orders. How else can I assist your shopping today?",
-      actionButton: { label: 'Explore Collections', path: '/category/women' }
+      text: "Thanks for asking! As PGmart AI Assistant, I can help you find exact products like sarees, kurtas, shirts, innerwear, and track live orders. How else can I assist your shopping today?",
+      actionButton: firstProd ? { label: `🛍️ View Product: ${firstProd.name}`, path: `/product/${firstProd.id}` } : undefined
     };
   };
 
@@ -124,6 +193,8 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
     if (!textToSend) setInput('');
     setIsTyping(true);
 
+    const matchedProd = findMatchingProduct(query);
+
     try {
       // Call Gemini AI backend endpoint
       const formattedHistory = newMessages.map(m => ({
@@ -139,13 +210,19 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
 
       if (res.ok) {
         const data = await res.json();
-        if (data && data.text) {
+        if (data) {
           const aiMsg: ChatMessage = {
             id: `bot-${Date.now()}`,
             sender: 'bot',
-            text: data.text,
+            text: data.reply || data.text || 'Here are the recommended items from PGmart:',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            isAi: true
+            isAi: true,
+            products: Array.isArray(data.products) && data.products.length > 0 ? data.products : undefined,
+            categoryLink: data.categoryLink ? data.categoryLink : undefined,
+            actionButton: matchedProd && (!data.products || data.products.length === 0) ? {
+              label: `🛍️ View Product: ${matchedProd.name}`,
+              path: `/product/${matchedProd.id}`
+            } : undefined
           };
           setMessages(prev => [...prev, aiMsg]);
           setIsTyping(false);
@@ -164,6 +241,8 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
         sender: 'bot',
         text: localReply.text,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        products: localReply.products,
+        categoryLink: localReply.categoryLink,
         actionButton: localReply.actionButton
       };
 
@@ -172,41 +251,12 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
     }, 500);
   };
 
-  const whatsappLink = "https://wa.me/919471155434?text=Hi%2C%20I%20have%20a%20question%20about%20PGmart";
-
   return (
     <>
       {/* TWO INDEPENDENT VERTICALLY STACKED FLOATING CHAT BUTTONS (Positioned on Left Side) */}
       {!chatOpen && (
         <div className="fixed bottom-5 left-5 z-50 flex flex-col items-center gap-2.5 pb-safe">
-          {/* BUTTON B — DIRECT WHATSAPP TOGGLE */}
-          <motion.a
-            href={whatsappLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.3, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.95 }}
-            className="group relative w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#25D366] hover:bg-[#20ba5a] text-white flex items-center justify-center shadow-md hover:shadow-lg transition-colors cursor-pointer border-2 border-white"
-            aria-label="Chat with us on WhatsApp"
-          >
-            {/* Standard WhatsApp SVG Glyph */}
-            <svg
-              className="w-5 h-5 fill-current text-white shrink-0 group-hover:rotate-6 transition-transform"
-              viewBox="0 0 24 24"
-            >
-              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.572-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
-            </svg>
-
-            {/* Desktop Tooltip / Mobile Label */}
-            <span className="absolute left-13 sm:left-14 bg-[#2B2620] text-white text-[11px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl border border-stone-700">
-              Chat with us on WhatsApp
-            </span>
-          </motion.a>
-
-          {/* BUTTON A — AI STYLIST CHATBOT TOGGLE */}
+          {/* AI STYLIST CHATBOT TOGGLE */}
           <motion.button
             onClick={() => setChatOpen(true)}
             initial={{ scale: 0, opacity: 0 }}
@@ -298,8 +348,63 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
                     >
                       <p className="whitespace-pre-line">{msg.text}</p>
                       
+                      {/* Products Mini Cards Grid */}
+                      {msg.products && msg.products.length > 0 && (
+                        <div className="mt-3 space-y-2 text-left">
+                          <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Matching Products ({msg.products.length}):</p>
+                          <div className="grid grid-cols-1 gap-2">
+                            {msg.products.map((p) => (
+                              <div
+                                key={p.id}
+                                onClick={() => {
+                                  setChatOpen(false);
+                                  onNavigate(p.url || `/product/${p.id}`);
+                                }}
+                                className="flex items-center gap-2.5 p-2 bg-stone-50 hover:bg-stone-100 rounded-xl border border-stone-200 transition-colors cursor-pointer group"
+                              >
+                                {p.imageUrl ? (
+                                  <img src={p.imageUrl} alt={p.name} className="w-10 h-10 object-cover rounded-lg shrink-0 border border-stone-200" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-[#FAF7F5] text-[#C0654B] flex items-center justify-center font-bold text-xs shrink-0 border border-stone-200">
+                                    PG
+                                  </div>
+                                )}
+                                <div className="flex-1 min-w-0 text-left">
+                                  <h4 className="font-bold text-stone-900 text-xs truncate group-hover:text-[#C0654B] transition-colors">{p.name}</h4>
+                                  <p className="text-[11px] font-extrabold text-[#C0654B]">₹{p.price.toLocaleString('en-IN')}</p>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-stone-400 group-hover:text-[#C0654B] group-hover:translate-x-0.5 transition-all shrink-0" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Category Link Button */}
+                      {msg.categoryLink && (
+                        <div className="mt-2.5">
+                          <button
+                            onClick={() => {
+                              setChatOpen(false);
+                              onNavigate(msg.categoryLink?.url || '/');
+                            }}
+                            className="w-full bg-[#2B2620] hover:bg-[#C0654B] text-white text-[11px] font-bold px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer shadow-xs"
+                          >
+                            <span>Browse {msg.categoryLink.name}</span>
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Zero match fallback notice */}
+                      {msg.products && msg.products.length === 0 && msg.categoryLink && (
+                        <div className="mt-2 text-[10px] text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200">
+                          <span>No exact match found in catalog — browse closest collection above.</span>
+                        </div>
+                      )}
+
                       {/* Optional Action Button */}
-                      {msg.actionButton && (
+                      {msg.actionButton && (!msg.products || msg.products.length === 0) && (
                         <button
                           onClick={() => {
                             setChatOpen(false);

@@ -4,8 +4,10 @@ import crypto from 'crypto';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import nodemailer from 'nodemailer';
 import { createServer as createViteServer } from 'vite';
 import prisma from './src/lib/prisma';
+import { sendOtpEmail, sendAdminAlert } from './src/lib/mailer';
 import {
   initialSiteSettings,
   initialBrands,
@@ -26,6 +28,7 @@ import {
   Review,
   Banner
 } from './src/types';
+import { GoogleGenAI } from '@google/genai';
 
 export const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -35,6 +38,251 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve the /src/assets folder statically
 app.use('/src/assets', express.static(path.join(process.cwd(), 'src/assets')));
+
+// Helper to hash OTP code with SHA-256
+function hashOtpCode(code: string): string {
+  return crypto.createHash('sha256').update(code.trim()).digest('hex');
+}
+
+// ---------------- API ROUTE: SEND OTP ----------------
+async function handleSendOtp(req: express.Request, res: express.Response) {
+  try {
+    const { email } = req.body;
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({ error: 'Valid email address is required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // 1. Rate limiting: Reject resend within 60 seconds of a still-valid OTP for the same email
+    const recentOtp = await prisma.otp.findFirst({
+      where: {
+        email: cleanEmail,
+        purpose: 'signup_verification',
+        createdAt: { gte: new Date(Date.now() - 60 * 1000) }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (recentOtp) {
+      return res.status(429).json({
+        error: 'Please wait 60 seconds before requesting another verification code.'
+      });
+    }
+
+    // 2. Suspicious activity check: Alert admin if requested > 5 times in 1 hour
+    const hourlyCount = await prisma.otp.count({
+      where: {
+        email: cleanEmail,
+        purpose: 'signup_verification',
+        createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) }
+      }
+    });
+
+    if (hourlyCount >= 5) {
+      sendAdminAlert(
+        'High Frequency OTP Requests',
+        `Email ${cleanEmail} has requested an OTP verification code ${hourlyCount + 1} times within the last hour. Possible abuse or signup spike.`
+      );
+    }
+
+    // 3. Generate random 6-digit code and hash before storing in database
+    const plainCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = hashOtpCode(plainCode);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await prisma.otp.create({
+      data: {
+        email: cleanEmail,
+        codeHash,
+        purpose: 'signup_verification',
+        expiresAt,
+        attempts: 0,
+        verified: false
+      }
+    });
+
+    // 4. Send email via cPanel SMTP (noreply@pgmart.in) using mailer module
+    const emailSent = await sendOtpEmail(cleanEmail, plainCode);
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Failed to send verification email. Please check your email address or try again.' });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Verification OTP code dispatched successfully to your email.',
+      emailSent: true
+    });
+  } catch (err: any) {
+    console.error('[Send OTP Error]:', err);
+    return res.status(500).json({ error: 'Failed to process OTP request.' });
+  }
+}
+
+app.post('/api/auth/send-otp', handleSendOtp);
+app.post('/api/send-email-otp', handleSendOtp);
+
+// ---------------- API ROUTE: VERIFY OTP ----------------
+async function handleVerifyOtp(req: express.Request, res: express.Response) {
+  try {
+    const { email, code, otp } = req.body;
+    const rawCode = String(code || otp || '').trim();
+    if (!email || !rawCode) {
+      return res.status(400).json({ error: 'Email and OTP verification code are required.' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // 1. Find latest non-verified, non-expired OTP record
+    const otpRecord = await prisma.otp.findFirst({
+      where: {
+        email: cleanEmail,
+        purpose: 'signup_verification',
+        verified: false,
+        expiresAt: { gte: new Date() }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({ error: 'Invalid or expired code. Please request a new OTP.' });
+    }
+
+    // 2. Lock out after 5 failed attempts (429)
+    if (otpRecord.attempts >= 5) {
+      return res.status(429).json({
+        error: 'Too many failed attempts. This code is locked. Please request a new OTP.'
+      });
+    }
+
+    // 3. Increment attempt counter
+    await prisma.otp.update({
+      where: { id: otpRecord.id },
+      data: { attempts: { increment: 1 } }
+    });
+
+    // 4. Hash input code and compare
+    const inputHash = hashOtpCode(rawCode);
+    if (inputHash !== otpRecord.codeHash) {
+      const remaining = 5 - (otpRecord.attempts + 1);
+      return res.status(400).json({
+        error: remaining > 0 
+          ? `Invalid OTP code. ${remaining} attempt(s) remaining.` 
+          : 'Invalid OTP code. Lockout limit reached. Please request a new code.'
+      });
+    }
+
+    // 5. On match: mark verified = true, set User.emailVerified = true
+    await prisma.otp.update({
+      where: { id: otpRecord.id },
+      data: { verified: true }
+    });
+
+    await prisma.user.updateMany({
+      where: { email: cleanEmail },
+      data: { emailVerified: true }
+    });
+
+    return res.json({
+      success: true,
+      verified: true,
+      message: 'Email address verified successfully.'
+    });
+  } catch (err: any) {
+    console.error('[Verify OTP Error]:', err);
+    return res.status(500).json({ error: 'Failed to verify OTP code.' });
+  }
+}
+
+app.post('/api/auth/verify-otp', handleVerifyOtp);
+app.post('/api/verify-email-otp', handleVerifyOtp);
+
+// ---------------- API ROUTE: USER SIGNUP ----------------
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+    if (!email || !name) {
+      return res.status(400).json({ error: 'Name and email address are required.' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Create or update user with emailVerified: false
+    let user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name,
+          email: cleanEmail,
+          phone: phone || null,
+          emailVerified: false
+        }
+      });
+    }
+
+    // Trigger send OTP
+    const plainCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = hashOtpCode(plainCode);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await prisma.otp.create({
+      data: {
+        email: cleanEmail,
+        codeHash,
+        purpose: 'signup_verification',
+        expiresAt,
+        attempts: 0,
+        verified: false
+      }
+    });
+
+    const emailSent = await sendOtpEmail(cleanEmail, plainCode);
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Failed to send OTP verification email. Please check your email address or try again.' });
+    }
+
+    return res.json({
+      success: true,
+      requiresVerification: true,
+      email: cleanEmail,
+      message: 'User account created. Verification OTP code sent to your email address.',
+      emailSent: true
+    });
+  } catch (err: any) {
+    console.error('[Signup Error]:', err);
+    return res.status(500).json({ error: 'Failed to process account signup.' });
+  }
+});
+
+// ---------------- API ROUTE: USER LOGIN ----------------
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email address is required.' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await prisma.user.findUnique({ where: { email: cleanEmail } });
+
+    // Block login if emailVerified is false
+    if (user && !user.emailVerified) {
+      return res.status(403).json({
+        error: 'Email address not verified. Please verify your email OTP before logging in.',
+        requiresVerification: true,
+        email: cleanEmail
+      });
+    }
+
+    return res.json({
+      success: true,
+      user: user || { name: cleanEmail.split('@')[0], email: cleanEmail, emailVerified: true }
+    });
+  } catch (err: any) {
+    console.error('[Login Error]:', err);
+    return res.status(500).json({ error: 'Failed to process login.' });
+  }
+});
 
 // Admin Authentication Middleware using timing-safe token check
 export function adminAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -1356,7 +1604,6 @@ app.post('/api/banners', adminAuth, async (req, res) => {
 let ai: any = null;
 if (process.env.GEMINI_API_KEY) {
   try {
-    const { GoogleGenAI } = await import('@google/genai');
     ai = new GoogleGenAI({
       apiKey: process.env.GEMINI_API_KEY,
       httpOptions: {
@@ -1399,15 +1646,134 @@ async function resolveImageToBase64(imagePath: string): Promise<{ data: string; 
   throw new Error('Image could not be resolved');
 }
 
-app.post('/api/ai-stylist/chat', async (req, res) => {
-  if (!process.env.GEMINI_API_KEY || !ai) {
-    return res.status(500).json({ error: 'Gemini API is not configured. Please add GEMINI_API_KEY in Settings > Secrets.' });
+// ---------------- TOOL IMPLEMENTATIONS FOR GEMINI STYLIST ----------------
+async function executeSearchProducts(args: { query: string; category?: string; minPrice?: number; maxPrice?: number }) {
+  const q = (args.query || '').toLowerCase().trim();
+  const whereClause: any = { status: 'published' };
+
+  if (q) {
+    whereClause.OR = [
+      { name: { contains: q } },
+      { description: { contains: q } },
+      { fabric: { contains: q } },
+      { brandName: { contains: q } },
+      { categoryId: { contains: q } },
+      { subcategoryId: { contains: q } },
+      { tags: { contains: q } }
+    ];
   }
 
+  if (args.category) {
+    const cat = args.category.toLowerCase().trim();
+    whereClause.OR = whereClause.OR || [];
+    whereClause.OR.push(
+      { categoryId: { contains: cat } },
+      { subcategoryId: { contains: cat } }
+    );
+  }
+
+  if (args.minPrice !== undefined || args.maxPrice !== undefined) {
+    whereClause.basePrice = {};
+    if (args.minPrice !== undefined) whereClause.basePrice.gte = Number(args.minPrice);
+    if (args.maxPrice !== undefined) whereClause.basePrice.lte = Number(args.maxPrice);
+  }
+
+  let rawProducts = await prisma.product.findMany({
+    where: whereClause,
+    take: 5
+  });
+
+  if (rawProducts.length === 0 && q) {
+    const words = q.split(/\s+/).filter(w => w.length > 2);
+    if (words.length > 0) {
+      rawProducts = await prisma.product.findMany({
+        where: {
+          OR: words.map(w => ({ name: { contains: w } }))
+        },
+        take: 5
+      });
+    }
+  }
+
+  return rawProducts.map(p => {
+    let imageUrl = '';
+    try {
+      const colors = JSON.parse(p.colors || '[]');
+      if (colors.length > 0 && colors[0].image) {
+        imageUrl = colors[0].image;
+      }
+    } catch (e) {}
+
+    return {
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      price: p.discountPrice || p.basePrice,
+      imageUrl,
+      url: `/product/${p.id}`,
+      categoryName: p.categoryId
+    };
+  });
+}
+
+async function executeGetCategoryLink(args: { categoryName: string }) {
+  const catName = (args.categoryName || '').toLowerCase().trim();
+  const categories = await prisma.category.findMany();
+  let matchedCat = categories.find(c => c.name.toLowerCase().includes(catName) || catName.includes(c.name.toLowerCase()) || c.slug.includes(catName));
+
+  if (matchedCat) {
+    return {
+      name: matchedCat.name,
+      slug: matchedCat.slug,
+      url: `/category/${matchedCat.slug}`
+    };
+  }
+
+  const subcategories = await prisma.subcategory.findMany();
+  let matchedSub = subcategories.find(s => s.name.toLowerCase().includes(catName) || catName.includes(s.name.toLowerCase()) || s.slug.includes(catName));
+
+  if (matchedSub) {
+    return {
+      name: matchedSub.name,
+      slug: matchedSub.slug,
+      url: `/category/${matchedSub.categoryId}?sub=${matchedSub.slug}`
+    };
+  }
+
+  const fallback = categories[0] || { name: 'Women Collection', slug: 'women' };
+  return {
+    name: fallback.name,
+    slug: fallback.slug,
+    url: `/category/${fallback.slug}`
+  };
+}
+
+// ---------------- API ROUTE: AI STYLIST CHAT ----------------
+app.post('/api/ai-stylist/chat', async (req, res) => {
   try {
     const { messages } = req.body;
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Invalid messages array' });
+    }
+
+    const lastUserMessage = messages.filter((m: any) => m.role === 'user').pop()?.content || '';
+    
+    // Always pre-search database for matching products/categories as primary source
+    const dbSearchProducts = await executeSearchProducts({ query: lastUserMessage });
+    const dbCategoryLink = await executeGetCategoryLink({ categoryName: lastUserMessage });
+
+    if (!process.env.GEMINI_API_KEY || !ai) {
+      // Fallback response when Gemini API key is unconfigured
+      const replyText = dbSearchProducts.length > 0
+        ? `I found ${dbSearchProducts.length} matching item(s) in our store catalog for "${lastUserMessage}".`
+        : `We don't have an exact match for "${lastUserMessage}" currently, but you can browse our ${dbCategoryLink.name} collection!`;
+
+      return res.json({
+        reply: replyText,
+        text: replyText,
+        products: dbSearchProducts,
+        categoryLink: dbCategoryLink
+      });
     }
 
     const formattedContents = messages.map(msg => ({
@@ -1415,46 +1781,149 @@ app.post('/api/ai-stylist/chat', async (req, res) => {
       parts: [{ text: msg.content }]
     }));
 
-    const sampleProducts = await prisma.product.findMany({ take: 15 });
-    const formattedSampleProducts = sampleProducts.map(formatProduct);
-
-    const productCatalogSummary = formattedSampleProducts.map(p => 
-      `- ${p.name} (Category: ${p.categoryId}, Subcategory: ${p.subcategoryId}, Price: ₹${p.basePrice}, Colors: ${(p.colors || []).map(c => c.name).join(', ')})`
-    ).join('\n');
-
     const systemInstruction = `You are the PGmart AI Fashion Stylist, an expert stylist for premium ethnic, traditional, and modern apparel in India. 
 You are warm, fashion-forward, professional, and knowledgeable.
 Help the user coordinate their outfits, recommend matches, select perfect colors, suggest sizing, and answer styling questions.
 
-Here are some real, in-store products currently available on PGmart. Proactively recommend these actual products where they match the user's inquiry:
-${productCatalogSummary}
+CRITICAL PRODUCT SEARCH & LINKING RULES:
+1. When the user asks about a specific product, item type, or category, ALWAYS use the 'search_products' or 'get_category_link' tool results to reference real store items.
+2. NEVER invent product names, prices, or links. Only reference products returned by tools or provided in catalog search.
+3. Always structure your final output response as valid JSON matching this exact structure:
+{
+  "reply": "Your friendly, stylish conversational response here.",
+  "products": [
+    { "id": "prod-id", "name": "Product Name", "price": 1999, "imageUrl": "https://...", "url": "/product/prod-id" }
+  ],
+  "categoryLink": { "name": "Category Name", "url": "/category/slug" }
+}`;
 
-Always mention you are recommending genuine products from PGmart.
-Use your Google Search grounding tool to look up current 2026 fashion trends, festival outfits, styling tips, color matches, and wedding trends.
-Give clear, stylish, and highly engaging advice.`;
+    const stylistTools = [
+      {
+        functionDeclarations: [
+          {
+            name: 'search_products',
+            description: 'Search the PGmart product catalog for matching items by query, category, or price range.',
+            parameters: {
+              type: 'OBJECT',
+              properties: {
+                query: { type: 'STRING', description: 'Product search term e.g. lehenga, kurta, silk saree, dress, innerwear, linen shirt' },
+                category: { type: 'STRING', description: 'Optional category name e.g. women, men, kids, sarees' },
+                minPrice: { type: 'NUMBER', description: 'Minimum price filter in INR' },
+                maxPrice: { type: 'NUMBER', description: 'Maximum price filter in INR' }
+              },
+              required: ['query']
+            }
+          },
+          {
+            name: 'get_category_link',
+            description: 'Look up the exact site route/link for a PGmart category or subcategory.',
+            parameters: {
+              type: 'OBJECT',
+              properties: {
+                categoryName: { type: 'STRING', description: 'Name of category or style e.g. women, men, kids, ethnic wear, sarees, kurtas' }
+              },
+              required: ['categoryName']
+            }
+          }
+        ]
+      }
+    ];
 
-    const response = await ai.models.generateContent({
+    let response = await ai.models.generateContent({
       model: 'gemini-3.6-flash',
       contents: formattedContents,
       config: {
         systemInstruction,
-        tools: [{ googleSearch: {} }]
+        tools: stylistTools
       }
     });
 
-    const text = response.text;
-    const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    let functionCalls = response.functionCalls;
+    let toolProducts = dbSearchProducts;
+    let toolCatLink = dbCategoryLink;
+
+    if (functionCalls && functionCalls.length > 0) {
+      const toolResultsParts: any[] = [];
+
+      for (const call of functionCalls) {
+        if (call.name === 'search_products') {
+          const results = await executeSearchProducts(call.args as any);
+          if (results && results.length > 0) toolProducts = results;
+          toolResultsParts.push({
+            functionResponse: {
+              name: 'search_products',
+              response: { products: results }
+            }
+          });
+        } else if (call.name === 'get_category_link') {
+          const catLink = await executeGetCategoryLink(call.args as any);
+          if (catLink) toolCatLink = catLink;
+          toolResultsParts.push({
+            functionResponse: {
+              name: 'get_category_link',
+              response: { categoryLink: catLink }
+            }
+          });
+        }
+      }
+
+      const updatedContents = [
+        ...formattedContents,
+        { role: 'model', parts: response.candidates?.[0]?.content?.parts || [] },
+        { role: 'user', parts: toolResultsParts }
+      ];
+
+      const followUpResponse = await ai.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents: updatedContents,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json'
+        }
+      });
+
+      response = followUpResponse;
+    }
+
+    let replyText = response.text || '';
+    let finalProducts = toolProducts;
+    let finalCategoryLink = toolCatLink;
+
+    try {
+      const jsonMatch = replyText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.reply) replyText = parsed.reply;
+        if (Array.isArray(parsed.products) && parsed.products.length > 0) {
+          finalProducts = parsed.products;
+        }
+        if (parsed.categoryLink) {
+          finalCategoryLink = parsed.categoryLink;
+        }
+      }
+    } catch (e) {
+      // Keep plain replyText
+    }
 
     res.json({
-      text,
-      grounding: groundingChunks.map((chunk: any) => ({
-        title: chunk.web?.title || 'Fashion Source',
-        uri: chunk.web?.uri || '#'
-      }))
+      reply: replyText,
+      text: replyText,
+      products: finalProducts,
+      categoryLink: finalCategoryLink
     });
   } catch (error: any) {
     console.error('Error in /api/ai-stylist/chat:', error);
-    res.status(500).json({ error: error.message || 'Error communicating with AI Stylist' });
+    // Graceful fallback with direct DB query results
+    const lastUserMsg = (req.body?.messages || []).pop()?.content || '';
+    const fallbackProducts = await executeSearchProducts({ query: lastUserMsg });
+    const fallbackCat = await executeGetCategoryLink({ categoryName: lastUserMsg });
+
+    res.json({
+      reply: `Here are the matching items found in the PGmart catalog for your query.`,
+      text: `Here are the matching items found in the PGmart catalog for your query.`,
+      products: fallbackProducts,
+      categoryLink: fallbackCat
+    });
   }
 });
 
@@ -1715,6 +2184,9 @@ async function startServer() {
       const distPath = path.join(process.cwd(), 'dist');
       app.use(express.static(distPath));
       app.get('*', (req, res) => {
+        if (req.path.startsWith('/api')) {
+          return res.status(404).json({ error: `API endpoint ${req.path} not found` });
+        }
         res.sendFile(path.join(distPath, 'index.html'));
       });
     }

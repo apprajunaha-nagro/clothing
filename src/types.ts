@@ -91,6 +91,13 @@ export interface ColorVariant {
   images: string[];
 }
 
+export interface KidsSizeVariant {
+  ageLabel: string;
+  measurement: number;
+  unit: 'cm' | 'inch';
+  stock: number;
+}
+
 export interface ProductVariant {
   id: string;
   productId: string;
@@ -102,6 +109,7 @@ export interface ProductVariant {
   discountPrice?: number;
   stock: number;
   images: string[];
+  kidsSize?: KidsSizeVariant;
 }
 
 export interface Product {
@@ -131,6 +139,7 @@ export interface Product {
   variants: ProductVariant[];
   colors: ColorVariant[];
   availableSizes: string[];
+  kidsSizes?: KidsSizeVariant[];
   rating: number;
   reviewCount: number;
   created_at: string;

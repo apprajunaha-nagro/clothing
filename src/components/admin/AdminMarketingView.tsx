@@ -92,7 +92,7 @@ export const AdminMarketingView: React.FC = () => {
 
   // Campaigns marketing setups
   const [campaignSegment, setCampaignSegment] = useState('all');
-  const [campaignChannel, setCampaignChannel] = useState<'email' | 'sms' | 'whatsapp'>('email');
+  const [campaignChannel, setCampaignChannel] = useState<'email' | 'sms'>('email');
   const [campaignSubject, setCampaignSubject] = useState('Celebrate in Style: Festive Silk Sarees are back in Stock!');
   const [campaignBody, setCampaignBody] = useState('Hello {{customer_name}}, prepare for the upcoming celebrations with PGmart handcrafted sarees. Free shipping over ₹999!');
 
@@ -1449,7 +1449,7 @@ export const AdminMarketingView: React.FC = () => {
       {activeTab === 'campaigns' && (
         <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-5 text-left">
           <div>
-            <h3 className="text-base font-bold font-serif text-stone-900">SMS / Email / WhatsApp Segment Broadcasts</h3>
+            <h3 className="text-base font-bold font-serif text-stone-900">SMS / Email Segment Broadcasts</h3>
             <p className="text-xs text-stone-400">Trigger news notifications, festive catalogs, or cart recovery reminders instantly</p>
           </div>
 
@@ -1476,7 +1476,7 @@ export const AdminMarketingView: React.FC = () => {
                 <div>
                   <label className="block font-bold text-stone-600 mb-1">2. Choose Delivery Channel</label>
                   <div className="flex gap-2 font-bold font-mono">
-                    {(['email', 'sms', 'whatsapp'] as const).map(channel => (
+                    {(['email', 'sms'] as const).map(channel => (
                       <button
                         key={channel}
                         type="button"

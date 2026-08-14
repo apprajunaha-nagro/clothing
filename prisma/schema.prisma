@@ -154,6 +154,7 @@ model Product {
   variants        String        @default("[]") // JSON string of ProductVariant[]
   colors          String        @default("[]") // JSON string of ColorVariant[]
   availableSizes  String        @default("[]") // JSON string of string[]
+  kidsSizes       String        @default("[]") // JSON string of KidsSizeVariant[]
   rating          Float         @default(4.5)
   reviewCount     Int           @default(0)
   created_at      DateTime      @default(now())
@@ -234,3 +235,28 @@ model Order {
   exchangeSize    String?
   exchangeColor   String?
 }
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  phone         String?
+  passwordHash  String?
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Otp {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String
+  purpose   String   // "signup_verification"
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email, purpose])
+}
+
