@@ -62,7 +62,7 @@ export async function sendOtpEmail(toEmail: string, otpCode: string): Promise<bo
   if (resend) {
     try {
       const data = await resend.emails.send({
-        from: 'PGmart <onboarding@resend.dev>',
+        from: 'PGmart <noreply@pgmart.in>',
         to: [toEmail],
         subject: `Your PGmart Verification Code: ${otpCode}`,
         html: htmlContent,
