@@ -131,9 +131,6 @@ function AppContent() {
     if (currentPath === '/privacy-policy') {
       return <StaticPages pageType="privacy-policy" onNavigate={navigateTo} />;
     }
-    if (currentPath === '/terms') {
-      return <StaticPages pageType="terms" onNavigate={navigateTo} />;
-    }
     if (currentPath === '/shipping-policy' || currentPath === '/return-policy') {
       return <StaticPages pageType="policies" onNavigate={navigateTo} />;
     }

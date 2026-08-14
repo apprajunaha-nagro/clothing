@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { 
   Settings, Palette, Shield, ShieldCheck, Truck, Download, Save, RefreshCw, Eye, 
-  MapPin, CheckCircle, Database, History, UserCheck, AlertCircle 
+  MapPin, CheckCircle, Database, History, UserCheck, AlertCircle, Plus, Trash2, 
+  ArrowUp, ArrowDown, RotateCcw, FileText, Layers
 } from 'lucide-react';
-import { SiteSettings } from '../../types';
+import { SiteSettings, PolicySection } from '../../types';
+import { parsePrivacySections, DEFAULT_PRIVACY_SECTIONS } from '../../data/seedData';
 
 export const AdminSettingsView: React.FC = () => {
   const { settings, updateSettings, showToast, products, orders } = useStore();
@@ -19,9 +21,8 @@ export const AdminSettingsView: React.FC = () => {
   const [sGst, setSGst] = useState(settings.gstNumber || '');
   const [sCurrency, setSCurrency] = useState('INR (₹)');
 
-  // Policy & Terms states
-  const [termsText, setTermsText] = useState(settings.termsOfService || '');
-  const [privacyText, setPrivacyText] = useState(settings.privacyPolicy || '');
+  // Policy & Privacy sections state
+  const [privacySections, setPrivacySections] = useState<PolicySection[]>(() => parsePrivacySections(settings.privacyPolicy));
   const [refundText, setRefundText] = useState(settings.refundPolicy || '');
   const [shippingText, setShippingText] = useState(settings.shippingPolicy || '');
 
@@ -35,21 +36,6 @@ export const AdminSettingsView: React.FC = () => {
     { id: 'z1', name: 'Jharkhand (Local State Delivery)', charge: 49, minOrder: 999, active: true },
     { id: 'z2', name: 'Rest of India', charge: 99, minOrder: 1499, active: true },
   ]);
-
-  // Admin logins and roles states
-  const adminUsers = [
-    { name: 'Priyam Ghoshal', email: 'priyam@pgmart.in', role: 'Super Admin', lastLogin: 'Today, 09:12 AM', ip: '192.168.1.14' },
-    { name: 'Swarnali Sen', email: 'logistics@pgmart.in', role: 'Logistics Manager', lastLogin: 'Yesterday, 04:30 PM', ip: '103.45.2.89' },
-    { name: 'Rahul Dev', email: 'support@pgmart.in', role: 'Support Agent', lastLogin: '3 days ago', ip: '122.10.85.12' },
-  ];
-
-  // System Audit Logs states
-  const auditLogs = [
-    { timestamp: '2026-08-03 09:22:15', user: 'Priyam Ghoshal', action: 'Created new product variant "Banarasi Silk Saree XL"', type: 'catalog' },
-    { timestamp: '2026-08-03 08:14:10', user: 'Swarnali Sen', action: 'Dispatched order #PGM-5201 via Delhivery Express', type: 'logistics' },
-    { timestamp: '2026-08-02 18:44:59', user: 'Priyam Ghoshal', action: 'Generated coupon code "FESTIVE15"', type: 'marketing' },
-    { timestamp: '2026-08-02 11:30:25', user: 'Rahul Dev', action: 'Approved product review by "Aishwarya Roy"', type: 'moderation' },
-  ];
 
   const handleSaveStoreSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,15 +59,59 @@ export const AdminSettingsView: React.FC = () => {
     showToast('Brand color accents and display typographies loaded successfully.');
   };
 
+  // Section managers for Privacy Policy
+  const handleUpdateSection = (id: string, field: 'title' | 'content', value: string) => {
+    setPrivacySections(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+  };
+
+  const handleAddSection = () => {
+    const newId = `section-${Date.now()}`;
+    const newSec: PolicySection = {
+      id: newId,
+      title: `${privacySections.length + 1}. New Policy Section`,
+      content: 'Enter the guidelines and details for this section here...'
+    };
+    setPrivacySections(prev => [...prev, newSec]);
+    showToast('➕ New section created. Customize its title and content below.');
+  };
+
+  const handleDeleteSection = (id: string) => {
+    if (privacySections.length <= 1) {
+      showToast('⚠️ At least one section is required in the privacy policy.');
+      return;
+    }
+    setPrivacySections(prev => prev.filter(s => s.id !== id));
+    showToast('🗑 Section removed.');
+  };
+
+  const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === privacySections.length - 1) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    setPrivacySections(prev => {
+      const next = [...prev];
+      const temp = next[index];
+      next[index] = next[targetIndex];
+      next[targetIndex] = temp;
+      return next;
+    });
+  };
+
+  const handleResetDefaultSections = () => {
+    if (window.confirm('Reset all privacy policy sections back to the standard PGmart legal template?')) {
+      setPrivacySections(DEFAULT_PRIVACY_SECTIONS);
+      showToast('↻ Standard privacy policy template restored.');
+    }
+  };
+
   const handleSavePolicies = (e: React.FormEvent) => {
     e.preventDefault();
     updateSettings({
-      termsOfService: termsText,
-      privacyPolicy: privacyText,
+      privacyPolicy: JSON.stringify(privacySections),
       refundPolicy: refundText,
       shippingPolicy: shippingText
     });
-    showToast('📜 Store Terms of Service & Privacy Policy updated live!');
+    showToast('📜 Store Legal & Privacy Policy sections published live!');
   };
 
   const handleUpdateShippingZone = (id: string, charge: number, minOrder: number, active: boolean) => {
@@ -93,21 +123,21 @@ export const AdminSettingsView: React.FC = () => {
   const handleDownloadFullBackup = () => {
     const backupObj = {
       timestamp: new Date().toISOString(),
-      storeSettings: settings,
-      shippingZones,
-      productsCatalog: products,
-      storeOrdersHistory: orders,
-      adminLogs: auditLogs
+      storeInfo: { ...settings },
+      productsCount: products.length,
+      ordersCount: orders.length,
+      catalog: products,
+      ordersList: orders,
+      systemVersion: 'PGmart Commerce Core v3.4 Enterprise'
     };
-
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupObj, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `terra_ethnic_db_backup_${Date.now()}.json`);
+    downloadAnchor.setAttribute("download", `PGmart_Backup_${new Date().toISOString().slice(0,10)}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
-    document.body.removeChild(downloadAnchor);
-    showToast('Complete JSON Database Backup downloaded successfully.');
+    downloadAnchor.remove();
+    showToast('Full store snapshot backup downloaded (.json).');
   };
 
   return (
@@ -342,77 +372,165 @@ export const AdminSettingsView: React.FC = () => {
         </div>
       )}
 
-      {/* 2.5 LEGAL TERMS & POLICIES CUSTOMIZATION */}
+      {/* 2.5 LEGAL & PRIVACY POLICIES CUSTOMIZATION (MULTI-SECTION MANAGER) */}
       {activeSettingsTab === 'policies' && (
-        <form onSubmit={handleSavePolicies} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-6 text-left text-xs font-semibold text-stone-700">
+        <form onSubmit={handleSavePolicies} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-8 text-left text-xs font-semibold text-stone-700">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
             <div>
-              <h3 className="text-base font-bold font-serif text-stone-900">Legal Policies & Terms of Service Customizer</h3>
-              <p className="text-xs text-stone-500">
-                Customize store policy documents published live on customer checkout and footer legal pages.
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold font-serif text-stone-900">Privacy Policy & Legal Sections Customizer</h3>
+                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] px-2.5 py-0.5 rounded-full font-bold">
+                  {privacySections.length} Sections
+                </span>
+              </div>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Add, edit, reorder, or delete all individual sections of the customer-facing Privacy Policy page.
               </p>
             </div>
-            <button
-              type="submit"
-              className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 shrink-0"
-            >
-              <Save className="w-4 h-4" /> Save & Publish All Policies
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={handleResetDefaultSections}
+                className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl cursor-pointer flex items-center gap-1.5 transition-colors text-xs"
+                title="Reset to default legal templates"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-stone-500" /> Reset Defaults
+              </button>
+              <button
+                type="button"
+                onClick={handleAddSection}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors text-xs"
+              >
+                <Plus className="w-4 h-4" /> Add New Section
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors text-xs"
+              >
+                <Save className="w-4 h-4" /> Save & Publish
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-6">
-            {/* 1. Terms of Service */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
-                  <Shield className="w-4 h-4 text-[#C0654B]" />
-                  <span>Terms of Service</span>
-                </label>
-                <span className="text-[10px] text-stone-400 font-mono">
-                  {termsText.length} characters
-                </span>
-              </div>
-              <p className="text-stone-500 text-[11px]">
-                Governs customer eligibility, order processing, pricing policies, and platform rules.
-              </p>
-              <textarea
-                rows={8}
-                value={termsText}
-                onChange={(e) => setTermsText(e.target.value)}
-                placeholder="Enter Terms of Service content..."
-                className="w-full p-3 border border-stone-300 rounded-xl focus:outline-none focus:border-[#C0654B] font-mono text-xs leading-relaxed"
-              />
+          {/* Privacy Policy Dynamic Sections List */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-stone-900 text-sm flex items-center gap-2">
+                <ShieldCheck className="w-4.5 h-4.5 text-emerald-600" />
+                <span>Privacy Policy Sections (Ordered)</span>
+              </label>
+              <span className="text-[11px] text-stone-400">
+                Changes go live immediately upon saving.
+              </span>
             </div>
 
-            {/* 2. Privacy Policy */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>Privacy Policy</span>
-                </label>
-                <span className="text-[10px] text-stone-400 font-mono">
-                  {privacyText.length} characters
-                </span>
-              </div>
-              <p className="text-stone-500 text-[11px]">
-                Explains data collection, storage, cookie usage, and customer personal information protection.
-              </p>
-              <textarea
-                rows={8}
-                value={privacyText}
-                onChange={(e) => setPrivacyText(e.target.value)}
-                placeholder="Enter Privacy Policy content..."
-                className="w-full p-3 border border-stone-300 rounded-xl focus:outline-none focus:border-[#C0654B] font-mono text-xs leading-relaxed"
-              />
+            <div className="space-y-4">
+              {privacySections.map((section, idx) => (
+                <div
+                  key={section.id || `section-${idx}`}
+                  className="bg-stone-50/70 border border-stone-200 hover:border-stone-300 rounded-xl p-4 sm:p-5 transition-all shadow-xs space-y-3"
+                >
+                  <div className="flex items-center justify-between gap-2 border-b border-stone-200/80 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-[#C0654B]/10 text-[#C0654B] font-bold text-[11px] px-2.5 py-0.5 rounded-md font-mono">
+                        Section #{idx + 1}
+                      </span>
+                      <span className="text-[11px] text-stone-500 font-medium hidden sm:inline">
+                        ID: {section.id}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleMoveSection(idx, 'up')}
+                        disabled={idx === 0}
+                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                          idx === 0
+                            ? 'opacity-30 border-stone-200 cursor-not-allowed text-stone-400'
+                            : 'bg-white hover:bg-stone-100 border-stone-300 text-stone-700'
+                        }`}
+                        title="Move Section Up"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveSection(idx, 'down')}
+                        disabled={idx === privacySections.length - 1}
+                        className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                          idx === privacySections.length - 1
+                            ? 'opacity-30 border-stone-200 cursor-not-allowed text-stone-400'
+                            : 'bg-white hover:bg-stone-100 border-stone-300 text-stone-700'
+                        }`}
+                        title="Move Section Down"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSection(section.id)}
+                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-colors cursor-pointer ml-1"
+                        title="Delete Section"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-stone-700 flex items-center justify-between">
+                        <span>Section Title / Heading</span>
+                        <span className="text-[10px] text-stone-400 font-normal">{section.title.length} chars</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={section.title}
+                        onChange={(e) => handleUpdateSection(section.id, 'title', e.target.value)}
+                        placeholder="e.g. 1. Information We Collect"
+                        className="w-full p-2.5 bg-white border border-stone-300 rounded-xl focus:outline-none focus:border-[#C0654B] font-semibold text-xs text-stone-900"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-stone-700 flex items-center justify-between">
+                        <span>Section Content & Clauses</span>
+                        <span className="text-[10px] text-stone-400 font-normal">Supports paragraphs & bullet points (•)</span>
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={section.content}
+                        onChange={(e) => handleUpdateSection(section.id, 'content', e.target.value)}
+                        placeholder="Enter the detailed legal terms, policy clauses, or bullet points..."
+                        className="w-full p-3 bg-white border border-stone-300 rounded-xl focus:outline-none focus:border-[#C0654B] text-xs font-normal leading-relaxed text-stone-800"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* 3. Returns & Refund Policy */}
+            {/* Quick Add Section Button */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleAddSection}
+                className="w-full py-3 border-2 border-dashed border-stone-300 hover:border-[#C0654B] hover:bg-[#F3E9E4]/40 text-stone-600 hover:text-[#C0654B] rounded-xl font-bold flex items-center justify-center gap-2 transition-all cursor-pointer text-xs"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Another Privacy Policy Section</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="border-t border-stone-200 pt-6 space-y-6">
+            {/* Returns & Refund Policy */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
                   <History className="w-4 h-4 text-indigo-600" />
-                  <span>Return & Refund Policy</span>
+                  <span>Return & Refund Policy Summary</span>
                 </label>
                 <span className="text-[10px] text-stone-400 font-mono">
                   {refundText.length} characters
@@ -422,7 +540,7 @@ export const AdminSettingsView: React.FC = () => {
                 Details return windows (e.g., 7-15 days), non-returnable categories (innerwear), and refund SLA.
               </p>
               <textarea
-                rows={6}
+                rows={4}
                 value={refundText}
                 onChange={(e) => setRefundText(e.target.value)}
                 placeholder="Enter Return & Refund policy guidelines..."
@@ -430,12 +548,12 @@ export const AdminSettingsView: React.FC = () => {
               />
             </div>
 
-            {/* 4. Shipping & Delivery Policy */}
+            {/* Shipping & Delivery Policy */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="font-bold text-stone-900 text-sm flex items-center gap-1.5">
                   <Truck className="w-4 h-4 text-amber-600" />
-                  <span>Shipping & Delivery Policy</span>
+                  <span>Shipping & Delivery Policy Summary</span>
                 </label>
                 <span className="text-[10px] text-stone-400 font-mono">
                   {shippingText.length} characters
@@ -445,7 +563,7 @@ export const AdminSettingsView: React.FC = () => {
                 Describes dispatch SLA, courier partners (Delhivery, BlueDart), and delivery timelines.
               </p>
               <textarea
-                rows={6}
+                rows={4}
                 value={shippingText}
                 onChange={(e) => setShippingText(e.target.value)}
                 placeholder="Enter Shipping & Delivery policy details..."
@@ -454,10 +572,13 @@ export const AdminSettingsView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex justify-end pt-4 border-t border-stone-100">
+          <div className="flex items-center justify-between pt-4 border-t border-stone-100">
+            <p className="text-[11px] text-stone-400">
+              All policy changes update live across customer footer legal links and checkout summaries.
+            </p>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
+              className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors"
             >
               <Save className="w-4 h-4" /> Save & Publish All Policies
             </button>

@@ -1,9 +1,74 @@
-import { Category, Brand, Product, Banner, Coupon, SiteSettings, Review } from '../types';
+import { Category, Brand, Product, Banner, Coupon, SiteSettings, Review, PolicySection } from '../types';
 import { generateFullCatalogProducts } from './productGenerator';
 const womenBannerImg = '/src/assets/images/women_hero_banner_v2_1785702026093.jpg';
 const menBannerImg = '/src/assets/images/men_hero_banner_v2_1785702040043.jpg';
 const kidsBannerImg = '/src/assets/images/kids_hero_banner_v2_1785702121789.jpg';
 const innerwearBannerImg = '/src/assets/images/innerwear_hero_banner_v2_1785702177666.jpg';
+
+export const DEFAULT_PRIVACY_SECTIONS: PolicySection[] = [
+  {
+    id: 'intro',
+    title: 'Privacy Policy Overview',
+    content: 'At PGmart, we are committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy outlines how we collect, use, disclose, and safeguard your data when you visit our website or make a purchase.'
+  },
+  {
+    id: 'info-collected',
+    title: '1. Information We Collect',
+    content: 'We collect information you provide directly to us when you create an account, place an order, contact customer support, or interact with our services. This includes your name, email address, shipping address, phone number, and order history.'
+  },
+  {
+    id: 'how-we-use',
+    title: '2. How We Use Your Information',
+    content: '• To process and deliver your orders and manage shipping logistics.\n• To send order confirmations, delivery tracking updates, and OTP authentications.\n• To provide customer support and respond to inquiries.\n• To personalize your shopping experience and improve our platform.'
+  },
+  {
+    id: 'data-protection',
+    title: '3. Data Protection & Security',
+    content: 'We implement industry-standard technical and organizational security measures to protect your personal information against unauthorized access, loss, or misuse. We never sell your personal data to third parties.'
+  },
+  {
+    id: 'payment-security',
+    title: '4. Payment Information & Encryption',
+    content: 'All payment transactions are processed securely through certified payment gateways (Razorpay, UPI, Cards). We do not store your complete credit/debit card numbers or sensitive banking credentials on our servers.'
+  },
+  {
+    id: 'cookies',
+    title: '5. Cookies & Browsing Preferences',
+    content: 'We use cookies and similar technologies to enhance your browsing experience, remember your cart items, and understand how visitors use our store.'
+  },
+  {
+    id: 'shipping-returns',
+    title: '6. Shipping & Return Guidelines',
+    content: 'Orders are dispatched within 24–48 hours via Delhivery / BlueDart partners with an estimated delivery of 2–6 business days. Products are eligible for return within 7–15 days of delivery, provided they are unused and unwashed with tags intact.'
+  },
+  {
+    id: 'contact',
+    title: '7. Contact & Privacy Inquiries',
+    content: 'If you have any questions or requests regarding your data and privacy, please reach out to our Customer Care team via phone or email.'
+  }
+];
+
+export function parsePrivacySections(raw: string | undefined | null): PolicySection[] {
+  if (!raw || !raw.trim()) {
+    return DEFAULT_PRIVACY_SECTIONS;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0].title === 'string') {
+      return parsed;
+    }
+  } catch (e) {
+    // If it's a plain string, convert to single section
+    return [
+      {
+        id: 'section-1',
+        title: 'Privacy Policy & Terms',
+        content: raw
+      }
+    ];
+  }
+  return DEFAULT_PRIVACY_SECTIONS;
+}
 
 export const initialSiteSettings: SiteSettings = {
   storeName: "PGmart",

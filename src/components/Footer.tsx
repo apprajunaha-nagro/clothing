@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { Truck, RotateCcw, ShieldCheck, CreditCard, Mail, Phone, MapPin, Send, Instagram, Facebook, Twitter, Youtube, Settings, ArrowRight, Sparkles } from 'lucide-react';
+import { Truck, RotateCcw, ShieldCheck, CreditCard, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, ArrowRight } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (path: string) => void;
@@ -8,17 +8,8 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' }) => {
-  const { settings, isAdminLoggedIn, showToast } = useStore();
-  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const { settings, isAdminLoggedIn } = useStore();
   const isHomePage = currentPath === '/' || currentPath === '';
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newsletterEmail) {
-      showToast(`Thank you for subscribing with ${newsletterEmail}! Welcome to Terra Club.`);
-      setNewsletterEmail('');
-    }
-  };
 
   return (
     <footer className="bg-[#2B2620] text-stone-300 border-t border-stone-800 text-left">
@@ -133,9 +124,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
       </div>
 
       {/* 2. MAIN FOOTER CONTENT */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-xs">
-        {/* Col 1: Brand & Bio */}
-        <div className="lg:col-span-2 space-y-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-xs">
+        {/* Col 1: Brand, Bio & Contact */}
+        <div className="md:col-span-2 space-y-4">
           <div className="flex items-center gap-3">
             <img
               src="/src/assets/images/pgmart_logo_1785764319471.jpg"
@@ -153,7 +144,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
               <p className="text-[10px] text-emerald-400 font-semibold tracking-wide uppercase">{settings.tagline}</p>
             </div>
           </div>
-          <p className="text-stone-400 leading-relaxed text-xs pr-4">
+          <p className="text-stone-400 leading-relaxed text-xs max-w-xl">
             PGmart is India's most trusted online shopping destination bringing together authentic ethnic fashion, contemporary western styles, kids apparel, and premium innerwear with 100% quality guarantee.
           </p>
 
@@ -177,17 +168,18 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
               </svg>
               <span>WhatsApp: +91 {settings.whatsappNumber || '9471155434'}</span>
             </a>
-            <a
-              href="mailto:support@pgmart.in"
-              className="flex items-center gap-2 hover:text-white transition-colors cursor-pointer"
-            >
-              <Mail className="w-4 h-4 text-[#C0654B] shrink-0" />
-              <span>support@pgmart.in</span>
-            </a>
+          </div>
+
+          {/* Social Media Links */}
+          <div className="pt-2 flex items-center space-x-3 text-stone-400">
+            <a href="#" className="hover:text-[#C0654B] transition-colors"><Instagram className="w-4 h-4" /></a>
+            <a href="#" className="hover:text-[#C0654B] transition-colors"><Facebook className="w-4 h-4" /></a>
+            <a href="#" className="hover:text-[#C0654B] transition-colors"><Twitter className="w-4 h-4" /></a>
+            <a href="#" className="hover:text-[#C0654B] transition-colors"><Youtube className="w-4 h-4" /></a>
           </div>
         </div>
 
-        {/* Col 2: Customer Care */}
+        {/* Col 2: Customer Care & Navigation */}
         <div className="space-y-3">
           <h4 className="font-bold text-white uppercase tracking-wider text-xs border-b border-stone-800 pb-2">
             Customer Care & Journal
@@ -201,42 +193,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
             <li><button onClick={() => onNavigate('/return-policy')} className="hover:text-[#C0654B] cursor-pointer">Return Policy</button></li>
           </ul>
         </div>
-
-        {/* Col 4: Newsletter */}
-        <div className="space-y-3">
-          <h4 className="font-bold text-white uppercase tracking-wider text-xs border-b border-stone-800 pb-2">
-            Join Terra Club
-          </h4>
-          <p className="text-stone-400 text-[11px] leading-relaxed">
-            Subscribe for early access to new seasonal launches, VIP discounts, and style lookbooks.
-          </p>
-
-          <form onSubmit={handleSubscribe} className="space-y-2">
-            <div className="relative">
-              <input
-                type="email"
-                required
-                value={newsletterEmail}
-                onChange={(e) => setNewsletterEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="w-full bg-stone-900 border border-stone-700 rounded-lg px-3 py-2.5 text-xs text-white placeholder-stone-500 focus:outline-none focus:border-[#C0654B]"
-              />
-              <button
-                type="submit"
-                className="absolute right-1 top-1 bottom-1 bg-[#C0654B] hover:bg-[#8B4A38] text-white px-3 rounded-md text-xs font-bold transition-colors cursor-pointer flex items-center justify-center"
-              >
-                <Send className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </form>
-
-          <div className="pt-2 flex items-center space-x-3 text-stone-400">
-            <a href="#" className="hover:text-[#C0654B] transition-colors"><Instagram className="w-4 h-4" /></a>
-            <a href="#" className="hover:text-[#C0654B] transition-colors"><Facebook className="w-4 h-4" /></a>
-            <a href="#" className="hover:text-[#C0654B] transition-colors"><Twitter className="w-4 h-4" /></a>
-            <a href="#" className="hover:text-[#C0654B] transition-colors"><Youtube className="w-4 h-4" /></a>
-          </div>
-        </div>
       </div>
 
       {/* 3. COPYRIGHT & LEGAL BAR */}
@@ -245,7 +201,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
           <p>© {new Date().getFullYear()} {settings.storeName}. All Rights Reserved. GSTIN: {settings.gstNumber}</p>
           <div className="flex items-center flex-wrap gap-4 text-stone-400">
             <button onClick={() => onNavigate('/privacy-policy')} className="hover:underline cursor-pointer">Privacy Policy</button>
-            <button onClick={() => onNavigate('/terms')} className="hover:underline cursor-pointer">Terms of Service</button>
             <button
               onClick={() => onNavigate(isAdminLoggedIn ? '/admin' : '/admin/login')}
               className="hover:underline cursor-pointer"

@@ -405,7 +405,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         </header>
 
         {/* ACTIVE MODULE CONTAINER VIEW */}
-        <div className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6">
+        <div className="flex-1 p-3 sm:p-6 max-w-7xl w-full mx-auto space-y-4 sm:space-y-6">
           {activeView}
         </div>
 

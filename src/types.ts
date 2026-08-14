@@ -319,6 +319,12 @@ export interface SiteSettings {
   brandsMaxItems?: number;
 }
 
+export interface PolicySection {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export interface FilterState {
   categoryId?: string;
   subcategoryId?: string;

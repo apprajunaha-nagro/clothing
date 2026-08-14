@@ -783,35 +783,35 @@ export const AdminProductsView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 text-stone-800 animate-fade-in text-left">
+    <div className="space-y-4 sm:space-y-6 text-stone-800 animate-fade-in text-left">
       {/* HEADER CONTROLS */}
       {!isFormOpen && (
-        <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h2 className="text-lg font-bold font-serif text-stone-900">Apparel Style Manager</h2>
-            <p className="text-xs text-stone-400">Total catalog products list, soft deletes, and bulk imports/exports</p>
+            <h2 className="text-base sm:text-lg font-bold font-serif text-stone-900">Apparel Style Manager</h2>
+            <p className="text-[11px] sm:text-xs text-stone-400">Total catalog products list, soft deletes, and bulk imports/exports</p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => setShowCsvImport(!showCsvImport)}
-              className="px-4 py-2 border border-stone-200 hover:bg-stone-50 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors"
+              className="flex-1 sm:flex-none justify-center px-3 sm:px-4 py-2 border border-stone-200 hover:bg-stone-50 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors"
             >
-              <Upload className="w-4 h-4 text-stone-500" />
-              Bulk CSV Import
+              <Upload className="w-3.5 h-3.5 text-stone-500" />
+              <span>Bulk CSV</span>
             </button>
 
             <button
               onClick={handleExportCSV}
-              className="px-4 py-2 border border-stone-200 hover:bg-stone-50 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors"
+              className="flex-1 sm:flex-none justify-center px-3 sm:px-4 py-2 border border-stone-200 hover:bg-stone-50 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-colors"
             >
-              <Download className="w-4 h-4 text-[#C0654B]" />
-              Export Catalog
+              <Download className="w-3.5 h-3.5 text-[#C0654B]" />
+              <span>Export</span>
             </button>
 
             <button
               onClick={handleOpenCreateForm}
-              className="px-5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer transition-all"
+              className="w-full sm:w-auto justify-center px-4 sm:px-5 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer transition-all"
             >
               <Plus className="w-4 h-4" /> Add Product Wizard
             </button>
@@ -821,19 +821,19 @@ export const AdminProductsView: React.FC = () => {
 
       {/* EXCEL / CSV IMPORT POP-PANEL */}
       {showCsvImport && (
-        <div className="bg-stone-50 border border-stone-200 p-5 rounded-2xl space-y-4">
+        <div className="bg-stone-50 border border-stone-200 p-4 sm:p-5 rounded-2xl space-y-4">
           <div className="flex items-center justify-between border-b border-stone-200 pb-3">
             <div>
-              <span className="text-sm font-bold text-stone-900 block">Bulk Import Products via Excel (.xlsx / .xls) or CSV</span>
-              <p className="text-[11px] text-stone-500 mt-0.5">
-                Upload an Excel sheet (.xlsx, .xls) or CSV file from your device, or paste CSV rows below. Click "Parse & Import Data" to save into catalog.
+              <span className="text-xs sm:text-sm font-bold text-stone-900 block">Bulk Import Products via Excel (.xlsx / .xls) or CSV</span>
+              <p className="text-[10.5px] sm:text-[11px] text-stone-500 mt-0.5">
+                Upload an Excel sheet (.xlsx, .xls) or CSV file from your device, or paste CSV rows below.
               </p>
             </div>
-            <button onClick={() => setShowCsvImport(false)} className="text-stone-400 hover:text-stone-700 text-lg">✕</button>
+            <button onClick={() => setShowCsvImport(false)} className="text-stone-400 hover:text-stone-700 text-lg p-1">✕</button>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-stone-200">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 bg-white p-3 rounded-xl border border-stone-200">
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <input
                 type="file"
                 ref={csvFileInputRef}
@@ -844,28 +844,28 @@ export const AdminProductsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() => csvFileInputRef.current?.click()}
-                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                className="w-full sm:w-auto px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
               >
-                <Upload className="w-4 h-4 text-emerald-300" />
-                Select Excel (.xlsx) / CSV File from Device
+                <Upload className="w-3.5 h-3.5 text-emerald-300" />
+                Select File from Device
               </button>
 
               <button
                 type="button"
                 onClick={handleDownloadSampleExcel}
-                className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer border border-emerald-200"
+                className="flex-1 sm:flex-none px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-200"
               >
-                <Download className="w-3.5 h-3.5 text-emerald-700" />
-                Download Sample Excel (.xlsx)
+                <Download className="w-3 h-3 text-emerald-700" />
+                Sample .xlsx
               </button>
 
               <button
                 type="button"
                 onClick={handleDownloadSampleCSV}
-                className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl text-xs flex items-center gap-1.5 cursor-pointer"
+                className="flex-1 sm:flex-none px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer"
               >
-                <Download className="w-3.5 h-3.5 text-stone-600" />
-                Download Sample CSV
+                <Download className="w-3 h-3 text-stone-600" />
+                Sample .csv
               </button>
             </div>
 
@@ -878,15 +878,15 @@ export const AdminProductsView: React.FC = () => {
             value={csvText}
             onChange={(e) => setCsvText(e.target.value)}
             placeholder="Paste raw CSV rows or select a .csv file above..."
-            rows={5}
+            rows={4}
             className="w-full p-3 bg-white border border-stone-300 rounded-xl text-xs font-mono"
           />
 
-          <div className="flex items-center justify-between pt-1">
-            <button onClick={() => setCsvText('')} className="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold rounded-lg text-xs cursor-pointer">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+            <button onClick={() => setCsvText('')} className="px-3 py-2 bg-stone-200 hover:bg-stone-300 text-stone-700 font-bold rounded-xl text-xs cursor-pointer text-center">
               Clear Text
             </button>
-            <button onClick={handleImportCSVText} className="px-5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl text-xs cursor-pointer shadow-md flex items-center gap-1.5">
+            <button onClick={handleImportCSVText} className="px-5 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl text-xs cursor-pointer shadow-md flex items-center justify-center gap-1.5">
               <Upload className="w-4 h-4" />
               Parse & Import Data into Database
             </button>
@@ -896,10 +896,10 @@ export const AdminProductsView: React.FC = () => {
 
       {/* MULTI-FILTER PANEL */}
       {!isFormOpen && (
-        <div className="bg-white p-5 rounded-2xl border border-stone-200/80 shadow-sm space-y-4 text-xs font-medium text-stone-500">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-stone-200/80 shadow-sm space-y-3 sm:space-y-4 text-xs font-medium text-stone-500">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 sm:gap-3">
             {/* Live Search */}
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-2.5 w-4 h-4 text-stone-400" />
               <input
                 type="text"
@@ -910,108 +910,108 @@ export const AdminProductsView: React.FC = () => {
               />
             </div>
 
-            {/* Placement Category Select */}
-            <select
-              value={filterCat}
-              onChange={(e) => { setFilterCat(e.target.value); setFilterSub(''); setFilterType(''); }}
-              className="p-2 border border-stone-200 rounded-xl outline-none bg-white font-bold text-stone-700"
-            >
-              <option value="">All Categories</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-
-            {/* Subcategory Filter */}
-            <select
-              value={filterSub}
-              onChange={(e) => { setFilterSub(e.target.value); setFilterType(''); }}
-              disabled={!filterCat}
-              className="p-2 border border-stone-200 rounded-xl outline-none bg-white font-bold text-stone-700 disabled:bg-stone-50 disabled:text-stone-300"
-            >
-              <option value="">All Subcategories</option>
-              {getSubcategoriesForCategory(filterCat).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-
-            {/* Type/Style Filter */}
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              disabled={!filterSub}
-              className="p-2 border border-stone-200 rounded-xl outline-none bg-white font-bold text-stone-700 disabled:bg-stone-50 disabled:text-stone-300"
-            >
-              <option value="">All Style Types</option>
-              {getTypesForSubcategory(filterCat, filterSub).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-
-            {/* Status Select */}
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="p-2 border border-stone-200 rounded-xl bg-white font-bold text-stone-700"
-            >
-              <option value="">All Statuses</option>
-              <option value="published">Published</option>
-              <option value="draft">Drafts</option>
-            </select>
-
-            {/* Stock Level Selector */}
-            <select
-              value={filterStock}
-              onChange={(e) => setFilterStock(e.target.value as any)}
-              className="p-2 border border-stone-200 rounded-xl bg-white font-bold text-stone-700"
-            >
-              <option value="all">All Stocks</option>
-              <option value="instock">In Stock (&gt;10)</option>
-              <option value="lowstock">Low Stock (1-10)</option>
-              <option value="out">Out of Stock (0)</option>
-            </select>
-
-            {/* Reset Button */}
-            {(filterCat || filterSub || filterType || filterStatus || filterStock !== 'all' || searchQuery || filterTag) && (
-              <button
-                onClick={() => {
-                  setFilterCat(''); setFilterSub(''); setFilterType('');
-                  setFilterStatus(''); setFilterStock('all'); setSearchQuery(''); setFilterTag('');
-                }}
-                className="px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl font-bold cursor-pointer"
+            {/* Placement Category & Status Selects (Responsive Grid on Mobile) */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+              <select
+                value={filterCat}
+                onChange={(e) => { setFilterCat(e.target.value); setFilterSub(''); setFilterType(''); }}
+                className="w-full sm:w-auto p-2 border border-stone-200 rounded-xl outline-none bg-white font-bold text-stone-700 text-[11px] sm:text-xs"
               >
-                Reset Filters
-              </button>
-            )}
+                <option value="">All Categories</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+
+              <select
+                value={filterSub}
+                onChange={(e) => { setFilterSub(e.target.value); setFilterType(''); }}
+                disabled={!filterCat}
+                className="w-full sm:w-auto p-2 border border-stone-200 rounded-xl outline-none bg-white font-bold text-stone-700 disabled:bg-stone-50 disabled:text-stone-300 text-[11px] sm:text-xs"
+              >
+                <option value="">All Subcategories</option>
+                {getSubcategoriesForCategory(filterCat).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                disabled={!filterSub}
+                className="w-full sm:w-auto p-2 border border-stone-200 rounded-xl outline-none bg-white font-bold text-stone-700 disabled:bg-stone-50 disabled:text-stone-300 text-[11px] sm:text-xs"
+              >
+                <option value="">All Style Types</option>
+                {getTypesForSubcategory(filterCat, filterSub).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full sm:w-auto p-2 border border-stone-200 rounded-xl bg-white font-bold text-stone-700 text-[11px] sm:text-xs"
+              >
+                <option value="">All Statuses</option>
+                <option value="published">Published</option>
+                <option value="draft">Drafts</option>
+              </select>
+
+              <select
+                value={filterStock}
+                onChange={(e) => setFilterStock(e.target.value as any)}
+                className="col-span-2 sm:col-span-1 p-2 border border-stone-200 rounded-xl bg-white font-bold text-stone-700 text-[11px] sm:text-xs"
+              >
+                <option value="all">All Stocks</option>
+                <option value="instock">In Stock (&gt;10)</option>
+                <option value="lowstock">Low Stock (1-10)</option>
+                <option value="out">Out of Stock (0)</option>
+              </select>
+
+              {/* Reset Button */}
+              {(filterCat || filterSub || filterType || filterStatus || filterStock !== 'all' || searchQuery || filterTag) && (
+                <button
+                  onClick={() => {
+                    setFilterCat(''); setFilterSub(''); setFilterType('');
+                    setFilterStatus(''); setFilterStock('all'); setSearchQuery(''); setFilterTag('');
+                  }}
+                  className="col-span-2 sm:col-span-1 px-3 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl font-bold cursor-pointer text-center text-[11px] sm:text-xs"
+                >
+                  Reset Filters
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Quick filter by tags */}
-          <div className="flex items-center gap-2 border-t border-stone-100 pt-3">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter Tags:</span>
-            {['new_arrival', 'bestseller', 'trending', 'sale', 'online_exclusive', 'curves_plus_size'].map(tag => (
-              <button
-                key={tag}
-                onClick={() => setFilterTag(filterTag === tag ? '' : tag)}
-                className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize transition-colors cursor-pointer ${
-                  filterTag === tag 
-                    ? 'bg-[#C0654B] text-white' 
-                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                }`}
-              >
-                {tag.replace(/_/g, ' ')}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 border-t border-stone-100 pt-2.5 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider shrink-0">Filter Tags:</span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {['new_arrival', 'bestseller', 'trending', 'sale', 'online_exclusive', 'curves_plus_size'].map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setFilterTag(filterTag === tag ? '' : tag)}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold capitalize transition-colors cursor-pointer shrink-0 ${
+                    filterTag === tag 
+                      ? 'bg-[#C0654B] text-white' 
+                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  }`}
+                >
+                  {tag.replace(/_/g, ' ')}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
       {/* BULK ACTIONS BANNER */}
       {!isFormOpen && selectedProductIds.length > 0 && (
-        <div className="bg-[#2B2620] text-white p-3.5 rounded-2xl flex items-center justify-between shadow-lg border border-stone-700 animate-in fade-in duration-150">
+        <div className="bg-[#2B2620] text-white p-3 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg border border-stone-700 animate-in fade-in duration-150">
           <div className="flex items-center gap-2.5 text-xs font-semibold">
             <span className="w-5 h-5 bg-[#C0654B] rounded-full flex items-center justify-center font-bold text-[10px] font-mono">{selectedProductIds.length}</span>
             <span>Products Selected</span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-xs w-full sm:w-auto">
             <select
               value={bulkAction}
               onChange={(e) => setBulkAction(e.target.value)}
-              className="p-1.5 bg-stone-800 text-white border border-stone-700 rounded-lg outline-none font-bold cursor-pointer"
+              className="flex-1 sm:flex-none p-2 bg-stone-800 text-white border border-stone-700 rounded-xl outline-none font-bold cursor-pointer text-xs"
             >
               <option value="">-- Apply Bulk Action --</option>
               <option value="activate">Publish Selection</option>
@@ -1028,7 +1028,7 @@ export const AdminProductsView: React.FC = () => {
                   max={99}
                   value={bulkDiscountVal}
                   onChange={(e) => setBulkDiscountVal(Number(e.target.value))}
-                  className="w-12 p-1.5 bg-stone-800 text-white text-center font-bold rounded-lg border border-stone-700"
+                  className="w-12 p-2 bg-stone-800 text-white text-center font-bold rounded-xl border border-stone-700 text-xs"
                 />
                 <span className="text-stone-400 font-bold">%</span>
               </div>
@@ -1037,7 +1037,7 @@ export const AdminProductsView: React.FC = () => {
             <button
               onClick={handleExecuteBulkAction}
               disabled={!bulkAction}
-              className="px-4 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] disabled:bg-stone-700 disabled:cursor-not-allowed text-white font-bold rounded-lg cursor-pointer shadow-sm transition-colors"
+              className="px-4 py-2 bg-[#C0654B] hover:bg-[#8B4A38] disabled:bg-stone-700 disabled:cursor-not-allowed text-white font-bold rounded-xl cursor-pointer shadow-sm transition-colors text-xs"
             >
               Apply
             </button>
@@ -1045,10 +1045,12 @@ export const AdminProductsView: React.FC = () => {
         </div>
       )}
 
-      {/* PRODUCTS TABLE */}
+      {/* PRODUCTS DISPLAY: DESKTOP TABLE & MOBILE PRODUCT CARDS */}
       {!isFormOpen && (
         <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+          
+          {/* 1. DESKTOP DATA TABLE (Visible on md+ screens) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead className="bg-stone-50 text-stone-500 font-bold border-b border-stone-200">
                 <tr>
@@ -1060,13 +1062,13 @@ export const AdminProductsView: React.FC = () => {
                       className="rounded cursor-pointer"
                     />
                   </th>
-                  <th className="p-3">Product details</th>
-                  <th className="p-3">Category Hierarchy</th>
-                  <th className="p-3">Base Price</th>
-                  <th className="p-3">Discount Price</th>
-                  <th className="p-3">Total Stock</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 text-right">Actions</th>
+                  <th className="p-3 min-w-[220px]">Product details</th>
+                  <th className="p-3 min-w-[120px]">Category Hierarchy</th>
+                  <th className="p-3 min-w-[100px]">Base Price</th>
+                  <th className="p-3 min-w-[100px]">Discount Price</th>
+                  <th className="p-3 min-w-[90px]">Total Stock</th>
+                  <th className="p-3 min-w-[90px]">Status</th>
+                  <th className="p-3 min-w-[100px] text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 font-semibold text-stone-700">
@@ -1096,12 +1098,12 @@ export const AdminProductsView: React.FC = () => {
                             <img 
                               src={prod.colors[0]?.images[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=120&q=80'} 
                               alt={prod.name} 
-                              className="w-10 h-10 object-cover rounded-xl border border-stone-200 bg-stone-50"
+                              className="w-10 h-10 object-cover rounded-xl border border-stone-200 bg-stone-50 shrink-0"
                               referrerPolicy="no-referrer"
                             />
-                            <div className="min-w-0 max-w-[200px]">
+                            <div className="min-w-0 max-w-[220px]">
                               <h4 className="font-bold text-stone-900 truncate">{prod.name}</h4>
-                              <p className="text-[10px] text-stone-400 font-mono truncate">SKU template: {prod.variants[0]?.sku || 'None'}</p>
+                              <p className="text-[10px] text-stone-400 font-mono truncate">SKU: {prod.variants[0]?.sku || 'None'}</p>
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {prod.tags.map(t => (
                                   <span key={t} className="text-[8px] bg-stone-100 text-stone-500 px-1 rounded-md lowercase">{t.replace(/_/g, ' ')}</span>
@@ -1111,7 +1113,7 @@ export const AdminProductsView: React.FC = () => {
                           </div>
                         </td>
                         <td className="p-3">
-                          <div className="text-stone-800 text-[11px] capitalize">{prod.categoryId}</div>
+                          <div className="text-stone-800 text-[11px] capitalize font-bold">{prod.categoryId}</div>
                           <div className="text-[10px] text-stone-400 font-mono font-medium">{prod.subcategoryId}</div>
                         </td>
                         <td className="p-3">
@@ -1188,25 +1190,142 @@ export const AdminProductsView: React.FC = () => {
             </table>
           </div>
 
+          {/* 2. MOBILE-OPTIMIZED PRODUCT CARDS VIEW (Visible on Phone/Small screens) */}
+          <div className="md:hidden divide-y divide-stone-100">
+            {pagedProducts.length === 0 ? (
+              <div className="p-8 text-center text-stone-400 text-xs">
+                No products match your search criteria. Create a new one!
+              </div>
+            ) : (
+              pagedProducts.map(prod => {
+                const totalStock = prod.variants?.reduce((sum, v) => sum + v.stock, 0) || 0;
+                const isSelected = selectedProductIds.includes(prod.id);
+
+                return (
+                  <div key={prod.id} className={`p-3.5 sm:p-4 space-y-3 transition-colors ${isSelected ? 'bg-stone-50/90' : 'bg-white'}`}>
+                    {/* Top Row: Checkbox + Photo + Title & Hierarchy */}
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleSelectProduct(prod.id)}
+                        className="mt-1 rounded cursor-pointer shrink-0"
+                      />
+                      <img 
+                        src={prod.colors[0]?.images[0] || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=160&q=80'} 
+                        alt={prod.name} 
+                        className="w-14 h-14 object-cover rounded-xl border border-stone-200 bg-stone-50 shrink-0"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-stone-900 text-xs leading-snug line-clamp-2">{prod.name}</h4>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-stone-500 font-mono">
+                          <span className="truncate">SKU: {prod.variants[0]?.sku || 'None'}</span>
+                          <span>•</span>
+                          <span className="capitalize font-sans text-stone-700 font-semibold">{prod.categoryId}</span>
+                        </div>
+                        {prod.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {prod.tags.map(t => (
+                              <span key={t} className="text-[8px] bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded-md font-semibold capitalize">
+                                {t.replace(/_/g, ' ')}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Price & Stock Stats Bar */}
+                    <div className="grid grid-cols-3 gap-2 p-2.5 bg-stone-50 rounded-xl border border-stone-200/70 text-center text-xs">
+                      <div>
+                        <span className="text-[9px] font-bold text-stone-400 block uppercase">Base Price</span>
+                        <span className="font-mono font-bold text-stone-900 text-xs">₹{prod.basePrice}</span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-bold text-stone-400 block uppercase">Sale Price</span>
+                        <span className="font-mono font-bold text-[#C0654B] text-xs">
+                          {prod.discountPrice ? `₹${prod.discountPrice}` : '—'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[9px] font-bold text-stone-400 block uppercase">Total Stock</span>
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
+                          totalStock === 0 ? 'bg-red-100 text-red-700' :
+                          totalStock <= 10 ? 'bg-amber-100 text-amber-800' :
+                          'bg-emerald-100 text-emerald-800'
+                        }`}>
+                          {totalStock} units
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Quick Status Toggle & Actions */}
+                    <div className="flex items-center justify-between gap-2 pt-0.5">
+                      <button
+                        onClick={() => handleInlineStatusToggle(prod.id, prod.status)}
+                        className={`px-3 py-1.5 rounded-xl text-[10px] uppercase font-bold tracking-wider cursor-pointer border transition-colors ${
+                          prod.status === 'published' 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                            : 'bg-stone-100 text-stone-600 border-stone-200'
+                        }`}
+                      >
+                        ● {prod.status}
+                      </button>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleDuplicateProduct(prod)}
+                          className="px-2.5 py-1.5 text-stone-600 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Clone Product"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                          <span className="text-[10px]">Copy</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleOpenEditForm(prod)}
+                          className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shadow-xs transition-colors"
+                          title="Edit Product Details"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span className="text-[10px]">Edit</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleSoftDeleteProduct(prod)}
+                          className="p-1.5 text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded-xl cursor-pointer transition-colors"
+                          title="Delete Product"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
           {/* TABLE PAGINATION FOOTER */}
           {totalPages > 1 && (
-            <div className="p-3 bg-stone-50 border-t border-stone-200 flex items-center justify-between text-xs font-semibold">
-              <span className="text-stone-500">
+            <div className="p-3 sm:p-3.5 bg-stone-50 border-t border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs font-semibold">
+              <span className="text-stone-500 text-[11px] sm:text-xs">
                 Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredProducts.length)} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} items
               </span>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1 bg-white border border-stone-200 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed text-stone-700 font-bold rounded-lg cursor-pointer"
+                  className="px-3 py-1.5 bg-white border border-stone-200 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed text-stone-700 font-bold rounded-xl cursor-pointer text-xs"
                 >
                   PREV
                 </button>
-                <span className="px-2 font-mono text-stone-600">Page {currentPage} of {totalPages}</span>
+                <span className="px-2 font-mono text-stone-600 text-xs">Page {currentPage} of {totalPages}</span>
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1 bg-white border border-stone-200 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed text-stone-700 font-bold rounded-lg cursor-pointer"
+                  className="px-3 py-1.5 bg-white border border-stone-200 hover:bg-stone-100 disabled:opacity-40 disabled:cursor-not-allowed text-stone-700 font-bold rounded-xl cursor-pointer text-xs"
                 >
                   NEXT
                 </button>
@@ -1218,30 +1337,30 @@ export const AdminProductsView: React.FC = () => {
 
       {/* RECENTLY DELETED BIN */}
       {!isFormOpen && recentlyDeleted.length > 0 && (
-        <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm space-y-4 text-left">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-200/80 shadow-sm space-y-4 text-left">
           <div className="flex items-center justify-between border-b border-stone-100 pb-2">
             <div className="flex items-center gap-2">
               <Archive className="w-5 h-5 text-red-600 animate-pulse" />
-              <h3 className="text-sm font-bold font-serif text-stone-900">Recently Deleted Bin (Safeguard)</h3>
+              <h3 className="text-xs sm:text-sm font-bold font-serif text-stone-900">Recently Deleted Bin (Safeguard)</h3>
             </div>
-            <span className="text-[10px] font-bold bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full uppercase">Soft-Deleted Items</span>
+            <span className="text-[10px] font-bold bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full uppercase">Soft-Deleted</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-semibold text-stone-700">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs font-semibold text-stone-700">
             {recentlyDeleted.map(prod => (
-              <div key={prod.id} className="border border-stone-200 p-3.5 rounded-xl bg-stone-50 flex items-center justify-between gap-3">
+              <div key={prod.id} className="border border-stone-200 p-3 sm:p-3.5 rounded-xl bg-stone-50 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <img src={prod.colors[0]?.images[0]} alt="" className="w-10 h-10 object-cover rounded-lg bg-white shrink-0" referrerPolicy="referrer" />
+                  <img src={prod.colors[0]?.images[0]} alt="" className="w-10 h-10 object-cover rounded-lg bg-white shrink-0" referrerPolicy="no-referrer" />
                   <div className="min-w-0">
-                    <h4 className="font-bold text-stone-800 truncate">{prod.name}</h4>
+                    <h4 className="font-bold text-stone-800 truncate text-xs">{prod.name}</h4>
                     <span className="text-[9px] text-stone-400 font-mono uppercase">ID: {prod.id}</span>
                   </div>
                 </div>
 
-                <div className="flex gap-1">
+                <div className="flex gap-1 shrink-0">
                   <button
                     onClick={() => handleRestoreProduct(prod)}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer transition-colors text-[10px]"
+                    className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg cursor-pointer transition-colors text-[10px]"
                   >
                     Restore
                   </button>
@@ -1258,22 +1377,22 @@ export const AdminProductsView: React.FC = () => {
         </div>
       )}
 
-      {/* GUIDED ADD/EDIT PRODUCT WIZARD */}
+      {/* GUIDED ADD/EDIT PRODUCT WIZARD (FULLY RESPONSIVE ON PHONES & TABLETS) */}
       {isFormOpen && (
-        <div className="bg-white rounded-2xl border border-stone-200 shadow-xl p-6 space-y-6 text-left">
+        <div className="bg-white rounded-2xl border border-stone-200 shadow-xl p-4 sm:p-6 space-y-5 sm:space-y-6 text-left">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-stone-100 pb-3">
             <div>
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider font-mono">Step {formStep} of 4</span>
-              <h3 className="text-base font-bold font-serif text-stone-900">
+              <span className="text-[10px] font-bold text-[#C0654B] uppercase tracking-wider font-mono">Step {formStep} of 4</span>
+              <h3 className="text-sm sm:text-base font-bold font-serif text-stone-900 leading-tight">
                 {editProduct ? `Edit "${editProduct.name}"` : 'Guided Product Placement Wizard'}
               </h3>
             </div>
-            <button onClick={() => setIsFormOpen(false)} className="text-stone-400 hover:text-stone-700">✕</button>
+            <button onClick={() => setIsFormOpen(false)} className="text-stone-400 hover:text-stone-700 p-1.5 rounded-lg text-lg">✕</button>
           </div>
 
           {/* Steps Indicator Progress bar */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {[1, 2, 3, 4].map(stepNum => (
               <div 
                 key={stepNum} 
@@ -1284,17 +1403,19 @@ export const AdminProductsView: React.FC = () => {
             ))}
           </div>
 
-          <form onSubmit={handleSaveProductForm} className="space-y-6 text-xs text-stone-700 font-medium">
+          <form onSubmit={handleSaveProductForm} className="space-y-5 sm:space-y-6 text-xs text-stone-700 font-medium">
             
             {/* STEP 1: CATEGORY PLACEMENT */}
             {formStep === 1 && (
               <div className="space-y-4">
                 <div className="p-3 bg-stone-50 border border-stone-200 rounded-xl">
                   <span className="font-bold text-stone-800 block mb-1">Store Placement:</span>
-                  <p className="text-[10px] text-stone-400 leading-snug">Select precisely where in the store's deep category tree this apparel should live. This structures storefront filters, sizes charts, and menus automatically.</p>
+                  <p className="text-[10.5px] text-stone-500 leading-snug">
+                    Select precisely where in the store's deep category tree this apparel should live. This structures storefront filters, sizes charts, and menus automatically.
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">1. Choose Core Category</label>
                     <select
@@ -1333,7 +1454,7 @@ export const AdminProductsView: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">Apparel Brand Name</label>
                     <input
@@ -1341,7 +1462,7 @@ export const AdminProductsView: React.FC = () => {
                       value={pBrand}
                       onChange={(e) => setPBrand(e.target.value)}
                       placeholder="e.g. Terra Ethnic, Clay Urban"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-xl outline-none"
+                      className="w-full px-3 py-2.5 border border-stone-300 rounded-xl outline-none text-xs"
                     />
                   </div>
                   <div>
@@ -1349,7 +1470,7 @@ export const AdminProductsView: React.FC = () => {
                     <select
                       value={pStatus}
                       onChange={(e) => setPStatus(e.target.value as any)}
-                      className="w-full p-2.5 bg-white border border-stone-300 rounded-xl outline-none font-bold text-stone-800"
+                      className="w-full p-2.5 bg-white border border-stone-300 rounded-xl outline-none font-bold text-stone-800 text-xs"
                     >
                       <option value="published">Published instantly</option>
                       <option value="draft">Draft (hidden from storefront)</option>
@@ -1370,7 +1491,7 @@ export const AdminProductsView: React.FC = () => {
                     value={pName}
                     onChange={(e) => setPName(e.target.value)}
                     placeholder="e.g. Traditional Hand-Woven Banarasi Silk Saree"
-                    className="w-full px-4 py-2.5 border border-stone-300 rounded-xl outline-none focus:border-[#C0654B] text-xs font-semibold text-stone-800"
+                    className="w-full px-3.5 py-2.5 border border-stone-300 rounded-xl outline-none focus:border-[#C0654B] text-xs font-semibold text-stone-800"
                   />
                 </div>
 
@@ -1381,11 +1502,11 @@ export const AdminProductsView: React.FC = () => {
                     onChange={(e) => setPDescription(e.target.value)}
                     placeholder="Detail material specifics, design motifs, elegance, matching styling accessories..."
                     rows={4}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-xl outline-none focus:border-[#C0654B]"
+                    className="w-full p-3 border border-stone-300 rounded-xl outline-none focus:border-[#C0654B] text-xs leading-relaxed"
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                   <div>
                     <label className="block font-bold text-stone-700 mb-1">Fabric Material</label>
                     <input
@@ -1393,7 +1514,7 @@ export const AdminProductsView: React.FC = () => {
                       value={pFabric}
                       onChange={(e) => setPFabric(e.target.value)}
                       placeholder="e.g. Pure Georgette Silk"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-xl"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-xl text-xs"
                     />
                   </div>
                   <div>
@@ -1403,7 +1524,7 @@ export const AdminProductsView: React.FC = () => {
                       value={pFit}
                       onChange={(e) => setPFit(e.target.value)}
                       placeholder="e.g. Slim / Regular Fit"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-xl"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-xl text-xs"
                     />
                   </div>
                   <div>
@@ -1413,28 +1534,28 @@ export const AdminProductsView: React.FC = () => {
                       value={pOccasion}
                       onChange={(e) => setPOccasion(e.target.value)}
                       placeholder="e.g. Festive / Ceremonial"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-xl"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-xl text-xs"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 bg-stone-50 p-3 rounded-xl border border-stone-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-stone-50 p-3 sm:p-4 rounded-xl border border-stone-200">
                   <div>
                     <label className="block font-bold text-stone-600 mb-1">GST/HSN Code (Accounting)</label>
                     <input
                       type="text"
                       value={pHsn}
                       onChange={(e) => setPHsn(e.target.value)}
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg bg-white"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg bg-white text-xs"
                     />
                   </div>
                   <div>
-                    <label className="block font-bold text-stone-600 mb-1">Gst Tax Percentage (%)</label>
+                    <label className="block font-bold text-stone-600 mb-1">GST Tax Percentage (%)</label>
                     <input
                       type="number"
                       value={pGst}
                       onChange={(e) => setPGst(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg bg-white font-mono"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg bg-white font-mono text-xs"
                     />
                   </div>
                 </div>
@@ -1444,21 +1565,21 @@ export const AdminProductsView: React.FC = () => {
             {/* STEP 3: SIZE x COLOR VARIANT MATRIX */}
             {formStep === 3 && (
               <div className="space-y-4">
-                <div className="p-3.5 bg-[#C0654B]/5 rounded-xl border border-[#C0654B]/10 space-y-2">
+                <div className="p-3.5 bg-[#C0654B]/5 rounded-xl border border-[#C0654B]/10 space-y-1">
                   <span className="font-bold text-[#C0654B] block text-xs">Aesthetic Color & Size Matrix</span>
                   <p className="text-[10.5px] text-stone-500 leading-snug">
                     Pick target apparel sizes and color combinations. The wizard will automatically generate unique SKUs and coordinate price/stock tables down below.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Sizes Selection: Conditional Rendering for Kids vs Standard */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                  {/* Sizes Selection */}
                   {isKidsCategory ? (
-                    <div className="space-y-3 p-4 bg-amber-50/70 rounded-xl border border-amber-200/80">
+                    <div className="space-y-3 p-3.5 sm:p-4 bg-amber-50/70 rounded-xl border border-amber-200/80">
                       <div className="flex items-center justify-between">
                         <div>
                           <span className="font-bold text-amber-900 block text-xs">Kids Custom Sizing Matrix</span>
-                          <p className="text-[10px] text-amber-700">Enter age range, measurement value, unit (cm/inch), and stock per size variant.</p>
+                          <p className="text-[10px] text-amber-700">Enter age range, measurement, unit, and stock.</p>
                         </div>
                         <button
                           type="button"
@@ -1466,17 +1587,17 @@ export const AdminProductsView: React.FC = () => {
                             setKidsSizeRows(prev => [...prev, { ageLabel: '', measurement: 50, unit: 'cm', stock: 10 }]);
                             setVariantsMatrix([]);
                           }}
-                          className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs"
+                          className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs shrink-0"
                         >
-                          + Add Size Row
+                          + Add Size
                         </button>
                       </div>
 
                       <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
                         {kidsSizeRows.map((row, idx) => (
-                          <div key={idx} className="flex flex-wrap items-center gap-2 p-2.5 bg-white rounded-xl border border-stone-200 shadow-2xs">
-                            <div className="flex-1 min-w-[120px]">
-                              <label className="text-[9px] font-bold text-stone-500 block uppercase">Age Range Label</label>
+                          <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 bg-white rounded-xl border border-stone-200 shadow-2xs">
+                            <div className="flex-1 min-w-0">
+                              <label className="text-[9px] font-bold text-stone-500 block uppercase">Age Range</label>
                               <input
                                 type="text"
                                 placeholder="e.g. 2-3 Years"
@@ -1491,82 +1612,84 @@ export const AdminProductsView: React.FC = () => {
                               />
                             </div>
 
-                            <div className="w-24">
-                              <label className="text-[9px] font-bold text-stone-500 block uppercase">Chest/Height</label>
-                              <input
-                                type="number"
-                                min={1}
-                                placeholder="54"
-                                value={row.measurement || ''}
-                                onChange={(e) => {
-                                  const updated = [...kidsSizeRows];
-                                  updated[idx].measurement = Math.max(1, Number(e.target.value));
-                                  setKidsSizeRows(updated);
-                                  setVariantsMatrix([]);
-                                }}
-                                className="w-full px-2.5 py-1.5 border border-stone-300 rounded-lg text-xs font-mono font-bold text-stone-800 text-center outline-none focus:border-[#C0654B]"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="text-[9px] font-bold text-stone-500 block uppercase">Unit</label>
-                              <div className="flex border border-stone-300 rounded-lg overflow-hidden font-bold text-[10px]">
-                                <button
-                                  type="button"
-                                  onClick={() => {
+                            <div className="flex items-center gap-2">
+                              <div className="w-20">
+                                <label className="text-[9px] font-bold text-stone-500 block uppercase">Measure</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  placeholder="54"
+                                  value={row.measurement || ''}
+                                  onChange={(e) => {
                                     const updated = [...kidsSizeRows];
-                                    updated[idx].unit = 'cm';
+                                    updated[idx].measurement = Math.max(1, Number(e.target.value));
                                     setKidsSizeRows(updated);
                                     setVariantsMatrix([]);
                                   }}
-                                  className={`px-2.5 py-1.5 cursor-pointer ${row.unit === 'cm' ? 'bg-[#C0654B] text-white' : 'bg-stone-100 text-stone-600'}`}
-                                >
-                                  cm
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const updated = [...kidsSizeRows];
-                                    updated[idx].unit = 'inch';
-                                    setKidsSizeRows(updated);
-                                    setVariantsMatrix([]);
-                                  }}
-                                  className={`px-2.5 py-1.5 cursor-pointer ${row.unit === 'inch' ? 'bg-[#C0654B] text-white' : 'bg-stone-100 text-stone-600'}`}
-                                >
-                                  inch
-                                </button>
+                                  className="w-full px-2 py-1.5 border border-stone-300 rounded-lg text-xs font-mono font-bold text-stone-800 text-center outline-none focus:border-[#C0654B]"
+                                />
                               </div>
-                            </div>
 
-                            <div className="w-20">
-                              <label className="text-[9px] font-bold text-stone-500 block uppercase">Stock</label>
-                              <input
-                                type="number"
-                                min={0}
-                                value={row.stock}
-                                onChange={(e) => {
-                                  const updated = [...kidsSizeRows];
-                                  updated[idx].stock = Math.max(0, Number(e.target.value));
-                                  setKidsSizeRows(updated);
-                                  setVariantsMatrix([]);
-                                }}
-                                className="w-full px-2 py-1.5 border border-stone-300 rounded-lg text-xs font-mono text-center font-bold text-stone-800 outline-none"
-                              />
-                            </div>
+                              <div>
+                                <label className="text-[9px] font-bold text-stone-500 block uppercase">Unit</label>
+                                <div className="flex border border-stone-300 rounded-lg overflow-hidden font-bold text-[10px]">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = [...kidsSizeRows];
+                                      updated[idx].unit = 'cm';
+                                      setKidsSizeRows(updated);
+                                      setVariantsMatrix([]);
+                                    }}
+                                    className={`px-2 py-1.5 cursor-pointer ${row.unit === 'cm' ? 'bg-[#C0654B] text-white' : 'bg-stone-100 text-stone-600'}`}
+                                  >
+                                    cm
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updated = [...kidsSizeRows];
+                                      updated[idx].unit = 'inch';
+                                      setKidsSizeRows(updated);
+                                      setVariantsMatrix([]);
+                                    }}
+                                    className={`px-2 py-1.5 cursor-pointer ${row.unit === 'inch' ? 'bg-[#C0654B] text-white' : 'bg-stone-100 text-stone-600'}`}
+                                  >
+                                    in
+                                  </button>
+                                </div>
+                              </div>
 
-                            {kidsSizeRows.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setKidsSizeRows(prev => prev.filter((_, i) => i !== idx));
-                                  setVariantsMatrix([]);
-                                }}
-                                className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg cursor-pointer mt-3"
-                                title="Remove Size Row"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
+                              <div className="w-16">
+                                <label className="text-[9px] font-bold text-stone-500 block uppercase">Stock</label>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  value={row.stock}
+                                  onChange={(e) => {
+                                    const updated = [...kidsSizeRows];
+                                    updated[idx].stock = Math.max(0, Number(e.target.value));
+                                    setKidsSizeRows(updated);
+                                    setVariantsMatrix([]);
+                                  }}
+                                  className="w-full px-1.5 py-1.5 border border-stone-300 rounded-lg text-xs font-mono text-center font-bold text-stone-800 outline-none"
+                                />
+                              </div>
+
+                              {kidsSizeRows.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setKidsSizeRows(prev => prev.filter((_, i) => i !== idx));
+                                    setVariantsMatrix([]);
+                                  }}
+                                  className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg cursor-pointer mt-3 shrink-0"
+                                  title="Remove Size Row"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1583,7 +1706,7 @@ export const AdminProductsView: React.FC = () => {
                               type="button"
                               onClick={() => {
                                 setSelectedSizes(prev => hasSz ? prev.filter(s => s !== sz) : [...prev, sz]);
-                                setVariantsMatrix([]); // reset so auto-regenerates
+                                setVariantsMatrix([]);
                               }}
                               className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                                 hasSz 
@@ -1602,7 +1725,7 @@ export const AdminProductsView: React.FC = () => {
                   {/* Colors selection */}
                   <div className="space-y-3">
                     <span className="font-bold text-stone-700 block">Select Color Palette:</span>
-                    <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1 border border-stone-100 rounded-xl bg-stone-50/30">
+                    <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-1 border border-stone-100 rounded-xl bg-stone-50/30">
                       {availableColors.map(col => {
                         const hasCol = selectedColors.some(c => c.name === col.name);
                         return (
@@ -1615,11 +1738,11 @@ export const AdminProductsView: React.FC = () => {
                               );
                               setVariantsMatrix([]);
                             }}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl font-bold transition-all cursor-pointer ${
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 border rounded-xl font-bold transition-all cursor-pointer text-xs ${
                               hasCol ? 'border-[#C0654B] bg-[#C0654B]/5 text-[#C0654B]' : 'border-stone-200 text-stone-600 bg-white hover:bg-stone-50'
                             }`}
                           >
-                            <span className="w-3.5 h-3.5 rounded-full border border-stone-200/50" style={{ backgroundColor: col.hex }} />
+                            <span className="w-3 h-3 rounded-full border border-stone-200/50 shrink-0" style={{ backgroundColor: col.hex }} />
                             <span>{col.name}</span>
                           </button>
                         );
@@ -1627,18 +1750,16 @@ export const AdminProductsView: React.FC = () => {
                     </div>
 
                     {/* Quick Custom Color Adder */}
-                    <div className="border border-stone-200 p-3 rounded-xl bg-stone-50/50 space-y-2 mt-1">
+                    <div className="border border-stone-200 p-2.5 sm:p-3 rounded-xl bg-stone-50/50 space-y-2 mt-1">
                       <span className="font-bold text-stone-600 block text-[10px] uppercase tracking-wider">Add Custom Saree / Apparel Color Option</span>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex-1 min-w-[140px]">
-                          <input
-                            type="text"
-                            placeholder="Color name (e.g. Saffron Gold)"
-                            value={customColorName}
-                            onChange={(e) => setCustomColorName(e.target.value)}
-                            className="w-full px-2.5 py-1.5 border border-stone-300 rounded-lg text-xs outline-none bg-white font-semibold focus:border-[#C0654B]"
-                          />
-                        </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <input
+                          type="text"
+                          placeholder="Color name (e.g. Saffron Gold)"
+                          value={customColorName}
+                          onChange={(e) => setCustomColorName(e.target.value)}
+                          className="flex-1 px-2.5 py-1.5 border border-stone-300 rounded-lg text-xs outline-none bg-white font-semibold focus:border-[#C0654B]"
+                        />
                         <div className="flex items-center gap-1.5">
                           <input
                             type="color"
@@ -1653,67 +1774,68 @@ export const AdminProductsView: React.FC = () => {
                             onChange={(e) => setCustomColorHex(e.target.value)}
                             className="w-16 px-1.5 py-1.5 border border-stone-300 rounded-lg text-[10px] font-mono font-bold text-center bg-white outline-none"
                           />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!customColorName.trim()) {
+                                showToast('Please provide a descriptive color name.');
+                                return;
+                              }
+                              const formattedName = customColorName.trim();
+                              const exists = availableColors.some(c => c.name.toLowerCase() === formattedName.toLowerCase());
+                              if (exists) {
+                                showToast(`"${formattedName}" already exists in the palette.`);
+                                return;
+                              }
+                              const newCol = { name: formattedName, hex: customColorHex };
+                              setAvailableColors(prev => [...prev, newCol]);
+                              setSelectedColors(prev => [...prev, newCol]);
+                              setVariantsMatrix([]);
+                              setCustomColorName('');
+                              showToast(`"${formattedName}" color option added and selected.`);
+                            }}
+                            className="flex-1 sm:flex-none px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-lg text-xs transition-colors cursor-pointer text-center"
+                          >
+                            + Add Color
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!customColorName.trim()) {
-                              showToast('Please provide a descriptive color name.');
-                              return;
-                            }
-                            const formattedName = customColorName.trim();
-                            const exists = availableColors.some(c => c.name.toLowerCase() === formattedName.toLowerCase());
-                            if (exists) {
-                              showToast(`"${formattedName}" already exists in the palette.`);
-                              return;
-                            }
-                            const newCol = { name: formattedName, hex: customColorHex };
-                            setAvailableColors(prev => [...prev, newCol]);
-                            setSelectedColors(prev => [...prev, newCol]);
-                            setVariantsMatrix([]);
-                            setCustomColorName('');
-                            showToast(`"${formattedName}" color option added and selected.`);
-                          }}
-                          className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-lg text-xs transition-colors cursor-pointer"
-                        >
-                          + Add Color
-                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Variants Matrix Table with instant inputs */}
+                {/* Variants Matrix Section */}
                 {variantsMatrix.length > 0 && (
                   <div className="space-y-2 border-t border-stone-100 pt-4">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-stone-800">Review Auto-Generated Stock Combinations ({variantsMatrix.length}):</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <span className="font-bold text-stone-800 text-xs">Stock Combinations ({variantsMatrix.length} Variants):</span>
                       <button
                         type="button"
                         onClick={handleCopyFirstRow}
-                        className="px-3 py-1 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-[10px] font-bold cursor-pointer"
+                        className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-[10px] font-bold cursor-pointer self-start sm:self-auto"
                       >
                         Copy First Row Settings to All rows
                       </button>
                     </div>
 
-                    <div className="max-h-64 overflow-y-auto overflow-x-auto border border-stone-200 rounded-xl text-[11px] touch-scroll">
-                      <table className="w-full text-left min-w-[520px]">
+                    {/* Scrollable table container */}
+                    <div className="max-h-64 overflow-y-auto overflow-x-auto border border-stone-200 rounded-xl text-[11px]">
+                      <table className="w-full text-left min-w-[500px]">
                         <thead className="bg-stone-50 font-bold border-b border-stone-200 text-stone-500 sticky top-0">
                           <tr>
-                            <th className="p-2 min-w-[120px]">Variant Style</th>
-                            <th className="p-2 min-w-[130px]">SKU Barcode</th>
+                            <th className="p-2 min-w-[110px]">Variant Style</th>
+                            <th className="p-2 min-w-[120px]">SKU Barcode</th>
                             <th className="p-2 min-w-[70px]">Price (₹)</th>
-                            <th className="p-2 min-w-[80px]">Sale Price (₹)</th>
-                            <th className="p-2 min-w-[70px]">Stock Level</th>
+                            <th className="p-2 min-w-[75px]">Sale Price (₹)</th>
+                            <th className="p-2 min-w-[65px]">Stock</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-stone-100">
                           {variantsMatrix.map((v, idx) => (
                             <tr key={v.id} className="hover:bg-stone-50/50">
                               <td className="p-2 font-bold flex items-center gap-1.5">
-                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: v.colorHex }} />
-                                <span>{v.color} / {v.size}</span>
+                                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: v.colorHex }} />
+                                <span className="truncate">{v.color} / {v.size}</span>
                               </td>
                               <td className="p-2 font-mono">
                                 <input
@@ -1724,7 +1846,7 @@ export const AdminProductsView: React.FC = () => {
                                     next[idx].sku = e.target.value;
                                     setVariantsMatrix(next);
                                   }}
-                                  className="p-1 border border-stone-200 rounded w-full font-mono bg-white"
+                                  className="p-1 border border-stone-200 rounded w-full font-mono bg-white text-xs"
                                 />
                               </td>
                               <td className="p-2 font-mono">
@@ -1736,7 +1858,7 @@ export const AdminProductsView: React.FC = () => {
                                     next[idx].price = Number(e.target.value);
                                     setVariantsMatrix(next);
                                   }}
-                                  className="p-1 border border-stone-200 rounded w-16 text-center bg-white font-bold"
+                                  className="p-1 border border-stone-200 rounded w-16 text-center bg-white font-bold text-xs"
                                 />
                               </td>
                               <td className="p-2 font-mono">
@@ -1749,7 +1871,7 @@ export const AdminProductsView: React.FC = () => {
                                     next[idx].discountPrice = e.target.value ? Number(e.target.value) : undefined;
                                     setVariantsMatrix(next);
                                   }}
-                                  className="p-1 border border-stone-200 rounded w-16 text-center bg-white"
+                                  className="p-1 border border-stone-200 rounded w-16 text-center bg-white text-xs"
                                 />
                               </td>
                               <td className="p-2 font-mono">
@@ -1761,7 +1883,7 @@ export const AdminProductsView: React.FC = () => {
                                     next[idx].stock = Number(e.target.value);
                                     setVariantsMatrix(next);
                                   }}
-                                  className="p-1 border border-stone-200 rounded w-14 text-center bg-white font-bold"
+                                  className="p-1 border border-stone-200 rounded w-14 text-center bg-white font-bold text-xs"
                                 />
                               </td>
                             </tr>
@@ -1777,21 +1899,21 @@ export const AdminProductsView: React.FC = () => {
             {/* STEP 4: IMAGES & PRICE SCHEDULERS */}
             {formStep === 4 && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   {/* Photo Upload Section */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <span className="font-bold text-stone-800 text-xs block">Product Gallery Imagery ({productImages.length} Photos)</span>
+                        <span className="font-bold text-stone-800 text-xs block">Product Imagery ({productImages.length} Photos)</span>
                         <p className="text-[10px] text-stone-400">Upload photos from device or paste image URLs</p>
                       </div>
                       <button
                         type="button"
                         onClick={() => photoFileInputRef.current?.click()}
-                        className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                        className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors shrink-0"
                       >
                         <Upload className="w-3.5 h-3.5" />
-                        <span>Upload from Device</span>
+                        <span>Upload</span>
                       </button>
                     </div>
 
@@ -1807,16 +1929,16 @@ export const AdminProductsView: React.FC = () => {
                     {/* Drag & Drop / Click Zone */}
                     <div
                       onClick={() => photoFileInputRef.current?.click()}
-                      className="border-2 border-dashed border-stone-300 hover:border-[#C0654B] bg-stone-50 hover:bg-[#C0654B]/5 p-5 rounded-2xl text-center cursor-pointer transition-colors space-y-1.5"
+                      className="border-2 border-dashed border-stone-300 hover:border-[#C0654B] bg-stone-50 hover:bg-[#C0654B]/5 p-4 sm:p-5 rounded-2xl text-center cursor-pointer transition-colors space-y-1.5"
                     >
                       <div className="w-10 h-10 bg-[#C0654B]/10 text-[#C0654B] rounded-full flex items-center justify-center mx-auto">
                         <ImageIcon className="w-5 h-5" />
                       </div>
                       <p className="text-xs font-bold text-stone-800">
-                        Click here to add photos from your device
+                        Tap here to select photos from your device camera/gallery
                       </p>
                       <p className="text-[10px] text-stone-400">
-                        Select JPG, PNG, WEBP, or SVG files from computer or smartphone
+                        Supports JPG, PNG, WEBP, or SVG
                       </p>
                     </div>
 
@@ -1838,7 +1960,7 @@ export const AdminProductsView: React.FC = () => {
                             showToast('Image URL added to gallery.');
                           }
                         }}
-                        className="px-3 py-2 bg-stone-800 text-white font-bold rounded-xl text-xs hover:bg-stone-900 cursor-pointer"
+                        className="px-3 py-2 bg-stone-800 text-white font-bold rounded-xl text-xs hover:bg-stone-900 cursor-pointer shrink-0"
                       >
                         + Add URL
                       </button>
@@ -1860,7 +1982,7 @@ export const AdminProductsView: React.FC = () => {
                                 setProductImages(prev => [img, ...prev.filter((_, i) => i !== idx)]);
                                 showToast('Set as primary thumbnail.');
                               }}
-                              className="absolute top-1 left-1 bg-black/70 hover:bg-black text-white text-[8px] font-bold px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              className="absolute top-1 left-1 bg-black/70 hover:bg-black text-white text-[8px] font-bold px-1.5 py-0.5 rounded transition-opacity cursor-pointer"
                             >
                               Make Primary
                             </button>
@@ -1882,17 +2004,17 @@ export const AdminProductsView: React.FC = () => {
                   </div>
 
                   {/* Pricing and Tax overrides */}
-                  <div className="space-y-3 bg-stone-50 p-4 rounded-xl border border-stone-200">
+                  <div className="space-y-3 bg-stone-50 p-3.5 sm:p-4 rounded-xl border border-stone-200">
                     <span className="font-bold text-stone-800 block text-xs">Standard Store Pricing Setup</span>
                     
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="block font-bold text-stone-600 mb-0.5">Base Retail Price (₹)</label>
                         <input
                           type="number"
                           value={pBasePrice}
                           onChange={(e) => setPBasePrice(Number(e.target.value))}
-                          className="w-full p-2 border border-stone-300 rounded-lg bg-white font-mono font-bold"
+                          className="w-full p-2 border border-stone-300 rounded-lg bg-white font-mono font-bold text-xs"
                         />
                       </div>
                       <div>
@@ -1901,7 +2023,7 @@ export const AdminProductsView: React.FC = () => {
                           type="number"
                           value={pDiscPrice}
                           onChange={(e) => setPDiscPrice(Number(e.target.value))}
-                          className="w-full p-2 border border-stone-300 rounded-lg bg-white font-mono"
+                          className="w-full p-2 border border-stone-300 rounded-lg bg-white font-mono text-xs"
                         />
                       </div>
                     </div>
@@ -1930,9 +2052,9 @@ export const AdminProductsView: React.FC = () => {
                 </div>
 
                 {/* SEO fields */}
-                <div className="p-3.5 bg-stone-50 border border-stone-200 rounded-2xl space-y-2">
+                <div className="p-3 sm:p-3.5 bg-stone-50 border border-stone-200 rounded-2xl space-y-2">
                   <span className="font-bold text-stone-800 text-[11px] block uppercase tracking-wider">SEO Google Headers Preview</span>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Meta Title override</label>
                       <input
@@ -1955,21 +2077,21 @@ export const AdminProductsView: React.FC = () => {
             )}
 
             {/* BUTTON CONTROLS */}
-            <div className="flex items-center justify-between border-t border-stone-100 pt-4">
+            <div className="flex flex-col-reverse sm:flex-row gap-2.5 sm:items-center sm:justify-between border-t border-stone-100 pt-4">
               <button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
-                className="px-4 py-2 border border-stone-200 hover:bg-stone-50 text-stone-700 font-bold rounded-xl cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 border border-stone-200 hover:bg-stone-50 text-stone-700 font-bold rounded-xl cursor-pointer text-center text-xs"
               >
                 Cancel & Close
               </button>
 
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 {formStep > 1 && (
                   <button
                     type="button"
                     onClick={() => setFormStep(prev => prev - 1)}
-                    className="px-4 py-2 border border-stone-200 hover:bg-stone-50 text-stone-700 font-bold rounded-xl cursor-pointer flex items-center gap-1"
+                    className="flex-1 sm:flex-none px-4 py-2.5 border border-stone-200 hover:bg-stone-50 text-stone-700 font-bold rounded-xl cursor-pointer flex items-center justify-center gap-1 text-xs"
                   >
                     <ArrowLeft className="w-4 h-4" /> Back
                   </button>
@@ -1985,7 +2107,7 @@ export const AdminProductsView: React.FC = () => {
                       }
                       setFormStep(prev => prev + 1);
                     }}
-                    className="px-5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-sm flex items-center gap-1"
+                    className="flex-1 sm:flex-none px-5 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-sm flex items-center justify-center gap-1 text-xs"
                   >
                     Next <ArrowRight className="w-4 h-4" />
                   </button>
@@ -1993,7 +2115,7 @@ export const AdminProductsView: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => handleSaveProductForm()}
-                    className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl cursor-pointer shadow-md flex items-center gap-1.5 transition-colors"
+                    className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl cursor-pointer shadow-md flex items-center justify-center gap-1.5 transition-colors text-xs"
                   >
                     <Check className="w-4 h-4" /> Confirm & Place Live
                   </button>
