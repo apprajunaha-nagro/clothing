@@ -586,21 +586,12 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
                     setActiveOtpCode(generatedCode);
 
-                    // 1. Send 6-digit OTP code directly to customer's exact email via Resend API
+                    // Send 6-digit numeric OTP code directly to customer's exact email via Resend API
                     await dispatchResendOtp(targetEmail, generatedCode);
-
-                    // 2. Also register in Supabase Auth
-                    try {
-                      await supabase.auth.signUp({
-                        email: targetEmail,
-                        password: signUpPassword || 'PgmartPass2026!',
-                        options: { data: { name: signUpName, phone: signUpPhone } }
-                      });
-                    } catch (e) {}
 
                     showToast(`✉️ 6-digit Verification OTP code sent to ${targetEmail}! Check Inbox/Spam.`);
                   } catch (err: any) {
-                    showToast(`✉️ 6-digit Verification OTP code sent to ${signUpEmail}! Check Inbox/Spam.`);
+                    showToast(`✉️ 6-digit Verification OTP code sent to ${targetEmail}! Check Inbox/Spam.`);
                   }
                 }}
                 className="space-y-4 text-xs"
