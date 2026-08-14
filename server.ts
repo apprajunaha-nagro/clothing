@@ -83,47 +83,6 @@ app.post('/api/upload', (req, res) => {
   }
 });
 
-// ---------------- API ROUTE: SEND RESEND OTP ----------------
-app.post('/api/auth/send-resend-otp', async (req, res) => {
-  try {
-    const { email, code } = req.body;
-    if (!email || typeof email !== 'string') {
-      return res.status(400).json({ error: 'Valid email address is required' });
-    }
-    const targetEmail = email.trim().toLowerCase();
-    const otpCode = (code && typeof code === 'string') ? code.trim() : Math.floor(100000 + Math.random() * 900000).toString();
-    const codeHash = hashOtpCode(otpCode);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
-
-    try {
-      await prisma.otp.create({
-        data: {
-          email: targetEmail,
-          codeHash,
-          purpose: 'signup_verification',
-          expiresAt,
-          attempts: 0,
-          verified: false
-        }
-      });
-    } catch (dbErr) {
-      console.warn('[DB OTP Save Warning]:', dbErr);
-    }
-    
-    console.log(`[Express OTP API] Dispatching OTP ${otpCode} to ${targetEmail}...`);
-    const sent = await sendOtpEmail(targetEmail, otpCode);
-    
-    if (sent) {
-      return res.json({ success: true, otpCode });
-    } else {
-      return res.status(500).json({ error: 'Failed to dispatch OTP email' });
-    }
-  } catch (err: any) {
-    console.error('[OTP API Error]:', err);
-    return res.status(500).json({ error: err?.message || 'Server error dispatching OTP' });
-  }
-});
-
 // Helper to hash OTP code with SHA-256
 function hashOtpCode(code: string): string {
   return crypto.createHash('sha256').update(code.trim()).digest('hex');

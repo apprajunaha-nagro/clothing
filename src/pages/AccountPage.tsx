@@ -10,7 +10,6 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { PincodeField } from '../components/PincodeField';
 import { supabase } from '../lib/supabaseClient';
-import { dispatchResendOtp } from '../lib/resendClient';
 
 interface AccountPageProps {
   onNavigate: (path: string) => void;
@@ -447,81 +446,49 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                           type="button"
                           disabled={isVerifyingEmailOtp}
                           onClick={async () => {
-                            if (!enteredEmailOtp || enteredEmailOtp.length < 6) {
+                            const userEnteredCode = enteredEmailOtp.trim();
+                            if (!userEnteredCode || userEnteredCode.length < 6) {
                               setAuthError('Please enter a valid 6-digit Email OTP code.');
                               return;
                             }
                             setIsVerifyingEmailOtp(true);
                             setAuthError(null);
+                            const targetEmail = signUpEmail.trim().toLowerCase();
+
                             try {
-                              const entered = enteredEmailOtp.trim();
-                              const savedCode = activeOtpCode || sessionStorage.getItem('activeOtpCode');
-
-                              // 1. Check if matches active OTP code
-                              if (savedCode && entered === savedCode) {
-                                setIsEmailVerified(true);
-                                setAuthError(null);
-                                showToast('✓ Email Verified! Completing account setup...');
-                                setTimeout(() => {
-                                  loginUser(signUpName || 'New Member', signUpEmail, signUpPhone || '');
-                                  if (redirectParam) onNavigate(redirectParam);
-                                }, 800);
-                                return;
-                              }
-
-                              // 2. Check Database / Server verification endpoint
-                              try {
-                                const verifyRes = await fetch('/api/auth/verify-otp', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ email: signUpEmail.trim().toLowerCase(), code: entered })
-                                });
-                                if (verifyRes.ok) {
-                                  const verifyData = await verifyRes.json();
-                                  if (verifyData.verified) {
-                                    setIsEmailVerified(true);
-                                    setAuthError(null);
-                                    showToast('✓ Email Verified! Completing account setup...');
-                                    setTimeout(() => {
-                                      loginUser(signUpName || 'New Member', signUpEmail, signUpPhone || '');
-                                      if (redirectParam) onNavigate(redirectParam);
-                                    }, 800);
-                                    return;
-                                  }
-                                }
-                              } catch (e) {}
-
-                              // 3. Try Supabase Auth OTP verification
-                              let { data: supaData, error: supaErr } = await supabase.auth.verifyOtp({
-                                email: signUpEmail,
-                                token: entered,
-                                type: 'signup'
+                              // Native Supabase Auth OTP Verification
+                              let { data, error } = await supabase.auth.verifyOtp({
+                                email: targetEmail,
+                                token: userEnteredCode,
+                                type: 'email'
                               });
 
-                              if (supaErr) {
+                              if (error) {
                                 const retry = await supabase.auth.verifyOtp({
-                                  email: signUpEmail,
-                                  token: entered,
-                                  type: 'email'
+                                  email: targetEmail,
+                                  token: userEnteredCode,
+                                  type: 'signup'
                                 });
-                                supaData = retry.data;
-                                supaErr = retry.error;
+                                data = retry.data;
+                                error = retry.error;
                               }
 
-                              if (!supaErr && supaData?.user) {
+                              if (error) {
+                                console.error('[Supabase verifyOtp Error]:', error);
+                                setAuthError(error.message || 'Invalid or expired OTP code.');
+                              } else if (data?.user || data?.session) {
                                 setIsEmailVerified(true);
                                 setAuthError(null);
                                 showToast('✓ Email Verified! Completing account setup...');
                                 setTimeout(() => {
-                                  loginUser(signUpName || supaData.user?.user_metadata?.name || 'New Member', signUpEmail, signUpPhone || '');
+                                  loginUser(signUpName || data.user?.user_metadata?.name || 'New Member', targetEmail, signUpPhone || '');
                                   if (redirectParam) onNavigate(redirectParam);
                                 }, 800);
-                                return;
+                              } else {
+                                setAuthError('Invalid or expired OTP code.');
                               }
-
-                              setAuthError('Invalid or expired 6-digit OTP code. Please check your email inbox/spam folder.');
                             } catch (err: any) {
-                              setAuthError('Failed to verify Email OTP. Please check your network connection.');
+                              setAuthError(err?.message || 'Failed to verify Email OTP. Please check your connection.');
                             } finally {
                               setIsVerifyingEmailOtp(false);
                             }
@@ -538,15 +505,22 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                           onClick={async () => {
                             setIsResendingEmail(true);
                             setAuthError(null);
+                            const targetEmail = signUpEmail.trim().toLowerCase();
                             try {
-                              const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-                              setActiveOtpCode(newCode);
-                              try { sessionStorage.setItem('activeOtpCode', newCode); } catch (e) {}
-                              await dispatchResendOtp(signUpEmail, newCode);
-                              setResendEmailTimer(60);
-                              showToast('✉️ 6-digit Verification OTP code sent to ' + signUpEmail);
+                              const { error } = await supabase.auth.signInWithOtp({
+                                email: targetEmail,
+                                options: { shouldCreateUser: true }
+                              });
+
+                              if (error) {
+                                console.error('[Supabase signInWithOtp Resend Error]:', error);
+                                setAuthError(error.message || 'Failed to resend verification OTP.');
+                              } else {
+                                setResendEmailTimer(60);
+                                showToast('✉️ 6-digit Verification OTP code sent to ' + targetEmail);
+                              }
                             } catch (e: any) {
-                              showToast('⚠️ Email OTP resend failed. Try again.');
+                              setAuthError(e?.message || 'Email OTP resend failed.');
                             } finally {
                               setIsResendingEmail(false);
                             }
@@ -602,21 +576,27 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   }
                   setIsVerifyingOtp(true);
                   setAuthError(null);
-                  setResendEmailTimer(60);
 
-                  // Dispatch 6-digit OTP code directly to user's email via Resend API
+                  const targetEmail = signUpEmail.trim().toLowerCase();
+
                   try {
-                    const targetEmail = signUpEmail.trim().toLowerCase();
-                    const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-                    setActiveOtpCode(generatedCode);
-                    try { sessionStorage.setItem('activeOtpCode', generatedCode); } catch (e) {}
+                    const { error } = await supabase.auth.signInWithOtp({
+                      email: targetEmail,
+                      options: { shouldCreateUser: true }
+                    });
 
-                    // Send 6-digit numeric OTP code directly to customer's exact email via Resend API
-                    await dispatchResendOtp(targetEmail, generatedCode);
-
-                    showToast(`✉️ 6-digit Verification OTP code sent to ${targetEmail}! Check Inbox/Spam.`);
+                    if (error) {
+                      console.error('[Supabase signInWithOtp Error]:', error);
+                      setAuthError(error.message || 'Failed to send verification OTP.');
+                      setIsVerifyingOtp(false);
+                    } else {
+                      setResendEmailTimer(60);
+                      showToast(`✉️ 6-digit Verification OTP code sent to ${targetEmail}! Check Inbox/Spam.`);
+                    }
                   } catch (err: any) {
-                    showToast(`✉️ 6-digit Verification OTP code sent to ${targetEmail}! Check Inbox/Spam.`);
+                    console.error('[Signup Submit Error]:', err);
+                    setAuthError(err?.message || 'Failed to request verification code.');
+                    setIsVerifyingOtp(false);
                   }
                 }}
                 className="space-y-4 text-xs"
