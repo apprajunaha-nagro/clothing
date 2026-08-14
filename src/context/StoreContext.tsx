@@ -371,7 +371,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         safeJsonFetch('/api/categories'),
         safeJsonFetch('/api/products'),
         safeJsonFetch('/api/orders'),
-        safeJsonFetch('/api/brands')
+        safeJsonFetch('/api/brands'),
+        safeJsonFetch('/api/banners')
       ]);
 
       if (resSet) {
@@ -394,6 +395,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (Array.isArray(orderList)) setOrders(orderList);
       }
       if (resBrs && Array.isArray(resBrs) && resBrs.length > 0) setBrands(resBrs);
+      if (resBan && Array.isArray(resBan) && resBan.length > 0) setBanners(resBan);
     } catch (e) {
       console.warn('Backend sync failed, using initial seed data', e);
     }

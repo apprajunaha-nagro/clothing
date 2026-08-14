@@ -395,6 +395,87 @@ app.get('/api/brands', async (req, res) => {
   return res.json([]);
 });
 
+// ---------------- API ROUTES: BANNERS ----------------
+
+// GET /api/banners
+app.get('/api/banners', async (req, res) => {
+  try {
+    const banners = await prisma.banner.findMany({
+      orderBy: { sortOrder: 'asc' }
+    });
+    return res.json(banners);
+  } catch (e) {
+    console.warn('[GET /api/banners Error]:', e);
+  }
+  return res.json([]);
+});
+
+// POST /api/banners
+app.post('/api/banners', async (req, res) => {
+  try {
+    const b = req.body;
+    const id = b.id || `banner-${Date.now()}`;
+    const created = await prisma.banner.upsert({
+      where: { id },
+      update: {
+        title: b.title || 'Special Promotion',
+        subtitle: b.subtitle || null,
+        image: b.image || '',
+        mobileImage: b.mobileImage || null,
+        link: b.link || '/category/women',
+        buttonText: b.buttonText || 'Shop Now',
+        position: b.position || 'hero',
+        sortOrder: Number(b.sortOrder) || 1,
+        isActive: b.isActive ?? true
+      },
+      create: {
+        id,
+        title: b.title || 'Special Promotion',
+        subtitle: b.subtitle || null,
+        image: b.image || '',
+        mobileImage: b.mobileImage || null,
+        link: b.link || '/category/women',
+        buttonText: b.buttonText || 'Shop Now',
+        position: b.position || 'hero',
+        sortOrder: Number(b.sortOrder) || 1,
+        isActive: b.isActive ?? true
+      }
+    });
+    return res.json({ success: true, banner: created });
+  } catch (e: any) {
+    console.error('[POST /api/banners Error]:', e);
+    return res.status(500).json({ error: e?.message || 'Failed to save banner' });
+  }
+});
+
+// PUT /api/banners/:id
+app.put('/api/banners/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const b = req.body;
+    const updated = await prisma.banner.update({
+      where: { id },
+      data: b
+    });
+    return res.json({ success: true, banner: updated });
+  } catch (e: any) {
+    console.error('[PUT /api/banners Error]:', e);
+    return res.status(500).json({ error: e?.message || 'Failed to update banner' });
+  }
+});
+
+// DELETE /api/banners/:id
+app.delete('/api/banners/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.banner.delete({ where: { id } });
+    return res.json({ success: true });
+  } catch (e: any) {
+    console.error('[DELETE /api/banners Error]:', e);
+    return res.status(500).json({ error: 'Failed to delete banner' });
+  }
+});
+
 // POST /api/brands
 app.post('/api/brands', async (req, res) => {
   try {

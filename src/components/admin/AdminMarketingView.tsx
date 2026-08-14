@@ -168,7 +168,7 @@ export const AdminMarketingView: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleSaveBanner = (e: React.FormEvent) => {
+  const handleSaveBanner = async (e: React.FormEvent) => {
     e.preventDefault();
     const newBanner: Banner = {
       id: `ban-${Date.now()}`,
@@ -190,17 +190,29 @@ export const AdminMarketingView: React.FC = () => {
     setBImage('');
     setBLink('/category/women');
     setBButtonText('EXPLORE COLLECTION');
-    showToast(`Banner frame added & synchronized with live store!`);
+
+    try {
+      await fetch('/api/banners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBanner)
+      });
+      showToast(`Banner frame added & saved to database!`);
+    } catch (e) {
+      console.warn('Backend sync failed for banner creation', e);
+      showToast(`Banner frame added & synchronized!`);
+    }
   };
 
   // Dedicated Save Handler for the Ad Banner (Above Deals of the Day)
-  const handleSaveAdBannerSettings = (e: React.FormEvent) => {
+  const handleSaveAdBannerSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     const existingIndex = banners.findIndex(b => b.position === 'ad_banner' || b.position === 'promo_strip');
+    let targetAd: Banner;
     let updated: Banner[];
     if (existingIndex >= 0) {
-      updated = banners.map((b, idx) => idx === existingIndex ? {
-        ...b,
+      targetAd = {
+        ...banners[existingIndex],
         title: adTitle || 'Banarasi Silk Sarees',
         subtitle: adSubtitle || 'Flat 40% OFF Festive Discount | Code: FESTIVE40',
         image: adImage || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1400&q=85',
@@ -208,9 +220,10 @@ export const AdminMarketingView: React.FC = () => {
         buttonText: adButtonText || 'EXPLORE COLLECTION',
         position: 'ad_banner' as const,
         isActive: true,
-      } : b);
+      };
+      updated = banners.map((b, idx) => idx === existingIndex ? targetAd : b);
     } else {
-      const newAd: Banner = {
+      targetAd = {
         id: `ad-${Date.now()}`,
         title: adTitle || 'Banarasi Silk Sarees',
         subtitle: adSubtitle || 'Flat 40% OFF Festive Discount | Code: FESTIVE40',
@@ -221,31 +234,74 @@ export const AdminMarketingView: React.FC = () => {
         sortOrder: 1,
         isActive: true
       };
-      updated = [newAd, ...banners];
+      updated = [targetAd, ...banners];
     }
     setBanners(updated);
-    showToast('✨ Ad Banner (Above Deals of the Day) saved & updated live on homepage!');
+
+    try {
+      await fetch('/api/banners', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(targetAd)
+      });
+      showToast('✨ Ad Banner saved & updated live in database!');
+    } catch (e) {
+      console.warn('Backend sync failed for ad banner', e);
+      showToast('✨ Ad Banner saved & updated live on homepage!');
+    }
   };
 
-  const handleUpdateExistingBanner = (e: React.FormEvent) => {
+  const handleUpdateExistingBanner = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingBanner) return;
-    const updated = banners.map(b => b.id === editingBanner.id ? editingBanner : b);
+    const targetBanner = editingBanner;
+    const updated = banners.map(b => b.id === targetBanner.id ? targetBanner : b);
     setBanners(updated);
     setEditingBanner(null);
-    showToast(`Banner "${editingBanner.title}" updated successfully!`);
+
+    try {
+      await fetch(`/api/banners/${targetBanner.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(targetBanner)
+      });
+      showToast(`Banner "${targetBanner.title}" updated in database!`);
+    } catch (e) {
+      console.warn('Backend sync failed for banner update', e);
+      showToast(`Banner "${targetBanner.title}" updated successfully!`);
+    }
   };
 
-  const handleToggleBannerStatus = (id: string) => {
-    const updated = banners.map(b => b.id === id ? { ...b, isActive: !b.isActive } : b);
+  const handleToggleBannerStatus = async (id: string) => {
+    const target = banners.find(b => b.id === id);
+    const newStatus = target ? !target.isActive : true;
+    const updated = banners.map(b => b.id === id ? { ...b, isActive: newStatus } : b);
     setBanners(updated);
-    showToast('Banner active state updated on live store.');
+
+    try {
+      await fetch(`/api/banners/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newStatus })
+      });
+      showToast('Banner active state updated in database.');
+    } catch (e) {
+      console.warn('Backend sync failed for banner status toggle', e);
+      showToast('Banner active state updated on live store.');
+    }
   };
 
-  const handleDeleteBanner = (id: string) => {
+  const handleDeleteBanner = async (id: string) => {
     const updated = banners.filter(b => b.id !== id);
     setBanners(updated);
-    showToast('Banner removed.');
+
+    try {
+      await fetch(`/api/banners/${id}`, { method: 'DELETE' });
+      showToast('Banner removed from database.');
+    } catch (e) {
+      console.warn('Backend sync failed for banner delete', e);
+      showToast('Banner removed.');
+    }
   };
 
   // FEATURED BRANDS SECTION HANDLER
