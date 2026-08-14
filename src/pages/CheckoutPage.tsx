@@ -66,9 +66,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
     return acc + price * item.quantity;
   }, 0);
 
-  const freeShippingThreshold = settings.freeShippingThreshold || 999;
-  const shippingFee = subtotal >= freeShippingThreshold ? 0 : settings.standardShippingFee;
-  const codFee = paymentMethod === 'cod' ? settings.codFee : 0;
+  const freeShippingThreshold = typeof settings.freeShippingThreshold === 'number' ? settings.freeShippingThreshold : 999;
+  const standardShippingFee = typeof settings.standardShippingFee === 'number' ? settings.standardShippingFee : 79;
+  const shippingFee = subtotal >= freeShippingThreshold ? 0 : standardShippingFee;
+  const isCodEnabled = settings.codEnabled !== false;
+  const codFee = (paymentMethod === 'cod' && isCodEnabled) ? (Number(settings.codFee) || 0) : 0;
   const tax = Math.round(subtotal * 0.05);
 
   const total = Math.max(0, subtotal - couponDiscount + shippingFee + codFee);
@@ -636,21 +638,25 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
                 </label>
 
                 {/* COD Option */}
-                <label className={`block p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-[#C0654B] bg-[#FAF5F2]' : 'border-stone-200 bg-stone-50'}`}>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={paymentMethod === 'cod'}
-                      onChange={() => setPaymentMethod('cod')}
-                      className="accent-[#C0654B]"
-                    />
-                    <div>
-                      <p className="font-bold text-stone-900">Cash on Delivery (COD)</p>
-                      <p className="text-[11px] text-stone-500">Pay cash upon delivery at your doorstep (+₹{settings.codFee} handling fee applies)</p>
+                {isCodEnabled && (
+                  <label className={`block p-4 rounded-xl border cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-[#C0654B] bg-[#FAF5F2]' : 'border-stone-200 bg-stone-50'}`}>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="payment"
+                        checked={paymentMethod === 'cod'}
+                        onChange={() => setPaymentMethod('cod')}
+                        className="accent-[#C0654B]"
+                      />
+                      <div>
+                        <p className="font-bold text-stone-900">Cash on Delivery (COD)</p>
+                        <p className="text-[11px] text-stone-500">
+                          Pay cash upon delivery at your doorstep {codFee > 0 ? `(+₹${codFee} handling fee applies)` : '(No extra fee)'}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </label>
+                  </label>
+                )}
               </div>
 
               <button
@@ -701,10 +707,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
               <span>Delivery Charges</span>
               <span>{shippingFee === 0 ? <strong className="text-[#26A541]">FREE</strong> : `₹${shippingFee}`}</span>
             </div>
-            {paymentMethod === 'cod' && (
+            {paymentMethod === 'cod' && isCodEnabled && (
               <div className="flex justify-between">
                 <span>COD Charge</span>
-                <span>₹{settings.codFee}</span>
+                <span>{codFee === 0 ? <strong className="text-[#26A541]">FREE</strong> : `₹${codFee}`}</span>
               </div>
             )}
             <div className="flex justify-between font-extrabold text-stone-900 text-sm pt-2 border-t border-stone-200">

@@ -35,11 +35,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
     return acc + price * item.quantity;
   }, 0);
 
-  const freeShippingThreshold = settings.freeShippingThreshold || 999;
+  const freeShippingThreshold = typeof settings.freeShippingThreshold === 'number' ? settings.freeShippingThreshold : 999;
+  const standardShippingFee = typeof settings.standardShippingFee === 'number' ? settings.standardShippingFee : 79;
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
-  const freeShippingPercent = Math.min(100, (subtotal / freeShippingThreshold) * 100);
+  const freeShippingPercent = freeShippingThreshold > 0 ? Math.min(100, (subtotal / freeShippingThreshold) * 100) : 100;
 
-  const finalTotal = Math.max(0, subtotal - couponDiscount + (remainingForFreeShipping === 0 ? 0 : settings.standardShippingFee));
+  const shippingCharge = remainingForFreeShipping === 0 ? 0 : standardShippingFee;
+  const finalTotal = Math.max(0, subtotal - couponDiscount + shippingCharge);
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -249,8 +251,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery Charges</span>
-                  <span className={remainingForFreeShipping === 0 ? 'text-[#26A541] font-bold' : ''}>
-                    {remainingForFreeShipping === 0 ? 'FREE' : `₹${settings.standardShippingFee}`}
+                  <span className={shippingCharge === 0 ? 'text-[#26A541] font-bold' : 'font-semibold text-stone-900'}>
+                    {shippingCharge === 0 ? 'FREE' : `₹${shippingCharge}`}
                   </span>
                 </div>
                 <div className="flex justify-between font-extrabold text-stone-900 text-sm pt-2 border-t border-stone-200">

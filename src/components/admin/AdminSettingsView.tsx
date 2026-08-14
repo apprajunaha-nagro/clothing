@@ -31,6 +31,12 @@ export const AdminSettingsView: React.FC = () => {
   const [secondaryColor, setSecondaryColor] = useState(settings.secondaryDarkColor || '#2B2620');
   const [fontFamily, setFontFamily] = useState('Lora & Playfair Display');
 
+  // Delivery Charges & Free Shipping state
+  const [standardShippingFee, setStandardShippingFee] = useState<number>(settings.standardShippingFee ?? 79);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(settings.freeShippingThreshold ?? 999);
+  const [codFee, setCodFee] = useState<number>(settings.codFee ?? 49);
+  const [codEnabled, setCodEnabled] = useState<boolean>(settings.codEnabled !== false);
+
   // Shipping Zones state (Only Jharkhand and Rest of India)
   const [shippingZones, setShippingZones] = useState([
     { id: 'z1', name: 'Jharkhand (Local State Delivery)', charge: 49, minOrder: 999, active: true },
@@ -586,62 +592,172 @@ export const AdminSettingsView: React.FC = () => {
         </form>
       )}
 
-      {/* 3. LOGISTICS SHIPPING ZONES */}
+      {/* 3. LOGISTICS DELIVERY CHARGES & FREE DELIVERY THRESHOLD */}
       {activeSettingsTab === 'shipping' && (
-        <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-4 text-xs font-semibold text-stone-700 text-left">
-          <div>
-            <h3 className="text-base font-bold font-serif text-stone-900">Logistical Delivery Zones & Delivery Fees</h3>
-            <p className="text-xs text-stone-400">Set direct flat delivery fees and order minimum thresholds for free shipping</p>
-          </div>
-
-          <div className="border border-stone-200 rounded-xl divide-y divide-stone-100">
-            {shippingZones.map(zone => (
-              <div key={zone.id} className="p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="font-extrabold text-stone-900 text-xs flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-[#C0654B]" />
-                    <span>{zone.name}</span>
-                  </div>
-                  <p className="text-[10px] text-stone-400">Automated based on buyer delivery zipcodes at checkout screen</p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-stone-400 mb-0.5">Shipping Charge (₹)</label>
-                    <input
-                      type="number"
-                      value={zone.charge}
-                      onChange={(e) => handleUpdateShippingZone(zone.id, Number(e.target.value), zone.minOrder, zone.active)}
-                      className="w-20 p-1.5 border border-stone-300 rounded bg-white text-center font-bold font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-stone-400 mb-0.5">Free Shipping threshold (₹)</label>
-                    <input
-                      type="number"
-                      value={zone.minOrder}
-                      onChange={(e) => handleUpdateShippingZone(zone.id, zone.charge, Number(e.target.value), zone.active)}
-                      className="w-24 p-1.5 border border-stone-300 rounded bg-white text-center font-bold font-mono"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-1.5 pt-3">
-                    <span className="text-[10px] text-stone-400 font-bold">Scope active:</span>
-                    <button
-                      onClick={() => handleUpdateShippingZone(zone.id, zone.charge, zone.minOrder, !zone.active)}
-                      className={`px-2.5 py-1 rounded text-[10px] uppercase font-bold cursor-pointer ${
-                        zone.active ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-400'
-                      }`}
-                    >
-                      {zone.active ? 'Active' : 'Deactivated'}
-                    </button>
-                  </div>
-                </div>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            await updateSettings({
+              standardShippingFee: Number(standardShippingFee) >= 0 ? Number(standardShippingFee) : 79,
+              freeShippingThreshold: Number(freeShippingThreshold) >= 0 ? Number(freeShippingThreshold) : 999,
+              codFee: Number(codFee) >= 0 ? Number(codFee) : 0,
+              codEnabled: Boolean(codEnabled),
+              shippingPolicy: shippingText
+            });
+            showToast('✓ Delivery charges & free shipping thresholds updated and published live!');
+          }}
+          className="space-y-6 animate-fade-in text-left"
+        >
+          <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-100 pb-4">
+              <div>
+                <h3 className="text-base font-bold font-serif text-stone-900 flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-[#C0654B]" />
+                  <span>Delivery Charges & Free Shipping Configuration</span>
+                </h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  Changes made here instantly reflect across the customer Cart Drawer, Free Delivery meter, and Checkout page.
+                </p>
               </div>
-            ))}
+              <span className="bg-emerald-50 text-emerald-700 text-[11px] font-bold px-3 py-1 rounded-full border border-emerald-200 w-fit">
+                Live Storefront Sync
+              </span>
+            </div>
+
+            {/* CORE SHIPPING CHARGES GRID */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* STANDARD SHIPPING FEE */}
+              <div className="bg-stone-50 p-5 rounded-2xl border border-stone-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-extrabold text-stone-900 text-xs uppercase tracking-wider">
+                    Standard Delivery Fee (₹)
+                  </label>
+                  <span className="text-[10px] font-bold text-stone-500">Per Order</span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-stone-500 text-sm">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    value={standardShippingFee}
+                    onChange={(e) => setStandardShippingFee(Number(e.target.value))}
+                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-stone-300 rounded-xl font-bold font-mono text-stone-900 text-sm focus:outline-none focus:border-[#C0654B]"
+                    placeholder="79"
+                  />
+                </div>
+                <p className="text-[11px] text-stone-500 leading-relaxed">
+                  Flat delivery fee billed when the customer cart total is below the free delivery threshold. Set to <strong>0</strong> for sitewide free shipping.
+                </p>
+              </div>
+
+              {/* FREE DELIVERY THRESHOLD */}
+              <div className="bg-stone-50 p-5 rounded-2xl border border-stone-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-extrabold text-stone-900 text-xs uppercase tracking-wider">
+                    Free Delivery Threshold (₹)
+                  </label>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                    Auto Free Shipping
+                  </span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-stone-500 text-sm">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    required
+                    value={freeShippingThreshold}
+                    onChange={(e) => setFreeShippingThreshold(Number(e.target.value))}
+                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-stone-300 rounded-xl font-bold font-mono text-stone-900 text-sm focus:outline-none focus:border-[#C0654B]"
+                    placeholder="999"
+                  />
+                </div>
+                <p className="text-[11px] text-stone-500 leading-relaxed">
+                  Minimum cart subtotal required for the customer to unlock 100% Free Shipping. Drives higher average order value.
+                </p>
+              </div>
+
+              {/* CASH ON DELIVERY (COD) FEE */}
+              <div className="bg-stone-50 p-5 rounded-2xl border border-stone-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="font-extrabold text-stone-900 text-xs uppercase tracking-wider">
+                    Cash on Delivery (COD) Fee (₹)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setCodEnabled(!codEnabled)}
+                    className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full cursor-pointer transition-colors ${
+                      codEnabled ? 'bg-emerald-600 text-white' : 'bg-stone-300 text-stone-700'
+                    }`}
+                  >
+                    {codEnabled ? 'COD Enabled' : 'COD Disabled'}
+                  </button>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-stone-500 text-sm">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    disabled={!codEnabled}
+                    value={codFee}
+                    onChange={(e) => setCodFee(Number(e.target.value))}
+                    className="w-full pl-8 pr-4 py-2.5 bg-white border border-stone-300 rounded-xl font-bold font-mono text-stone-900 text-sm focus:outline-none focus:border-[#C0654B] disabled:opacity-50"
+                    placeholder="49"
+                  />
+                </div>
+                <p className="text-[11px] text-stone-500 leading-relaxed">
+                  Additional doorstep courier handling fee applied specifically when the customer selects COD at checkout.
+                </p>
+              </div>
+
+              {/* LIVE CUSTOMER STOREFRONT PREVIEW CARD */}
+              <div className="bg-[#FAF5F2] p-5 rounded-2xl border border-[#C0654B]/30 space-y-3">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#C0654B] block">
+                  Customer Experience Live Preview
+                </span>
+                <div className="bg-white p-3.5 rounded-xl border border-stone-200 shadow-2xs space-y-2 text-xs">
+                  <div className="flex justify-between items-center text-[11px] text-stone-700">
+                    <span>Cart Value &lt; ₹{freeShippingThreshold.toLocaleString('en-IN')}:</span>
+                    <span className="font-bold text-stone-900">
+                      +₹{standardShippingFee} Delivery Fee
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px] text-stone-700">
+                    <span>Cart Value &ge; ₹{freeShippingThreshold.toLocaleString('en-IN')}:</span>
+                    <span className="font-extrabold text-emerald-600">FREE Delivery</span>
+                  </div>
+                  {codEnabled && (
+                    <div className="flex justify-between items-center text-[11px] text-stone-700 pt-1 border-t border-stone-100">
+                      <span>Doorstep Cash on Delivery:</span>
+                      <span className="font-bold text-stone-900">+₹{codFee} COD Fee</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-[10px] text-stone-500">
+                  Customers in the Cart Drawer see the animated Free Shipping progress bar calibrated to ₹{freeShippingThreshold.toLocaleString('en-IN')}.
+                </p>
+              </div>
+            </div>
+
+            {/* SAVE BUTTON */}
+            <div className="pt-4 border-t border-stone-100 flex items-center justify-between flex-wrap gap-3">
+              <p className="text-xs text-stone-500">
+                All settings are stored permanently in the database and active instantly.
+              </p>
+              <button
+                type="submit"
+                className="px-6 py-3 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-2 transition-colors uppercase tracking-wider"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save & Apply Delivery Charges Live</span>
+              </button>
+            </div>
           </div>
-        </div>
+        </form>
       )}
 
 
