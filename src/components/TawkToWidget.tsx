@@ -6,20 +6,20 @@ interface TawkToWidgetProps {
 }
 
 export const TawkToWidget: React.FC<TawkToWidgetProps> = ({
-  propertyId = '5eac77c1203e206707f8b95a', // User's Tawk.to Property ID
+  propertyId = '5eac77c1203e206707f8b95a',
   widgetId = 'default'
 }) => {
   useEffect(() => {
     // Avoid duplicate script injection
-    if (document.getElementById('tawk-to-script')) return;
+    if (document.getElementById('tawk-to-script')) {
+      if ((window as any).Tawk_API?.showWidget) {
+        (window as any).Tawk_API.showWidget();
+      }
+      return;
+    }
 
     (window as any).Tawk_API = (window as any).Tawk_API || {};
     (window as any).Tawk_LoadStart = new Date();
-    (window as any).Tawk_API.onLoad = function() {
-      if ((window as any).Tawk_API.hideWidget) {
-        (window as any).Tawk_API.hideWidget();
-      }
-    };
 
     const s1 = document.createElement('script');
     const s0 = document.getElementsByTagName('script')[0];
@@ -32,6 +32,13 @@ export const TawkToWidget: React.FC<TawkToWidgetProps> = ({
     if (s0 && s0.parentNode) {
       s0.parentNode.insertBefore(s1, s0);
     }
+
+    return () => {
+      // Hide widget when navigating to admin or unmounting
+      if ((window as any).Tawk_API?.hideWidget) {
+        (window as any).Tawk_API.hideWidget();
+      }
+    };
   }, [propertyId, widgetId]);
 
   return null;
