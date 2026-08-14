@@ -19,9 +19,18 @@ type TabType = 'overview' | 'orders' | 'returns' | 'wishlist' | 'addresses' | 'p
 export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   const { user, setUser, orders, wishlist, products, showToast, addToCart, toggleWishlist, logoutUser, loginUser, requestOrderReturn, updateOrderStatus } = useStore();
   
-  // Read tab from query string if available (e.g. /account?tab=wishlist)
-  const queryTab = new URLSearchParams(window.location.search).get('tab') as TabType | null;
+  // Read tab and redirect from query string if available
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryTab = urlParams.get('tab') as TabType | null;
+  const redirectParam = urlParams.get('redirect');
   const [activeTab, setActiveTab] = useState<TabType>(queryTab || 'overview');
+
+  // If already logged in and redirect parameter exists, immediately navigate there
+  React.useEffect(() => {
+    if (user && redirectParam) {
+      onNavigate(redirectParam);
+    }
+  }, [user, redirectParam, onNavigate]);
 
   // Auth form state for logged-out state
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -278,9 +287,13 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
             <div className="w-14 h-14 rounded-full bg-[#C0654B] text-white font-bold text-xl flex items-center justify-center font-serif mx-auto shadow-md">
               PG
             </div>
-            <h1 className="text-2xl font-bold font-serif text-stone-100">Welcome to PGmart</h1>
+            <h1 className="text-2xl font-bold font-serif text-stone-100">
+              {redirectParam === '/checkout' ? 'Sign In to Place Order' : 'Welcome to PGmart'}
+            </h1>
             <p className="text-xs text-stone-300 max-w-xs mx-auto leading-relaxed">
-              Sign in or create an account to track orders, manage delivery addresses, and redeem Terra Club loyalty points.
+              {redirectParam === '/checkout'
+                ? 'Sign in or create an account to view your saved delivery address and place your order safely.'
+                : 'Sign in or create an account to track orders, manage delivery addresses, and redeem Terra Club loyalty points.'}
             </p>
           </div>
 
@@ -332,8 +345,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     return;
                   }
                   const displayName = signInEmail.split('@')[0];
-                  loginUser(displayName, signInEmail, '+91 98765 43210');
+                  loginUser(displayName, signInEmail);
                   showToast('Welcome back! Signed in successfully.');
+                  if (redirectParam) {
+                    onNavigate(redirectParam);
+                  }
                 }}
                 className="space-y-4 text-xs"
               >
@@ -446,7 +462,10 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                                 setAuthError(null);
                                 showToast('✓ Email Verified! Completing account setup...');
                                 setTimeout(() => {
-                                  loginUser(signUpName || 'New Member', signUpEmail || 'user@pgmart.in', signUpPhone || '+91 98765 43210');
+                                  loginUser(signUpName || 'New Member', signUpEmail || 'user@pgmart.in', signUpPhone || '');
+                                  if (redirectParam) {
+                                    onNavigate(redirectParam);
+                                  }
                                 }, 800);
                               } else {
                                 setAuthError(data.error || 'Invalid or expired OTP code. Please check your email.');
@@ -509,8 +528,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   type="button"
                   disabled={!isEmailVerified}
                   onClick={() => {
-                    loginUser(signUpName || 'New Member', signUpEmail || 'user@pgmart.in', signUpPhone || '+91 98765 43210');
+                    loginUser(signUpName || 'New Member', signUpEmail || 'user@pgmart.in', signUpPhone || '');
                     showToast('🎉 Account Verified! Welcome to PGmart.');
+                    if (redirectParam) {
+                      onNavigate(redirectParam);
+                    }
                   }}
                   className={`w-full font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md ${
                     isEmailVerified

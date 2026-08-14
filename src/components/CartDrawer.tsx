@@ -19,7 +19,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
     appliedCoupon,
     couponDiscount,
     applyCoupon,
-    removeCoupon
+    removeCoupon,
+    user,
+    showToast
   } = useStore();
 
   const [couponCode, setCouponCode] = useState('');
@@ -37,7 +39,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
   const remainingForFreeShipping = Math.max(0, freeShippingThreshold - subtotal);
   const freeShippingPercent = Math.min(100, (subtotal / freeShippingThreshold) * 100);
 
-  const finalTotal = Math.max(0, subtotal - couponDiscount);
+  const finalTotal = Math.max(0, subtotal - couponDiscount + (remainingForFreeShipping === 0 ? 0 : settings.standardShippingFee));
 
   const handleApplyCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,7 +264,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ onNavigate }) => {
               <button
                 onClick={() => {
                   setCartDrawerOpen(false);
-                  onNavigate('/checkout');
+                  if (!user) {
+                    showToast('Please sign in or create an account to place your order.');
+                    onNavigate('/account?redirect=/checkout');
+                  } else {
+                    onNavigate('/checkout');
+                  }
                 }}
                 className="w-full bg-[#C0654B] hover:bg-[#a85239] text-white text-xs font-black py-3 rounded shadow-2xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer uppercase tracking-wider"
               >

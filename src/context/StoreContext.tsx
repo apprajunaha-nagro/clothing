@@ -354,7 +354,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.name !== 'Priya Sharma') {
-          return parsed;
+          // Filter out any legacy dummy address from parsed user
+          const cleanedAddrs = Array.isArray(parsed.addresses)
+            ? parsed.addresses.filter((a: any) => !a.street?.includes('Flat 402, Lotus Apartments'))
+            : [];
+          return { ...parsed, addresses: cleanedAddrs };
         }
       }
       return null;
@@ -368,27 +372,31 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     localStorage.removeItem('terra_user');
   };
 
-  const loginUser = (name: string, email: string, phone?: string) => {
+  const loginUser = (name: string, email: string, phone?: string, initialAddresses?: Address[]) => {
+    // Preserve existing saved addresses if user previously saved any
+    let savedAddrs: Address[] = [];
+    if (initialAddresses && initialAddresses.length > 0) {
+      savedAddrs = initialAddresses;
+    } else {
+      try {
+        const saved = localStorage.getItem('terra_user');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed?.email?.toLowerCase() === email?.toLowerCase() && Array.isArray(parsed?.addresses)) {
+            savedAddrs = parsed.addresses.filter((a: Address) => !a.street?.includes('Flat 402, Lotus Apartments'));
+          }
+        }
+      } catch {}
+    }
+
     const newUser: User = {
       id: `u-${Date.now()}`,
       name: name || 'Valued Customer',
       email: email || 'customer@example.com',
-      phone: phone || '+91 98765 43210',
+      phone: phone || '',
       points: 100,
       createdAt: new Date().toISOString().split('T')[0],
-      addresses: [
-        {
-          id: `addr-${Date.now()}`,
-          fullName: name || 'Valued Customer',
-          phone: phone || '+91 98765 43210',
-          street: 'Flat 402, Lotus Apartments, Salt Lake Sector 5',
-          city: 'Kolkata',
-          state: 'West Bengal',
-          pincode: '700091',
-          type: 'home',
-          isDefault: true
-        }
-      ]
+      addresses: savedAddrs
     };
     setUser(newUser);
     localStorage.setItem('terra_user', JSON.stringify(newUser));

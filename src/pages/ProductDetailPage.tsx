@@ -276,7 +276,12 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
 
   const handleBuyNow = () => {
     handleAddToCartWithImage();
-    onNavigate('/checkout');
+    if (!user) {
+      showToast('Please sign in or create an account to complete your purchase.');
+      onNavigate('/account?redirect=/checkout');
+    } else {
+      onNavigate('/checkout');
+    }
   };
 
   const handleReviewSubmit = (e: React.FormEvent) => {
