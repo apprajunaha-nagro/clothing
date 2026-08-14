@@ -431,9 +431,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                       <p className="text-[10px] text-stone-500">
                         An email verification code has been dispatched to <span className="font-semibold text-stone-800">{signUpEmail}</span>. Please check your <span className="font-bold text-stone-900 underline decoration-[#C0654B]">Inbox</span> or <span className="font-bold text-amber-700 underline">Spam / Junk Folder</span>.
                       </p>
-                      <p className="text-[10px] font-semibold text-emerald-800 bg-emerald-50/90 border border-emerald-200 p-2 rounded-lg">
-                        💡 Check your email inbox/spam folder for your OTP. You can also enter master test code <span className="font-mono font-bold underline text-emerald-900">123456</span> for instant verification!
-                      </p>
 
                       <div className="flex gap-2">
                         <input
@@ -455,18 +452,6 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                             setIsVerifyingEmailOtp(true);
                             setAuthError(null);
                             try {
-                              // Master test fallback: 123456
-                              if (enteredEmailOtp.trim() === '123456') {
-                                setIsEmailVerified(true);
-                                setAuthError(null);
-                                showToast('✓ Email Verified! Completing account setup...');
-                                setTimeout(() => {
-                                  loginUser(signUpName || 'New Member', signUpEmail, signUpPhone || '');
-                                  if (redirectParam) onNavigate(redirectParam);
-                                }, 800);
-                                return;
-                              }
-
                               // 1. Try Supabase Auth OTP verification
                               const { data: supaData, error: supaErr } = await supabase.auth.verifyOtp({
                                 email: signUpEmail,
