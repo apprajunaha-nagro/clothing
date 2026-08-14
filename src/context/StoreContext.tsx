@@ -434,7 +434,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               });
               const dbIds = new Set(dbOrders.map((o: Order) => o.id));
               const localOnly = prev.filter(o => !dbIds.has(o.id));
-              return [...merged, ...localOnly];
+              const nextOrders = [...merged, ...localOnly];
+
+              // Check if identical to avoid useless state reference updates
+              if (prev.length === nextOrders.length) {
+                const isIdentical = prev.every((p, idx) => {
+                  const n = nextOrders[idx];
+                  return n && p.id === n.id && p.status === n.status && p.trackingNumber === n.trackingNumber && p.updatedAt === n.updatedAt;
+                });
+                if (isIdentical) return prev;
+              }
+              return nextOrders;
             });
           }
         }
@@ -1078,77 +1088,99 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setFilters(defaultFilters);
   };
 
+  const contextValue = useMemo(() => ({
+    settings,
+    updateSettings,
+    categories,
+    setCategories,
+    brands,
+    setBrands,
+    saveBrand,
+    toggleBrand,
+    deleteBrand,
+    products,
+    setProducts,
+    banners,
+    setBanners,
+    coupons,
+    setCoupons,
+    saveCoupon,
+    toggleCoupon,
+    deleteCoupon,
+    cart,
+    addToCart,
+    removeFromCart,
+    updateCartQty,
+    clearCart,
+    appliedCoupon,
+    couponDiscount,
+    applyCoupon,
+    removeCoupon,
+    wishlist,
+    toggleWishlist,
+    user,
+    setUser,
+    logoutUser,
+    loginUser,
+    isAdminLoggedIn,
+    adminLogin,
+    adminLogout,
+    saveSettings,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    orders,
+    createOrder,
+    updateOrderStatus,
+    requestOrderReturn,
+    updateReturnStatus,
+    reviews,
+    setReviews,
+    addReview,
+    updateReviewStatus,
+    deleteReview,
+    filters,
+    setFilters,
+    resetFilters,
+    toastMessage,
+    showToast,
+    searchModalOpen,
+    setSearchModalOpen,
+    cartDrawerOpen,
+    setCartDrawerOpen,
+    quickViewProduct,
+    setQuickViewProduct,
+    sizeChartCategory,
+    setSizeChartCategory,
+    chatOpen,
+    setChatOpen,
+    reloadCatalog
+  }), [
+    settings,
+    categories,
+    brands,
+    products,
+    banners,
+    coupons,
+    cart,
+    appliedCoupon,
+    couponDiscount,
+    wishlist,
+    user,
+    isAdminLoggedIn,
+    orders,
+    reviews,
+    filters,
+    toastMessage,
+    searchModalOpen,
+    cartDrawerOpen,
+    quickViewProduct,
+    sizeChartCategory,
+    chatOpen
+  ]);
+
   return (
-    <StoreContext.Provider
-      value={{
-        settings,
-        updateSettings,
-        categories,
-        setCategories,
-        brands,
-        setBrands,
-        saveBrand,
-        toggleBrand,
-        deleteBrand,
-        products,
-        setProducts,
-        banners,
-        setBanners,
-        coupons,
-        setCoupons,
-        saveCoupon,
-        toggleCoupon,
-        deleteCoupon,
-        cart,
-        addToCart,
-        removeFromCart,
-        updateCartQty,
-        clearCart,
-        appliedCoupon,
-        couponDiscount,
-        applyCoupon,
-        removeCoupon,
-        wishlist,
-        toggleWishlist,
-        user,
-        setUser,
-        logoutUser,
-        loginUser,
-        isAdminLoggedIn,
-        adminLogin,
-        adminLogout,
-        saveSettings,
-        createProduct,
-        updateProduct,
-        deleteProduct,
-        orders,
-        createOrder,
-        updateOrderStatus,
-        requestOrderReturn,
-        updateReturnStatus,
-        reviews,
-        setReviews,
-        addReview,
-        updateReviewStatus,
-        deleteReview,
-        filters,
-        setFilters,
-        resetFilters,
-        toastMessage,
-        showToast,
-        searchModalOpen,
-        setSearchModalOpen,
-        cartDrawerOpen,
-        setCartDrawerOpen,
-        quickViewProduct,
-        setQuickViewProduct,
-        sizeChartCategory,
-        setSizeChartCategory,
-        chatOpen,
-        setChatOpen,
-        reloadCatalog
-      }}
-    >
+    <StoreContext.Provider value={contextValue}>
       {children}
     </StoreContext.Provider>
   );

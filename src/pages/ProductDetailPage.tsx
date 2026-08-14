@@ -334,7 +334,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
               {/* Wishlist button */}
               <button
                 onClick={() => toggleWishlist(product.id)}
-                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 backdrop-blur-xs shadow-md flex items-center justify-center text-stone-700 hover:text-[#C0654B] cursor-pointer transition-transform hover:scale-110"
+                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/95 shadow-md flex items-center justify-center text-stone-700 hover:text-[#C0654B] cursor-pointer transition-transform hover:scale-110"
               >
                 <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-[#C0654B] text-[#C0654B]' : ''}`} />
               </button>

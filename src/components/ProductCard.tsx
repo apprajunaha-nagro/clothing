@@ -148,7 +148,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
         {/* WISHLIST BUTTON */}
         <button
           onClick={handleWishlistToggle}
-          className="absolute top-2 right-2 z-20 w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-stone-500 hover:text-[#C0654B] shadow-xs cursor-pointer transition-transform hover:scale-110"
+          className="absolute top-2 right-2 z-20 w-8 h-8 rounded-full bg-white/95 shadow-xs flex items-center justify-center text-stone-500 hover:text-[#C0654B] cursor-pointer transition-transform hover:scale-110"
           style={
             reducedMotion
               ? {}
