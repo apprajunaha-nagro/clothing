@@ -83,6 +83,40 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
     return () => clearInterval(timer);
   }, [resendPhoneTimer]);
 
+  // Fetch logged-in user's real orders from database API
+  const [dbUserOrders, setDbUserOrders] = useState<Order[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+
+  React.useEffect(() => {
+    async function loadUserOrders() {
+      if (!user?.email) {
+        setDbUserOrders([]);
+        return;
+      }
+      setIsLoadingOrders(true);
+      try {
+        const res = await fetch(`/api/orders?email=${encodeURIComponent(user.email.trim().toLowerCase())}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders)) {
+            setDbUserOrders(data.orders);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load user orders:', e);
+      } finally {
+        setIsLoadingOrders(false);
+      }
+    }
+    loadUserOrders();
+  }, [user?.email]);
+
+  // Fallback to store context orders filtered by customer email
+  const displayOrders = dbUserOrders.length > 0 
+    ? dbUserOrders 
+    : orders.filter(o => o.customerEmail?.toLowerCase() === user?.email?.toLowerCase());
+
   // ─── STATE FOR ADDRESS MANAGEMENT ──────────────────────────────────────────
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
@@ -867,15 +901,17 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                         onClick={() => setActiveTab('orders')}
                         className="text-xs font-bold text-[#C0654B] hover:underline cursor-pointer"
                       >
-                        View All Orders ({orders.length}) →
+                        View All Orders ({displayOrders.length}) →
                       </button>
                     </div>
 
-                    {orders.length === 0 ? (
+                    {isLoadingOrders ? (
+                      <p className="text-xs text-stone-500">Loading your orders...</p>
+                    ) : displayOrders.length === 0 ? (
                       <p className="text-xs text-stone-500">No recent orders found.</p>
                     ) : (
                       <div className="space-y-3 text-xs">
-                        {orders.slice(0, 2).map((ord) => (
+                        {displayOrders.slice(0, 2).map((ord) => (
                           <div key={ord.id} className="p-4 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between gap-4">
                             <div>
                               <p className="font-bold text-stone-900">Order #{ord.orderNumber}</p>
@@ -912,7 +948,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     </div>
                   </div>
 
-                  {orders.length === 0 ? (
+                  {isLoadingOrders ? (
+                    <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-4">
+                      <p className="text-xs text-stone-500">Loading your orders...</p>
+                    </div>
+                  ) : displayOrders.length === 0 ? (
                     <div className="bg-white p-12 rounded-3xl border border-stone-200 text-center space-y-4">
                       <div className="w-16 h-16 bg-stone-100 text-stone-400 rounded-full flex items-center justify-center mx-auto">
                         <Package className="w-8 h-8" />
@@ -931,7 +971,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                       </button>
                     </div>
                   ) : (
-                    orders.map((order) => {
+                    displayOrders.map((order) => {
                       const isExpanded = selectedOrder?.id === order.id;
 
                       return (

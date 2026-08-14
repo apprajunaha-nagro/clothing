@@ -241,6 +241,130 @@ async function handleVerifyOtp(req: express.Request, res: express.Response) {
 app.post('/api/auth/verify-otp', handleVerifyOtp);
 app.post('/api/verify-email-otp', handleVerifyOtp);
 
+// ---------------- API ROUTES: ORDERS ----------------
+function formatOrderResponse(order: any) {
+  let parsedAddress = order.shippingAddress;
+  if (typeof order.shippingAddress === 'string') {
+    try { parsedAddress = JSON.parse(order.shippingAddress); } catch (e) {}
+  }
+  let parsedItems = order.items;
+  if (typeof order.items === 'string') {
+    try { parsedItems = JSON.parse(order.items); } catch (e) {}
+  }
+  return {
+    ...order,
+    shippingAddress: parsedAddress,
+    items: parsedItems
+  };
+}
+
+// GET /api/orders (Optionally filter by customer email)
+app.get('/api/orders', async (req, res) => {
+  try {
+    const { email } = req.query;
+    let whereClause: any = {};
+    if (email && typeof email === 'string') {
+      whereClause.customerEmail = { equals: email.trim().toLowerCase(), mode: 'insensitive' };
+    }
+    const orders = await prisma.order.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' }
+    });
+    const formatted = orders.map(formatOrderResponse);
+    return res.json({ success: true, orders: formatted });
+  } catch (err: any) {
+    console.error('[GET /api/orders Error]:', err);
+    return res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// POST /api/orders (Create order in database)
+app.post('/api/orders', async (req, res) => {
+  try {
+    const orderData = req.body;
+    if (!orderData.customerEmail) {
+      return res.status(400).json({ error: 'Customer email is required' });
+    }
+
+    const orderNumber = orderData.orderNumber || `PGM-${Math.floor(100000 + Math.random() * 900000)}`;
+    const customerId = orderData.customerId || `cust-${Date.now()}`;
+    const customerName = orderData.customerName || 'Valued Customer';
+    const customerEmail = String(orderData.customerEmail).trim().toLowerCase();
+    const customerPhone = orderData.customerPhone || '';
+
+    const shippingAddressStr = typeof orderData.shippingAddress === 'object' 
+      ? JSON.stringify(orderData.shippingAddress) 
+      : String(orderData.shippingAddress || '{}');
+
+    const itemsStr = Array.isArray(orderData.items)
+      ? JSON.stringify(orderData.items)
+      : String(orderData.items || '[]');
+
+    const created = await prisma.order.create({
+      data: {
+        orderNumber,
+        customerId,
+        customerName,
+        customerEmail,
+        customerPhone,
+        shippingAddress: shippingAddressStr,
+        items: itemsStr,
+        subtotal: Number(orderData.subtotal) || 0,
+        discount: Number(orderData.discount) || 0,
+        shippingFee: Number(orderData.shippingFee) || 0,
+        tax: Number(orderData.tax) || 0,
+        total: Number(orderData.total) || 0,
+        status: orderData.status || 'pending',
+        paymentStatus: orderData.paymentStatus || 'pending',
+        paymentMethod: orderData.paymentMethod || 'cod',
+        trackingNumber: orderData.trackingNumber || null,
+        courierPartner: orderData.courierPartner || null,
+        couponCode: orderData.couponCode || null
+      }
+    });
+
+    const formatted = formatOrderResponse(created);
+    return res.json({ success: true, order: formatted });
+  } catch (err: any) {
+    console.error('[POST /api/orders Error]:', err);
+    return res.status(500).json({ error: 'Failed to create order' });
+  }
+});
+
+// PATCH /api/orders/:id (Update order or return status)
+app.patch('/api/orders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const existing = await prisma.order.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const payload: any = {};
+    if (updateData.status) payload.status = updateData.status;
+    if (updateData.paymentStatus) payload.paymentStatus = updateData.paymentStatus;
+    if (updateData.trackingNumber !== undefined) payload.trackingNumber = updateData.trackingNumber;
+    if (updateData.courierPartner !== undefined) payload.courierPartner = updateData.courierPartner;
+    if (updateData.returnStatus !== undefined) payload.returnStatus = updateData.returnStatus;
+    if (updateData.returnType !== undefined) payload.returnType = updateData.returnType;
+    if (updateData.returnReason !== undefined) payload.returnReason = updateData.returnReason;
+    if (updateData.returnComments !== undefined) payload.returnComments = updateData.returnComments;
+
+    const updated = await prisma.order.update({
+      where: { id },
+      data: payload
+    });
+
+    const formatted = formatOrderResponse(updated);
+    return res.json({ success: true, order: formatted });
+  } catch (err: any) {
+    console.error('[PATCH /api/orders Error]:', err);
+    return res.status(500).json({ error: 'Failed to update order' });
+  }
+});
+
 // ---------------- API ROUTE: USER SIGNUP ----------------
 app.post('/api/auth/signup', async (req, res) => {
   try {

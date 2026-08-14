@@ -65,6 +65,29 @@ const getStatusColorStyle = (status: OrderStatus) => {
 export const AdminOrdersView: React.FC = () => {
   const { orders, createOrder, updateOrderStatus, updateReturnStatus, products, setProducts, showToast, settings } = useStore();
 
+  // Fetch all orders from backend database for Admin View
+  const [allDbOrders, setAllDbOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    async function fetchAllDatabaseOrders() {
+      try {
+        const res = await fetch('/api/orders');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && Array.isArray(data.orders)) {
+            setAllDbOrders(data.orders);
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to fetch admin database orders:', e);
+      }
+    }
+    fetchAllDatabaseOrders();
+  }, []);
+
+  const ordersListToDisplay = allDbOrders.length > 0 ? allDbOrders : orders;
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<OrderStatus | ''>('');
@@ -96,7 +119,7 @@ export const AdminOrdersView: React.FC = () => {
   const [courierPartner, setCourierPartner] = useState('Delhivery');
 
   // Filtering orders
-  const filteredOrders = orders.filter(o => {
+  const filteredOrders = ordersListToDisplay.filter(o => {
     const matchesSearch = o.orderNumber.includes(searchQuery) || 
                           o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           o.customerPhone.includes(searchQuery);
