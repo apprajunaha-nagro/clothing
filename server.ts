@@ -39,6 +39,14 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Serve the /src/assets folder statically
 app.use('/src/assets', express.static(path.join(process.cwd(), 'src/assets')));
 
+// Serve public folder (favicon, etc.)
+app.use(express.static(path.join(process.cwd(), 'public')));
+
+// Redirect /favicon.ico to /favicon.svg to avoid 404
+app.get('/favicon.ico', (_req, res) => {
+  res.redirect('/favicon.svg');
+});
+
 // Helper to hash OTP code with SHA-256
 function hashOtpCode(code: string): string {
   return crypto.createHash('sha256').update(code.trim()).digest('hex');
