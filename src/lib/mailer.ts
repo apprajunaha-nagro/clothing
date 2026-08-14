@@ -1,6 +1,10 @@
+import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
+
+const resendApiKey = process.env.RESEND_API_KEY || '';
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 const smtpHost = process.env.SMTP_HOST || 'smtp.hostinger.com';
 const smtpPort = Number(process.env.SMTP_PORT) || 465;
@@ -10,7 +14,7 @@ const smtpPass = process.env.SMTP_PASS || '';
 const smtpFromName = process.env.SMTP_FROM_NAME || 'PGmart';
 const adminEmail = process.env.ADMIN_EMAIL || 'admin@pgmart.in';
 
-// Create Nodemailer Transporter
+// Create Nodemailer Transporter as fallback
 export const transporter = nodemailer.createTransport({
   host: smtpHost,
   port: smtpPort,
@@ -54,6 +58,23 @@ export async function sendOtpEmail(toEmail: string, otpCode: string): Promise<bo
     </div>
   `;
 
+  // 1. Primary: Use Resend API if API Key is configured
+  if (resend) {
+    try {
+      const data = await resend.emails.send({
+        from: 'PGmart <onboarding@resend.dev>',
+        to: [toEmail],
+        subject: `Your PGmart Verification Code: ${otpCode}`,
+        html: htmlContent,
+      });
+      console.log(`[Resend Mailer] OTP email successfully dispatched to ${toEmail}:`, data);
+      return true;
+    } catch (resendErr: any) {
+      console.warn(`[Resend Error] Falling back to Nodemailer SMTP:`, resendErr?.message || resendErr);
+    }
+  }
+
+  // 2. Fallback: Use Nodemailer SMTP
   try {
     const info = await transporter.sendMail({
       from: fromHeader,
@@ -71,8 +92,6 @@ export async function sendOtpEmail(toEmail: string, otpCode: string): Promise<bo
 
 /**
  * Send administrative alert email to ADMIN_EMAIL (admin@pgmart.in)
- * @param subject Alert subject line
- * @param message Alert message body content
  */
 export async function sendAdminAlert(subject: string, message: string): Promise<boolean> {
   const fromHeader = `"${smtpFromName} Security Alert" <${smtpUser}>`;
@@ -90,6 +109,19 @@ export async function sendAdminAlert(subject: string, message: string): Promise<
       </p>
     </div>
   `;
+
+  if (resend) {
+    try {
+      await resend.emails.send({
+        from: 'PGmart Security <onboarding@resend.dev>',
+        to: [adminEmail],
+        subject: `[ADMIN ALERT] ${subject}`,
+        html: htmlContent,
+      });
+      console.log(`[Resend Mailer] Admin alert sent to ${adminEmail}`);
+      return true;
+    } catch (e) {}
+  }
 
   try {
     const info = await transporter.sendMail({
