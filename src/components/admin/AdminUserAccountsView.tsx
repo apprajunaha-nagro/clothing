@@ -229,23 +229,63 @@ export const AdminUserAccountsView: React.FC = () => {
   }, [userAccounts]);
 
   // Save User Note
-  const handleSaveNote = (userId: string) => {
+  const handleSaveNote = async (userId: string) => {
     const updatedNotes = { ...userNotesMap, [userId]: editingNote };
     setUserNotesMap(updatedNotes);
     localStorage.setItem('pgmart_admin_user_notes', JSON.stringify(updatedNotes));
     if (selectedUser) {
       setSelectedUser({ ...selectedUser, notes: editingNote });
     }
+
+    try {
+      if (selectedUser && selectedUser.email) {
+        await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: userId,
+            email: selectedUser.email,
+            name: selectedUser.name,
+            phone: selectedUser.phone,
+            adminNotes: editingNote
+          })
+        });
+        showToast('Customer account note saved to database!');
+        return;
+      }
+    } catch (e) {
+      console.warn('Backend sync failed for user note update', e);
+    }
     showToast('Customer account note updated successfully');
   };
 
   // Change User Status
-  const handleStatusChange = (userId: string, newStatus: 'active' | 'vip' | 'flagged' | 'inactive') => {
+  const handleStatusChange = async (userId: string, newStatus: 'active' | 'vip' | 'flagged' | 'inactive') => {
     const updatedStatuses = { ...userStatusMap, [userId]: newStatus };
     setUserStatusMap(updatedStatuses);
     localStorage.setItem('pgmart_admin_user_statuses', JSON.stringify(updatedStatuses));
     if (selectedUser) {
       setSelectedUser({ ...selectedUser, status: newStatus });
+    }
+
+    try {
+      if (selectedUser && selectedUser.email) {
+        await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: userId,
+            email: selectedUser.email,
+            name: selectedUser.name,
+            phone: selectedUser.phone,
+            status: newStatus
+          })
+        });
+        showToast(`User status updated to "${newStatus.toUpperCase()}" in database!`);
+        return;
+      }
+    } catch (e) {
+      console.warn('Backend sync failed for user status update', e);
     }
     showToast(`User account status updated to "${newStatus.toUpperCase()}"`);
   };

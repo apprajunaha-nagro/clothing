@@ -476,6 +476,152 @@ app.delete('/api/banners/:id', async (req, res) => {
   }
 });
 
+// ---------------- API ROUTES: REVIEWS ----------------
+
+// GET /api/reviews
+app.get('/api/reviews', async (req, res) => {
+  try {
+    const { productId, status } = req.query;
+    let whereClause: any = {};
+    if (productId && typeof productId === 'string') {
+      whereClause.productId = productId;
+    }
+    if (status && typeof status === 'string') {
+      whereClause.status = status;
+    }
+    const reviews = await prisma.review.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json(reviews);
+  } catch (e) {
+    console.warn('[GET /api/reviews Error]:', e);
+  }
+  return res.json([]);
+});
+
+// POST /api/reviews
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const r = req.body;
+    const created = await prisma.review.create({
+      data: {
+        id: r.id || `rev-${Date.now()}`,
+        productId: r.productId || 'p-1',
+        customerName: r.customerName || 'Anonymous Customer',
+        rating: Number(r.rating) || 5,
+        title: r.title || 'Great product!',
+        comment: r.comment || '',
+        photos: typeof r.photos === 'string' ? r.photos : JSON.stringify(r.photos || []),
+        isVerifiedPurchase: r.isVerifiedPurchase ?? true,
+        status: r.status || 'approved'
+      }
+    });
+    return res.json({ success: true, review: created });
+  } catch (e: any) {
+    console.error('[POST /api/reviews Error]:', e);
+    return res.status(500).json({ error: e?.message || 'Failed to save review' });
+  }
+});
+
+// PATCH /api/reviews/:id
+app.patch('/api/reviews/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const r = req.body;
+    const updated = await prisma.review.update({
+      where: { id },
+      data: r
+    });
+    return res.json({ success: true, review: updated });
+  } catch (e: any) {
+    console.error('[PATCH /api/reviews Error]:', e);
+    return res.status(500).json({ error: e?.message || 'Failed to update review' });
+  }
+});
+
+// DELETE /api/reviews/:id
+app.delete('/api/reviews/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.review.delete({ where: { id } });
+    return res.json({ success: true });
+  } catch (e: any) {
+    console.error('[DELETE /api/reviews Error]:', e);
+    return res.status(500).json({ error: 'Failed to delete review' });
+  }
+});
+
+// ---------------- API ROUTES: USER ACCOUNTS ----------------
+
+// GET /api/users
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        emailVerified: true,
+        status: true,
+        adminNotes: true,
+        createdAt: true
+      }
+    });
+    return res.json(users);
+  } catch (e) {
+    console.warn('[GET /api/users Error]:', e);
+  }
+  return res.json([]);
+});
+
+// POST /api/users
+app.post('/api/users', async (req, res) => {
+  try {
+    const u = req.body;
+    if (!u.email) return res.status(400).json({ error: 'Email is required' });
+    const user = await prisma.user.upsert({
+      where: { email: String(u.email).toLowerCase().trim() },
+      update: {
+        name: u.name,
+        phone: u.phone || null,
+        status: u.status || 'active',
+        adminNotes: u.adminNotes || null
+      },
+      create: {
+        id: u.id || `usr-${Date.now()}`,
+        name: u.name || 'New Customer',
+        email: String(u.email).toLowerCase().trim(),
+        phone: u.phone || null,
+        status: u.status || 'active',
+        adminNotes: u.adminNotes || null
+      }
+    });
+    return res.json({ success: true, user });
+  } catch (e: any) {
+    console.error('[POST /api/users Error]:', e);
+    return res.status(500).json({ error: e?.message || 'Failed to save user' });
+  }
+});
+
+// PATCH /api/users/:id
+app.patch('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const u = req.body;
+    const updated = await prisma.user.update({
+      where: { id },
+      data: u
+    });
+    return res.json({ success: true, user: updated });
+  } catch (e: any) {
+    console.error('[PATCH /api/users Error]:', e);
+    return res.status(500).json({ error: e?.message || 'Failed to update user' });
+  }
+});
+
 // POST /api/brands
 app.post('/api/brands', async (req, res) => {
   try {
