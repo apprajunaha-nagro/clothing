@@ -29,10 +29,11 @@ async function main() {
   console.log('Cleaned old records.');
 
   // 2. SiteSettings
+  const { newArrivalsEnabled, newArrivalsTitle, newArrivalsSubtitle, newArrivalsBadge, newArrivalsMaxItems, ...validSiteSettings } = initialSiteSettings as any;
   await prisma.siteSettings.create({
     data: {
       id: 'default',
-      ...initialSiteSettings,
+      ...validSiteSettings,
     },
   });
   console.log('SiteSettings seeded.');
