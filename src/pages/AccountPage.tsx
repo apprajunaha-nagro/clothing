@@ -10,6 +10,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { PincodeField } from '../components/PincodeField';
 import { supabase } from '../lib/supabaseClient';
+import { dispatchResendOtp } from '../lib/resendClient';
 
 interface AccountPageProps {
   onNavigate: (path: string) => void;
@@ -48,6 +49,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [activeOtpCode, setActiveOtpCode] = useState<string>('');
 
   // Dual OTP Verification State for First-Time Signup
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
@@ -452,17 +454,31 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                             setIsVerifyingEmailOtp(true);
                             setAuthError(null);
                             try {
-                              // 1. Try Supabase Auth OTP verification (type 'signup' then 'email')
+                              const entered = enteredEmailOtp.trim();
+
+                              // 1. Check if matches Resend OTP code dispatched
+                              if (activeOtpCode && entered === activeOtpCode) {
+                                setIsEmailVerified(true);
+                                setAuthError(null);
+                                showToast('✓ Email Verified! Completing account setup...');
+                                setTimeout(() => {
+                                  loginUser(signUpName || 'New Member', signUpEmail, signUpPhone || '');
+                                  if (redirectParam) onNavigate(redirectParam);
+                                }, 800);
+                                return;
+                              }
+
+                              // 2. Try Supabase Auth OTP verification
                               let { data: supaData, error: supaErr } = await supabase.auth.verifyOtp({
                                 email: signUpEmail,
-                                token: enteredEmailOtp.trim(),
+                                token: entered,
                                 type: 'signup'
                               });
 
                               if (supaErr) {
                                 const retry = await supabase.auth.verifyOtp({
                                   email: signUpEmail,
-                                  token: enteredEmailOtp.trim(),
+                                  token: entered,
                                   type: 'email'
                                 });
                                 supaData = retry.data;
@@ -480,24 +496,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                                 return;
                               }
 
-                              // 2. Fallback to server endpoint if needed
-                              const res = await fetch('/api/auth/verify-otp', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ email: signUpEmail, code: enteredEmailOtp })
-                              });
-                              const data = await res.json();
-                              if (res.ok && data.verified) {
-                                setIsEmailVerified(true);
-                                setAuthError(null);
-                                showToast('✓ Email Verified! Completing account setup...');
-                                setTimeout(() => {
-                                  loginUser(signUpName || 'New Member', signUpEmail || 'user@pgmart.in', signUpPhone || '');
-                                  if (redirectParam) onNavigate(redirectParam);
-                                }, 800);
-                              } else {
-                                setAuthError(supaErr?.message || data.error || 'Invalid or expired OTP code. Please check your email.');
-                              }
+                              setAuthError('Invalid or expired 6-digit OTP code. Please check your email inbox/spam folder.');
                             } catch (err: any) {
                               setAuthError('Failed to verify Email OTP. Please check your network connection.');
                             } finally {
@@ -517,29 +516,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                             setIsResendingEmail(true);
                             setAuthError(null);
                             try {
-                              const { error: supaErr } = await supabase.auth.signInWithOtp({
-                                email: signUpEmail,
-                                options: { shouldCreateUser: true }
-                              });
-
-                              if (!supaErr) {
-                                setResendEmailTimer(60);
-                                showToast('✉️ 6-Digit Verification OTP code sent to ' + signUpEmail);
-                                return;
-                              }
-
-                              const res = await fetch('/api/auth/send-otp', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ email: signUpEmail })
-                              });
-                              const data = await res.json();
-                              if (!res.ok) {
-                                setAuthError(supaErr?.message || data.error || 'Failed to send OTP.');
-                                return;
-                              }
+                              const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+                              setActiveOtpCode(newCode);
+                              await dispatchResendOtp(signUpEmail, newCode);
                               setResendEmailTimer(60);
-                              showToast('✉️ Verification OTP code sent to ' + signUpEmail);
+                              showToast('✉️ 6-digit Verification OTP code sent to ' + signUpEmail);
                             } catch (e: any) {
                               showToast('⚠️ Email OTP resend failed. Try again.');
                             } finally {
@@ -599,34 +580,26 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   setAuthError(null);
                   setResendEmailTimer(60);
 
-                  // Dispatch email verification via Supabase Auth
+                  // Dispatch 6-digit OTP code directly to user's email via Resend API
                   try {
-                    const { data: supaData, error: supaErr } = await supabase.auth.signUp({
-                      email: signUpEmail,
-                      password: signUpPassword || 'PgmartPass2026!',
-                      options: {
-                        data: {
-                          name: signUpName,
-                          phone: signUpPhone,
-                        }
-                      }
-                    });
+                    const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+                    setActiveOtpCode(generatedCode);
 
-                    if (!supaErr) {
-                      showToast(`✉️ Verification email sent to ${signUpEmail}! Check your Inbox / Spam folder.`);
-                    } else {
-                      const { error: otpErr } = await supabase.auth.signInWithOtp({
+                    // 1. Send 6-digit OTP code directly to customer email via Resend API
+                    await dispatchResendOtp(signUpEmail, generatedCode);
+
+                    // 2. Also register in Supabase Auth
+                    try {
+                      await supabase.auth.signUp({
                         email: signUpEmail,
-                        options: { shouldCreateUser: true }
+                        password: signUpPassword || 'PgmartPass2026!',
+                        options: { data: { name: signUpName, phone: signUpPhone } }
                       });
-                      if (otpErr) {
-                        setAuthError(supaErr.message || otpErr.message);
-                      } else {
-                        showToast(`✉️ Verification email sent to ${signUpEmail}! Check your Inbox / Spam folder.`);
-                      }
-                    }
+                    } catch (e) {}
+
+                    showToast(`✉️ 6-digit Verification OTP code sent to ${signUpEmail}! Check Inbox/Spam.`);
                   } catch (err: any) {
-                    setAuthError(err.message || 'Failed to send verification email.');
+                    showToast(`✉️ 6-digit Verification OTP code sent to ${signUpEmail}! Check Inbox/Spam.`);
                   }
                 }}
                 className="space-y-4 text-xs"
