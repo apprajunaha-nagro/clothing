@@ -1,5 +1,5 @@
-const p1 = 're_Aohs6Q9m';
-const p2 = '_K3fqYrwauxne5Tbx9qfqXU7Z';
+const p1 = 're_PtJEoHpv';
+const p2 = '_JwVZiafiTrQQcmMBSQfCxU7o';
 const DEFAULT_KEY = p1 + p2;
 
 const getResendKey = (): string => {
