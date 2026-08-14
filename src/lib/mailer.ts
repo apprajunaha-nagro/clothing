@@ -2,7 +2,7 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const smtpHost = process.env.SMTP_HOST || 'mail.pgmart.in';
+const smtpHost = process.env.SMTP_HOST || 'smtp.hostinger.com';
 const smtpPort = Number(process.env.SMTP_PORT) || 465;
 const smtpSecure = process.env.SMTP_SECURE === 'true' || smtpPort === 465;
 const smtpUser = process.env.SMTP_USER || 'noreply@pgmart.in';
