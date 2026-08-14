@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { 
   Star, MessageSquare, Check, Trash2, X, AlertTriangle, Edit2, 
-  Eye, FileText, Globe, CheckCircle 
+  Eye, FileText, Globe, CheckCircle, Plus, Sparkles, ShieldCheck, User, Package
 } from 'lucide-react';
+import { Review } from '../../types';
 
 interface StaticPage {
   id: string;
@@ -14,43 +15,20 @@ interface StaticPage {
 }
 
 export const AdminReviewsView: React.FC = () => {
-  const { products, showToast } = useStore();
+  const { products, reviews, addReview, updateReviewStatus, deleteReview, showToast } = useStore();
 
   const [activeSubTab, setActiveSubTab] = useState<'reviews' | 'static_pages'>('reviews');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'approved' | 'pending'>('all');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // 1. REVIEWS MODERATION STATES (Simulated database logs)
-  const [reviews, setReviews] = useState([
-    {
-      id: 'rev-1',
-      productName: 'Banarasi Silk Brocade Saree',
-      productId: 'p1',
-      author: 'Aishwarya Roy',
-      rating: 5,
-      date: '2026-08-01',
-      comment: 'Absolutely gorgeous saree! The gold zari work is extremely fine and matches the photo perfectly. Delivery was super fast within Kolkata.',
-      status: 'pending'
-    },
-    {
-      id: 'rev-2',
-      productName: 'Earthy Clay Cotton Kurta Set',
-      productId: 'p2',
-      author: 'Vikram Seth',
-      rating: 4,
-      date: '2026-07-29',
-      comment: 'Good fabric quality, feels genuine. Fits nicely on shoulders, though sleeves are slightly long. Overall very content.',
-      status: 'approved'
-    },
-    {
-      id: 'rev-3',
-      productName: 'Traditional Boys Sherwani Set',
-      productId: 'p4',
-      author: 'Neeta Lulla',
-      rating: 2,
-      date: '2026-07-26',
-      comment: 'Material is good but sizing runs very small. Had to exchange it, but customer care responded quickly.',
-      status: 'pending'
-    }
-  ]);
+  // Form State for creating a new review as admin
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newProductId, setNewProductId] = useState(products[0]?.id || 'w-1');
+  const [newRating, setNewRating] = useState<number>(5);
+  const [newTitle, setNewTitle] = useState('');
+  const [newComment, setNewComment] = useState('');
+  const [newIsVerified, setNewIsVerified] = useState(true);
+  const [newStatus, setNewStatus] = useState<'approved' | 'pending'>('approved');
 
   // 2. STATIC PAGES STATES (Rich Text Editor)
   const [staticPages, setStaticPages] = useState<StaticPage[]>([
@@ -88,16 +66,39 @@ Items must be unworn, with all handloom tags attached. Return courier pick-ups a
   const [pageTitle, setPageTitle] = useState('');
   const [pageContent, setPageContent] = useState('');
 
-  // REVIEWS LOGIC
-  const handleApproveReview = (id: string) => {
-    setReviews(prev => prev.map(r => r.id === id ? { ...r, status: 'approved' } : r));
-    showToast('Review approved and displayed live on product detail card!');
+  // Handle create review submit
+  const handleCreateReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustomerName.trim() || !newComment.trim()) {
+      showToast('Please enter customer name and review comment');
+      return;
+    }
+
+    addReview({
+      productId: newProductId,
+      customerName: newCustomerName.trim(),
+      rating: newRating,
+      title: newTitle.trim() || `${newRating} Star Experience`,
+      comment: newComment.trim(),
+      isVerifiedPurchase: newIsVerified,
+      status: newStatus
+    });
+
+    // Reset form
+    setNewCustomerName('');
+    setNewTitle('');
+    setNewComment('');
+    setNewRating(5);
+    setIsAddModalOpen(false);
   };
 
-  const handleRejectReview = (id: string) => {
-    setReviews(prev => prev.filter(r => r.id !== id));
-    showToast('Review rejected and deleted.');
-  };
+  const filteredReviews = reviews.filter(r => {
+    if (filterStatus === 'all') return true;
+    return r.status === filterStatus;
+  });
+
+  const approvedCount = reviews.filter(r => r.status === 'approved').length;
+  const pendingCount = reviews.filter(r => r.status === 'pending').length;
 
   // STATIC PAGES LOGIC
   const handleOpenEditPage = (page: StaticPage) => {
@@ -126,25 +127,25 @@ Items must be unworn, with all handloom tags attached. Return courier pick-ups a
     <div className="space-y-6 text-stone-800 animate-fade-in text-left">
       
       {/* HEADER SECTION WITH MINI TAB TOGGLE */}
-      <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-bold font-serif text-stone-900">Reviews & Static Page Editor</h2>
-          <p className="text-xs text-stone-400">Moderate product critiques and edit storefront informative policy cards</p>
+          <h2 className="text-lg font-bold font-serif text-stone-900">Reviews & Homepage Testimonials</h2>
+          <p className="text-xs text-stone-400">Post verified testimonials and moderate customer critiques (displayed live in Homepage Animated Strip)</p>
         </div>
 
         {/* Tab switcher */}
-        <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-bold">
+        <div className="flex flex-wrap bg-stone-100 p-1 rounded-xl text-xs font-bold w-full sm:w-auto">
           <button
             onClick={() => { setActiveSubTab('reviews'); setEditingPage(null); }}
-            className={`px-4 py-2 rounded-lg cursor-pointer transition-all ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-lg cursor-pointer transition-all ${
               activeSubTab === 'reviews' ? 'bg-[#C0654B] text-white shadow-sm' : 'text-stone-500 hover:text-stone-800'
             }`}
           >
-            Buyer Reviews ({reviews.filter(r => r.status === 'pending').length} pending)
+            Buyer Reviews ({reviews.length})
           </button>
           <button
             onClick={() => setActiveSubTab('static_pages')}
-            className={`px-4 py-2 rounded-lg cursor-pointer transition-all ${
+            className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-lg cursor-pointer transition-all ${
               activeSubTab === 'static_pages' ? 'bg-[#C0654B] text-white shadow-sm' : 'text-stone-500 hover:text-stone-800'
             }`}
           >
@@ -156,68 +157,262 @@ Items must be unworn, with all handloom tags attached. Return courier pick-ups a
       {/* SUB-VIEW 1: REVIEWS MODERATION */}
       {activeSubTab === 'reviews' && (
         <div className="space-y-4">
-          <div className="bg-amber-50 p-3.5 rounded-2xl border border-amber-200/40 text-xs text-amber-900 leading-relaxed flex items-start gap-2 font-medium">
-            <AlertTriangle className="w-4.5 h-4.5 text-[#C0654B] shrink-0" />
-            <span>Incoming reviews from storefront are quarantined automatically. They only build overall star-rating and show up publicly after admin manual validation.</span>
+          
+          {/* Action and Filter Bar */}
+          <div className="bg-white p-4 rounded-2xl border border-stone-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-bold w-full sm:w-auto">
+              <button
+                onClick={() => setFilterStatus('all')}
+                className={`px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                  filterStatus === 'all' ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                }`}
+              >
+                All ({reviews.length})
+              </button>
+              <button
+                onClick={() => setFilterStatus('approved')}
+                className={`px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                  filterStatus === 'approved' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                }`}
+              >
+                Approved & Live on Homepage ({approvedCount})
+              </button>
+              <button
+                onClick={() => setFilterStatus('pending')}
+                className={`px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
+                  filterStatus === 'pending' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
+                }`}
+              >
+                Pending ({pendingCount})
+              </button>
+            </div>
+
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="w-full sm:w-auto px-4 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Post Customer Review</span>
+            </button>
           </div>
 
-          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden divide-y divide-stone-100">
-            {reviews.length === 0 ? (
-              <div className="p-12 text-center text-stone-400">All buyer reviews moderated. Great job!</div>
+          <div className="bg-amber-50 p-3.5 rounded-2xl border border-amber-200/40 text-xs text-amber-900 leading-relaxed flex items-start gap-2 font-medium">
+            <Sparkles className="w-4.5 h-4.5 text-[#C0654B] shrink-0 mt-0.5" />
+            <span>All <strong>Approved</strong> reviews are dynamically streamed to the homepage in an animated right-to-left moving ticker just above the "Our Story" section!</span>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden divide-y divide-stone-100 shadow-xs">
+            {filteredReviews.length === 0 ? (
+              <div className="p-12 text-center text-stone-400 text-xs">
+                No reviews found matching filter. Click <strong>"+ Post Customer Review"</strong> to create your first live customer review.
+              </div>
             ) : (
-              reviews.map(rev => (
-                <div key={rev.id} className={`p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-colors ${
-                  rev.status === 'pending' ? 'bg-[#C0654B]/5' : 'bg-white'
-                }`}>
-                  <div className="space-y-2 text-xs font-semibold text-stone-700 text-left flex-1">
-                    {/* Rating stars & product name */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex text-amber-500">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`w-3.5 h-3.5 ${i < rev.rating ? 'fill-current' : 'text-stone-200'}`} />
-                        ))}
+              filteredReviews.map(rev => {
+                const prod = products.find(p => p.id === rev.productId);
+                return (
+                  <div key={rev.id} className={`p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors ${
+                    rev.status === 'pending' ? 'bg-[#C0654B]/5' : 'bg-white'
+                  }`}>
+                    <div className="space-y-2 text-xs font-semibold text-stone-700 text-left flex-1 w-full">
+                      {/* Rating stars & product name */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex text-amber-500">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className={`w-3.5 h-3.5 ${i < rev.rating ? 'fill-current text-amber-400' : 'text-stone-200'}`} />
+                          ))}
+                        </div>
+                        <span className="text-stone-400 font-medium">|</span>
+                        <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
+                          <Package className="w-3.5 h-3.5 text-[#C0654B]" />
+                          <span>{prod?.name || 'Handcrafted Apparel'}</span>
+                        </span>
+                        {rev.isVerifiedPurchase && (
+                          <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified Buyer
+                          </span>
+                        )}
                       </div>
-                      <span className="text-stone-400 font-medium">|</span>
-                      <span className="font-bold text-stone-900 text-[11px]">{rev.productName}</span>
+
+                      {/* Title & Comment text */}
+                      {rev.title && <h4 className="font-bold text-stone-900 text-xs">{rev.title}</h4>}
+                      <p className="text-stone-700 italic font-medium leading-relaxed bg-stone-50/60 p-2.5 rounded-xl border border-stone-100">
+                        "{rev.comment}"
+                      </p>
+
+                      {/* Author and Date metadata */}
+                      <div className="flex flex-wrap items-center gap-3 text-[10px] text-stone-400 font-medium font-mono uppercase">
+                        <span className="flex items-center gap-1 text-stone-700 font-bold">
+                          <User className="w-3 h-3 text-stone-400" /> {rev.customerName}
+                        </span>
+                        <span>•</span>
+                        <span>{new Date(rev.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        <span>•</span>
+                        <span className={`font-bold ${rev.status === 'approved' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                          {rev.status.toUpperCase()}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Comment text */}
-                    <p className="text-stone-700 italic font-medium leading-relaxed">"{rev.comment}"</p>
-
-                    {/* Author and Date metadata */}
-                    <div className="flex items-center gap-3 text-[10px] text-stone-400 font-medium font-mono uppercase">
-                      <span>By: {rev.author}</span>
-                      <span>•</span>
-                      <span>Date: {rev.date}</span>
+                    {/* Approve / Reject Actions */}
+                    <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                      {rev.status === 'pending' ? (
+                        <button
+                          onClick={() => updateReviewStatus(rev.id, 'approved')}
+                          className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 cursor-pointer shadow-xs"
+                        >
+                          <Check className="w-3.5 h-3.5" /> Approve & Show on Homepage
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => updateReviewStatus(rev.id, 'pending')}
+                          className="px-2.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 text-[11px] font-bold rounded-xl cursor-pointer"
+                          title="Move to pending"
+                        >
+                          Unpublish
+                        </button>
+                      )}
+                      <button
+                        onClick={() => deleteReview(rev.id)}
+                        className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-xl cursor-pointer transition-colors"
+                        title="Delete Review"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-
-                  {/* Approve / Reject Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    {rev.status === 'pending' ? (
-                      <>
-                        <button
-                          onClick={() => handleApproveReview(rev.id)}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl flex items-center gap-1 cursor-pointer"
-                        >
-                          <Check className="w-3.5 h-3.5" /> Approve
-                        </button>
-                        <button
-                          onClick={() => handleRejectReview(rev.id)}
-                          className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-xl cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </>
-                    ) : (
-                      <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
-                        <CheckCircle className="w-3.5 h-3.5" /> Published Live
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
+                );
+              })
             )}
+          </div>
+        </div>
+      )}
+
+      {/* POST NEW REVIEW MODAL */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-200 p-4 sm:p-6 space-y-4 animate-scale-in text-left">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#C0654B]/10 flex items-center justify-center text-[#C0654B]">
+                  <Plus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold font-serif text-stone-900">Post Customer Review</h3>
+                  <p className="text-[10px] text-stone-400">Add testimonial to be featured in Homepage Animated Marquee</p>
+                </div>
+              </div>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-stone-400 hover:text-stone-800 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateReview} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">Customer Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newCustomerName}
+                    onChange={(e) => setNewCustomerName(e.target.value)}
+                    placeholder="e.g. Radhika Sharma"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-xl outline-none focus:border-[#C0654B]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">Select Product *</label>
+                  <select
+                    value={newProductId}
+                    onChange={(e) => setNewProductId(e.target.value)}
+                    className="w-full px-3 py-2 border border-stone-300 rounded-xl outline-none focus:border-[#C0654B] bg-white font-medium text-xs"
+                  >
+                    {products.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Star Rating (1 to 5 Stars)</label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setNewRating(star)}
+                      className="p-1 cursor-pointer transition-transform hover:scale-110"
+                    >
+                      <Star className={`w-6 h-6 ${star <= newRating ? 'fill-amber-400 text-amber-400' : 'text-stone-200'}`} />
+                    </button>
+                  ))}
+                  <span className="ml-2 font-bold text-stone-700 text-sm font-mono">{newRating} / 5 Stars</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Review Headline / Title</label>
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="e.g. Breathtaking quality & perfect fitting!"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-xl outline-none focus:border-[#C0654B]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">Review Testimonial *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Share customer's genuine feedback and experience with the fabric, fitting, or delivery..."
+                  className="w-full px-3 py-2 border border-stone-300 rounded-xl outline-none focus:border-[#C0654B]"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-stone-50 p-3 rounded-xl border border-stone-200">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newIsVerified}
+                    onChange={(e) => setNewIsVerified(e.target.checked)}
+                    className="accent-[#C0654B] w-4 h-4"
+                  />
+                  <span className="font-bold text-stone-800 text-xs">Mark as Verified Buyer</span>
+                </label>
+
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-stone-600">Status:</span>
+                  <select
+                    value={newStatus}
+                    onChange={(e) => setNewStatus(e.target.value as 'approved' | 'pending')}
+                    className="px-2.5 py-1 bg-white border border-stone-300 rounded-lg text-xs font-bold"
+                  >
+                    <option value="approved">Approved & Live</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="w-full sm:w-auto px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-5 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-md"
+                >
+                  Post Review Live
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -487,20 +487,20 @@ export const AdminCatalogView: React.FC = () => {
   return (
     <div className="space-y-6 text-stone-800 animate-fade-in text-left">
       {/* HEADER SECTION */}
-      <div className="bg-white p-6 rounded-2xl border border-stone-200/80 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white p-4 sm:p-6 rounded-2xl border border-stone-200/80 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-bold font-serif text-stone-900">Unified Catalog Hierarchy</h2>
           <p className="text-xs text-stone-400">Fixed Top-Level Categories with complete dynamic Subcategories & Styles</p>
         </div>
 
         {/* Global Catalog Search */}
-        <div className="relative w-full md:w-80">
+        <div className="relative w-full sm:w-80">
           <Search className="absolute left-3.5 top-3 w-4 h-4 text-stone-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Type 'Sherwani' or 'Saree'..."
+            placeholder="Search category, subcategory or style..."
             className="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs outline-none focus:bg-white focus:border-[#C0654B] transition-colors"
           />
           {searchQuery && (
@@ -511,9 +511,9 @@ export const AdminCatalogView: React.FC = () => {
 
       {/* TREE CONTENT */}
       <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-hidden">
-        <div className="bg-stone-50 p-4 border-b border-stone-200 flex justify-between items-center text-xs font-bold text-stone-500">
+        <div className="bg-stone-50 p-3 sm:p-4 border-b border-stone-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 text-xs font-bold text-stone-500">
           <span>Catalog Tree Levels (Category → Subcategory → Style Type)</span>
-          <span>Linked Products count</span>
+          <span className="text-[11px] text-stone-400 font-medium">Tap chevron to expand levels</span>
         </div>
 
         <div className="divide-y divide-stone-100">
@@ -524,51 +524,53 @@ export const AdminCatalogView: React.FC = () => {
             return (
               <div key={cat.id} className="select-none">
                 {/* 1. Category Row (Fixed Parent) */}
-                <div className="flex items-center justify-between p-4 bg-stone-50/40 hover:bg-stone-50 transition-colors">
-                  <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => toggleCategory(cat.id)}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 sm:p-4 gap-3 bg-stone-50/40 hover:bg-stone-50 transition-colors">
+                  <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer flex-1 min-w-0" onClick={() => toggleCategory(cat.id)}>
                     {isCatExpanded ? (
-                      <ChevronDown className="w-5 h-5 text-[#C0654B]" />
+                      <ChevronDown className="w-5 h-5 text-[#C0654B] shrink-0" />
                     ) : (
-                      <ChevronRight className="w-5 h-5 text-stone-400" />
+                      <ChevronRight className="w-5 h-5 text-stone-400 shrink-0" />
                     )}
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-stone-300 shrink-0 bg-stone-100 shadow-xs">
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full overflow-hidden border border-stone-300 shrink-0 bg-stone-100 shadow-2xs">
                       <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold font-serif text-stone-900">{cat.name}</span>
-                        <span className="text-[10px] uppercase font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded">Core Category</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <span className="text-sm font-bold font-serif text-stone-900 truncate">{cat.name}</span>
+                        <span className="text-[9px] sm:text-[10px] uppercase font-bold text-stone-500 bg-stone-100 px-1.5 py-0.5 rounded">Core Category</span>
                       </div>
-                      <span className="text-[10px] text-stone-400 font-mono">Homepage photo under hero banner</span>
+                      <span className="text-[10px] text-stone-400 font-mono block truncate">Homepage photo tile</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs font-bold text-stone-500 bg-stone-100/80 px-2 py-1 rounded-lg border border-stone-200/60">
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-center pl-7 sm:pl-0 w-full sm:w-auto">
+                    <span className="font-mono text-xs font-bold text-stone-500 bg-stone-100/80 px-2 py-1 rounded-lg border border-stone-200/60 shrink-0">
                       {catProdCount} Products
                     </span>
 
                     {/* Edit Category Button */}
                     <button
                       onClick={() => startEditCategory(cat)}
-                      className="px-3 py-1.5 bg-stone-800 hover:bg-stone-900 text-white text-[10px] font-bold rounded-lg cursor-pointer transition-colors flex items-center gap-1 shadow-xs"
+                      className="px-3 py-1.5 bg-stone-800 hover:bg-stone-900 text-white text-[10px] sm:text-xs font-bold rounded-lg cursor-pointer transition-colors flex items-center gap-1 shadow-2xs"
                       title="Edit Category Name & Homepage Photo"
                     >
-                      <Edit2 className="w-3 h-3 text-amber-300" /> Edit Category Image
+                      <Edit2 className="w-3 h-3 text-amber-300 shrink-0" />
+                      <span>Edit Photo</span>
                     </button>
 
                     <button
                       onClick={() => openAddSubcategory(cat.id)}
-                      className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-[10px] font-bold rounded-lg cursor-pointer transition-colors flex items-center gap-1"
+                      className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-[10px] sm:text-xs font-bold rounded-lg cursor-pointer transition-colors flex items-center gap-1 shrink-0"
                     >
-                      <Plus className="w-3 h-3" /> Subcategory
+                      <Plus className="w-3 h-3 shrink-0" />
+                      <span>+ Subcategory</span>
                     </button>
                   </div>
                 </div>
 
                 {/* 2. Subcategories Container */}
                 {isCatExpanded && (
-                  <div className="pl-6 bg-stone-50/10 border-l-2 border-stone-100">
+                  <div className="pl-3 sm:pl-6 bg-stone-50/10 border-l-2 border-stone-200">
                     {cat.subcategories.length === 0 ? (
                       <div className="p-4 text-xs text-stone-400 text-center font-medium">No Subcategories created under {cat.name} yet.</div>
                     ) : (
@@ -577,24 +579,24 @@ export const AdminCatalogView: React.FC = () => {
                         const subProdCount = getProductCountForSub(sub.id);
 
                         return (
-                          <div key={sub.id} className="border-t border-stone-100/60">
+                          <div key={sub.id} className="border-t border-stone-100/80">
                             {/* Subcategory Row */}
-                            <div className="flex items-center justify-between p-3 hover:bg-stone-50/50 transition-colors">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 sm:p-3 gap-2.5 hover:bg-stone-50/50 transition-colors">
                               <div className="flex items-center gap-2 cursor-pointer flex-1 min-w-0" onClick={() => toggleSubcategory(sub.id)}>
                                 {isSubExpanded ? (
-                                  <ChevronDown className="w-4.5 h-4.5 text-[#C0654B]" />
+                                  <ChevronDown className="w-4.5 h-4.5 text-[#C0654B] shrink-0" />
                                 ) : (
-                                  <ChevronRight className="w-4.5 h-4.5 text-stone-400" />
+                                  <ChevronRight className="w-4.5 h-4.5 text-stone-400 shrink-0" />
                                 )}
-                                <div className="truncate text-xs">
+                                <div className="truncate text-xs flex-1">
                                   <span className="font-bold text-stone-800">{sub.name}</span>
-                                  <span className="text-[10px] font-mono text-stone-400 ml-2">/{sub.slug}</span>
+                                  <span className="text-[10px] font-mono text-stone-400 ml-1.5">/{sub.slug}</span>
                                 </div>
-                                <span className={`w-2 h-2 rounded-full ${sub.status === 'active' ? 'bg-emerald-500' : 'bg-stone-300'}`}></span>
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${sub.status === 'active' ? 'bg-emerald-500' : 'bg-stone-300'}`}></span>
                               </div>
 
-                              <div className="flex items-center gap-3">
-                                <span className="font-mono text-[11px] font-bold text-stone-400">
+                              <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2 pl-6 sm:pl-0 w-full sm:w-auto">
+                                <span className="font-mono text-[11px] font-bold text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
                                   {subProdCount} Prods
                                 </span>
 
@@ -633,7 +635,7 @@ export const AdminCatalogView: React.FC = () => {
                                   {/* Add Type Button */}
                                   <button
                                     onClick={() => openAddType(cat.id, sub.id)}
-                                    className="px-2 py-1 border border-[#C0654B] hover:bg-[#C0654B]/5 text-[#C0654B] text-[10px] font-bold rounded-lg cursor-pointer flex items-center gap-0.5 ml-1"
+                                    className="px-2.5 py-1 border border-[#C0654B] hover:bg-[#C0654B]/5 text-[#C0654B] text-[10px] font-bold rounded-lg cursor-pointer flex items-center gap-0.5 ml-1"
                                   >
                                     <Plus className="w-2.5 h-2.5" /> Style
                                   </button>
@@ -643,7 +645,7 @@ export const AdminCatalogView: React.FC = () => {
 
                             {/* 3. Style Types Container */}
                             {isSubExpanded && (
-                              <div className="pl-8 bg-stone-100/30 border-l border-dashed border-stone-200">
+                              <div className="pl-4 sm:pl-8 bg-stone-100/30 border-l border-dashed border-stone-200">
                                 {sub.types.length === 0 ? (
                                   <div className="p-3 text-[11px] text-stone-400 font-medium">No Style Types registered here. Add your first Style Type!</div>
                                 ) : (
@@ -651,15 +653,15 @@ export const AdminCatalogView: React.FC = () => {
                                     const typeProdCount = getProductCountForType(type.id);
 
                                     return (
-                                      <div key={type.id} className="flex items-center justify-between p-2.5 hover:bg-stone-50 text-xs border-t border-stone-100/40">
-                                        <div className="flex items-center gap-1.5 min-w-0">
+                                      <div key={type.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-2 sm:p-2.5 gap-1.5 hover:bg-stone-50 text-xs border-t border-stone-100/60">
+                                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                           <div className="w-1.5 h-1.5 rounded-full bg-[#C0654B]/60 shrink-0"></div>
                                           <span className="font-semibold text-stone-700 truncate">{type.name}</span>
                                           <span className="text-[9px] font-mono text-stone-400 truncate">/{type.slug}</span>
-                                          <span className={`w-1.5 h-1.5 rounded-full ${type.status === 'active' ? 'bg-emerald-500' : 'bg-stone-300'}`}></span>
+                                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${type.status === 'active' ? 'bg-emerald-500' : 'bg-stone-300'}`}></span>
                                         </div>
 
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center justify-between sm:justify-end gap-2 pl-3 sm:pl-0">
                                           <span className="font-mono text-[10px] text-stone-400">{typeProdCount} items</span>
 
                                           <div className="flex items-center gap-0.5">
@@ -847,38 +849,38 @@ export const AdminCatalogView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-stone-100 pt-3">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-stone-100 pt-3">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
                   <span className="font-bold text-stone-700">Display Status:</span>
                   <div className="flex bg-stone-100 p-0.5 rounded-lg">
                     <button
                       type="button"
                       onClick={() => setStatus('active')}
-                      className={`px-2 py-1 font-semibold rounded-md ${status === 'active' ? 'bg-[#C0654B] text-white shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${status === 'active' ? 'bg-[#C0654B] text-white shadow-xs' : 'text-stone-500 hover:text-stone-800'}`}
                     >
                       Active
                     </button>
                     <button
                       type="button"
                       onClick={() => setStatus('inactive')}
-                      className={`px-2 py-1 font-semibold rounded-md ${status === 'inactive' ? 'bg-red-600 text-white shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-colors ${status === 'inactive' ? 'bg-red-600 text-white shadow-xs' : 'text-stone-500 hover:text-stone-800'}`}
                     >
                       Inactive
                     </button>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col-reverse sm:flex-row gap-2 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={() => { setActiveModal(null); resetForm(); }}
-                    className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold rounded-xl cursor-pointer text-xs"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-sm"
+                    className="w-full sm:w-auto px-5 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-md text-xs"
                   >
                     {editTarget ? 'Update Level' : 'Save & Add'}
                   </button>

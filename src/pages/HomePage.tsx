@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from '../components/ProductCard';
 import { HeroSlider } from '../components/HeroSlider';
+import { ReviewsMarquee } from '../components/ReviewsMarquee';
 import { getOptimizedImageUrl } from '../utils/imageOptimizer';
 import { Sparkles, Flame, Award, Crown, ArrowRight, Star, Heart, CheckCircle2, Instagram, Camera, MessageSquare, MapPin, Truck, RotateCcw, ShieldCheck, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product } from '../types';
@@ -537,6 +538,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           })}
         </div>
       </section>
+
+      {/* 7. ANIMATED REVIEWS & TESTIMONIALS STRIP (RIGHT-TO-LEFT MARQUEE, JUST ABOVE OUR STORY) */}
+      <ReviewsMarquee onNavigate={onNavigate} />
     </div>
   );
 };
