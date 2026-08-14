@@ -258,6 +258,42 @@ function formatOrderResponse(order: any) {
   };
 }
 
+// GET /api/settings
+app.get('/api/settings', async (req, res) => {
+  try {
+    const settings = await prisma.siteSettings.findUnique({ where: { id: 'default' } });
+    if (settings) return res.json(settings);
+  } catch (e) {
+    console.warn('[GET /api/settings Error]:', e);
+  }
+  return res.json(null);
+});
+
+// GET /api/categories
+app.get('/api/categories', async (req, res) => {
+  try {
+    const categories = await prisma.category.findMany({
+      include: { subcategories: { include: { types: true } } },
+      orderBy: { sortOrder: 'asc' }
+    });
+    return res.json(categories);
+  } catch (e) {
+    console.warn('[GET /api/categories Error]:', e);
+  }
+  return res.json([]);
+});
+
+// GET /api/brands
+app.get('/api/brands', async (req, res) => {
+  try {
+    const brands = await prisma.brand.findMany({ orderBy: { name: 'asc' } });
+    return res.json(brands);
+  } catch (e) {
+    console.warn('[GET /api/brands Error]:', e);
+  }
+  return res.json([]);
+});
+
 // GET /api/orders (Optionally filter by customer email)
 app.get('/api/orders', async (req, res) => {
   try {

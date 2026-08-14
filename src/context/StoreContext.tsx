@@ -351,15 +351,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [banners]);
 
+  // Helper to safely fetch JSON from backend routes
+  const safeJsonFetch = async (url: string) => {
+    try {
+      const res = await fetch(url);
+      const contentType = res.headers.get('content-type');
+      if (res.ok && contentType && contentType.includes('application/json')) {
+        return await res.json();
+      }
+    } catch (e) {}
+    return null;
+  };
+
   // Fetch live state from backend on load
   const reloadCatalog = async () => {
     try {
       const [resSet, resCat, resProd, resOrd, resBrs] = await Promise.all([
-        fetch('/api/settings').then(r => r.ok ? r.json() : null),
-        fetch('/api/categories').then(r => r.ok ? r.json() : null),
-        fetch('/api/products').then(r => r.ok ? r.json() : null),
-        fetch('/api/orders').then(r => r.ok ? r.json() : null),
-        fetch('/api/brands').then(r => r.ok ? r.json() : null)
+        safeJsonFetch('/api/settings'),
+        safeJsonFetch('/api/categories'),
+        safeJsonFetch('/api/products'),
+        safeJsonFetch('/api/orders'),
+        safeJsonFetch('/api/brands')
       ]);
 
       if (resSet) {
@@ -368,8 +380,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           address: initialSiteSettings.address
         });
       }
-      if (resCat && resCat.length) setCategories(resCat);
-      if (resProd && resProd.length > 0) {
+      if (resCat && Array.isArray(resCat) && resCat.length > 0) setCategories(resCat);
+      if (resProd && Array.isArray(resProd) && resProd.length > 0) {
         if (resProd.length >= initialProducts.length) {
           setProducts(resProd);
         } else {
@@ -377,8 +389,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setProducts(initialProducts.map(p => prodMap.get(p.id) || p));
         }
       }
-      if (resOrd) setOrders(resOrd);
-      if (resBrs) setBrands(resBrs);
+      if (resOrd) {
+        const orderList = Array.isArray(resOrd) ? resOrd : (resOrd.orders || []);
+        if (Array.isArray(orderList)) setOrders(orderList);
+      }
+      if (resBrs && Array.isArray(resBrs) && resBrs.length > 0) setBrands(resBrs);
     } catch (e) {
       console.warn('Backend sync failed, using initial seed data', e);
     }
