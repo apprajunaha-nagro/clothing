@@ -11,8 +11,47 @@ export const AdminMarketingView: React.FC = () => {
   const bannerFileInputRef = useRef<HTMLInputElement>(null);
   const brandFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Banners List Local override/state
+  // Banners List Local override/state & Filters
   const [bannersList, setBannersList] = useState<Banner[]>(banners);
+  const [bannerFilter, setBannerFilter] = useState<'all' | 'hero' | 'ad_banner'>('all');
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+
+  // Sync bannersList whenever StoreContext banners changes
+  React.useEffect(() => {
+    setBannersList(banners);
+  }, [banners]);
+
+  // Primary Ad Banner (Above Deals of the Day) Quick-Edit state
+  const currentAdBanner = React.useMemo(() => {
+    return banners.find(b => b.position === 'ad_banner') || banners.find(b => b.position === 'promo_strip') || {
+      id: 'ad-b1',
+      title: 'Banarasi Silk Sarees',
+      subtitle: 'Flat 40% OFF Festive Discount | Code: FESTIVE40',
+      image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1400&q=85',
+      link: '/category/women?sub=sub-women-sarees',
+      buttonText: 'EXPLORE OFFER',
+      position: 'ad_banner' as const,
+      sortOrder: 1,
+      isActive: true
+    };
+  }, [banners]);
+
+  const [adTitle, setAdTitle] = useState(currentAdBanner.title || '');
+  const [adSubtitle, setAdSubtitle] = useState(currentAdBanner.subtitle || '');
+  const [adImage, setAdImage] = useState(currentAdBanner.image || '');
+  const [adLink, setAdLink] = useState(currentAdBanner.link || '/category/women');
+  const [adButtonText, setAdButtonText] = useState(currentAdBanner.buttonText || 'EXPLORE COLLECTION');
+
+  // Keep Ad Banner form in sync when currentAdBanner changes
+  React.useEffect(() => {
+    if (currentAdBanner) {
+      setAdTitle(currentAdBanner.title || '');
+      setAdSubtitle(currentAdBanner.subtitle || '');
+      setAdImage(currentAdBanner.image || '');
+      setAdLink(currentAdBanner.link || '/category/women');
+      setAdButtonText(currentAdBanner.buttonText || 'EXPLORE COLLECTION');
+    }
+  }, [currentAdBanner.id]);
 
   // Form toggles
   const [activeTab, setActiveTab] = useState<'banners' | 'brands' | 'deals' | 'new_arrivals' | 'coupons' | 'popups' | 'campaigns' | 'pixels'>('brands');
@@ -133,39 +172,80 @@ export const AdminMarketingView: React.FC = () => {
     e.preventDefault();
     const newBanner: Banner = {
       id: `ban-${Date.now()}`,
-      title: bTitle || 'Hero Fashion Banner',
+      title: bTitle || 'Special Festive Promotion',
       subtitle: bSubtitle || undefined,
       image: bImage || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=2000&q=90',
       link: bLink || '/category/women',
-      buttonText: 'Shop Collection',
+      buttonText: bButtonText || 'EXPLORE COLLECTION',
       position: bPosition,
-      sortOrder: bannersList.length + 1,
+      sortOrder: banners.length + 1,
       isActive: true
     };
-    const updatedList = [...bannersList, newBanner];
-    setBannersList(updatedList);
+    const updatedList = [...banners, newBanner];
     setBanners(updatedList);
     setIsBannerFormOpen(false);
     // Reset
     setBTitle('');
     setBSubtitle('');
     setBImage('');
-    setBLink('');
-    showToast(`Banner frame added & synchronized with live store slider!`);
+    setBLink('/category/women');
+    setBButtonText('EXPLORE COLLECTION');
+    showToast(`Banner frame added & synchronized with live store!`);
+  };
+
+  // Dedicated Save Handler for the Ad Banner (Above Deals of the Day)
+  const handleSaveAdBannerSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    const existingIndex = banners.findIndex(b => b.position === 'ad_banner' || b.position === 'promo_strip');
+    let updated: Banner[];
+    if (existingIndex >= 0) {
+      updated = banners.map((b, idx) => idx === existingIndex ? {
+        ...b,
+        title: adTitle || 'Banarasi Silk Sarees',
+        subtitle: adSubtitle || 'Flat 40% OFF Festive Discount | Code: FESTIVE40',
+        image: adImage || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1400&q=85',
+        link: adLink || '/category/women',
+        buttonText: adButtonText || 'EXPLORE COLLECTION',
+        position: 'ad_banner' as const,
+        isActive: true,
+      } : b);
+    } else {
+      const newAd: Banner = {
+        id: `ad-${Date.now()}`,
+        title: adTitle || 'Banarasi Silk Sarees',
+        subtitle: adSubtitle || 'Flat 40% OFF Festive Discount | Code: FESTIVE40',
+        image: adImage || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1400&q=85',
+        link: adLink || '/category/women',
+        buttonText: adButtonText || 'EXPLORE COLLECTION',
+        position: 'ad_banner',
+        sortOrder: 1,
+        isActive: true
+      };
+      updated = [newAd, ...banners];
+    }
+    setBanners(updated);
+    showToast('✨ Ad Banner (Above Deals of the Day) saved & updated live on homepage!');
+  };
+
+  const handleUpdateExistingBanner = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBanner) return;
+    const updated = banners.map(b => b.id === editingBanner.id ? editingBanner : b);
+    setBanners(updated);
+    setEditingBanner(null);
+    showToast(`Banner "${editingBanner.title}" updated successfully!`);
   };
 
   const handleToggleBannerStatus = (id: string) => {
-    const updated = bannersList.map(b => b.id === id ? { ...b, isActive: !b.isActive } : b);
-    setBannersList(updated);
+    const updated = banners.map(b => b.id === id ? { ...b, isActive: !b.isActive } : b);
     setBanners(updated);
     showToast('Banner active state updated on live store.');
   };
 
   const handleDeleteBanner = (id: string) => {
-    const updated = bannersList.filter(b => b.id !== id);
-    setBannersList(updated);
+    const updated = banners.filter(b => b.id !== id);
     setBanners(updated);
-    showToast('Banner removed from hero slider.');
+    showToast('Banner removed.');
   };
 
   // FEATURED BRANDS SECTION HANDLER
@@ -985,212 +1065,559 @@ export const AdminMarketingView: React.FC = () => {
       {/* 1. SLIDERS & BANNERS MANAGER */}
       {activeTab === 'banners' && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold font-serif text-stone-900">Homepage Sliders & Page Banners</h3>
-                <span className="bg-emerald-50 text-emerald-600 border border-emerald-300 text-xs font-extrabold font-mono px-2 py-0.5 rounded-md shadow-2xs">
-                  16:5
-                </span>
+
+          {/* DEDICATED SECTION 1: ADS BANNER JUST ABOVE DEALS OF THE DAY */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200 shadow-sm space-y-6 text-left">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#C0654B]/10 text-[#C0654B] flex items-center justify-center shrink-0">
+                  <Flame className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="bg-[#C0654B] text-white text-[10px] font-black px-2 py-0.5 rounded tracking-wider uppercase">
+                      HOMEPAGE PROMO
+                    </span>
+                    <h3 className="text-base font-bold font-serif text-stone-900">
+                      Ads Banner (Just Above Deals of the Day)
+                    </h3>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    Customize the full-width festive banner displayed on homepage directly above the Deals of the Day section
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-stone-400 mt-0.5">
-                Design promotional headers, hero sliders (recommended ratio <span className="text-emerald-600 font-extrabold font-mono">16:5</span>), and ad banners for your storefront
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              {/* Ad Banner Status Switch */}
-              <div className="flex items-center gap-2 bg-stone-50 px-3 py-1.5 rounded-xl border border-stone-200 text-xs">
-                <span className="font-bold text-stone-700">Ad Banners (Above Deals):</span>
+
+              {/* Master Visibility Switch */}
+              <div className="flex items-center gap-2 bg-stone-50 px-3.5 py-1.5 rounded-xl border border-stone-200 text-xs">
+                <span className="font-bold text-stone-700">Display Status:</span>
                 <button
+                  type="button"
                   onClick={() => {
                     const nextVal = settings.adBannerEnabled === false ? true : false;
                     updateSettings({ adBannerEnabled: nextVal });
-                    showToast(nextVal ? 'Ad Banners section is now LIVE above Deals of the Day!' : 'Ad Banners section is hidden.');
+                    showToast(nextVal ? '✓ Ad Banner is now LIVE above Deals of the Day!' : '✓ Ad Banner section is hidden from homepage.');
                   }}
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold cursor-pointer transition-colors ${
-                    settings.adBannerEnabled !== false ? 'bg-emerald-600 text-white' : 'bg-stone-300 text-stone-600'
+                  className={`px-3 py-1 rounded-full text-xs font-black cursor-pointer transition-colors ${
+                    settings.adBannerEnabled !== false ? 'bg-emerald-600 text-white shadow-xs' : 'bg-stone-300 text-stone-600'
                   }`}
                 >
-                  {settings.adBannerEnabled !== false ? 'LIVE' : 'HIDDEN'}
+                  {settings.adBannerEnabled !== false ? 'ACTIVE (LIVE)' : 'DISABLED (HIDDEN)'}
                 </button>
               </div>
-
-              <button
-                onClick={() => setIsBannerFormOpen(true)}
-                className="px-4 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-1 cursor-pointer shrink-0"
-              >
-                <Plus className="w-4 h-4" /> Add Slider Frame
-              </button>
             </div>
-          </div>
 
-          {isBannerFormOpen && (
-            <form onSubmit={handleSaveBanner} className="bg-white p-5 rounded-2xl border border-stone-200 space-y-4 text-xs font-medium">
-              <span className="font-bold text-stone-900 block text-sm border-b border-stone-100 pb-2">Schedule Promo Banner Frame</span>
-              
-              {/* Device Photo Upload Box */}
+            {/* Live Banner Preview Card */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider font-mono">
+                  Live Homepage Preview:
+                </span>
+                {settings.adBannerEnabled === false && (
+                  <span className="text-[11px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+                    Currently Hidden from Storefront
+                  </span>
+                )}
+              </div>
+
+              <div className="relative rounded-2xl overflow-hidden bg-stone-900 text-white p-5 sm:p-7 shadow-md border border-stone-200">
+                <img
+                  src={adImage || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1400&q=85'}
+                  alt={adTitle}
+                  className="absolute inset-0 w-full h-full object-cover opacity-60"
+                />
+                <div className="relative z-10 max-w-xl space-y-2 text-left">
+                  <span className="bg-[#C0654B] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block">
+                    EXCLUSIVE FESTIVE OFFER
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-extrabold font-serif leading-tight">
+                    {adTitle || 'Banarasi Silk Sarees'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-stone-200 font-medium">
+                    {adSubtitle || 'Flat 40% OFF Festive Discount | Code: FESTIVE40'}
+                  </p>
+                  <div className="pt-2">
+                    <span className="inline-flex items-center gap-2 bg-white text-stone-900 font-bold px-4 py-2 rounded-xl text-xs shadow-md">
+                      <span>{adButtonText || 'EXPLORE COLLECTION'}</span>
+                      <span>→</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Edit Form for Ad Banner */}
+            <form onSubmit={handleSaveAdBannerSettings} className="space-y-4 pt-2 border-t border-stone-100 text-xs">
+              {/* Photo Upload Section */}
               <div className="border border-dashed border-stone-300 rounded-xl p-4 bg-stone-50 space-y-3">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <label className="block font-bold text-stone-800 text-xs">Hero / Ad Banner Photo (Device Upload)</label>
-                      <span className="bg-emerald-50 text-emerald-600 border border-emerald-300 text-[10px] font-extrabold font-mono px-1.5 py-0.2 rounded">
-                        16:5
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 mt-0.5">Upload high-resolution Indian model fashion photos in <span className="text-emerald-600 font-extrabold font-mono">16:5</span> ratio directly from your phone or computer.</p>
+                    <label className="block font-bold text-stone-800 text-xs">Banner Image Photo</label>
+                    <p className="text-[11px] text-stone-500 mt-0.5">Upload a high-quality model or promotional banner image (PNG, JPG, WebP)</p>
                   </div>
                   
-                  <input
-                    type="file"
-                    ref={bannerFileInputRef}
-                    accept="image/*"
-                    onChange={handleDeviceFileUpload}
-                    className="hidden"
-                  />
-                  
-                  <button
-                    type="button"
-                    onClick={() => bannerFileInputRef.current?.click()}
-                    className="px-4 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm cursor-pointer shrink-0"
-                  >
-                    <Upload className="w-4 h-4" />
-                    <span>Upload Photo from Device</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      id="adBannerFileInput"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          if (typeof reader.result === 'string') {
+                            setAdImage(reader.result);
+                            showToast('Photo uploaded for Ad Banner!');
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('adBannerFileInput')?.click()}
+                      className="px-4 py-2 bg-stone-900 hover:bg-black text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Upload from Device</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Or image URL input */}
                 <div className="pt-2 border-t border-stone-200/60 flex items-center gap-2">
                   <span className="text-[10px] text-stone-400 font-bold uppercase shrink-0">Or Image URL:</span>
                   <input
                     type="text"
-                    value={bImage}
-                    onChange={(e) => setBImage(e.target.value)}
-                    placeholder="https://images.unsplash.com/... or data:image/..."
-                    className="w-full px-3 py-1.5 border border-stone-300 rounded-lg outline-none text-xs font-mono"
+                    value={adImage}
+                    onChange={(e) => setAdImage(e.target.value)}
+                    placeholder="https://images.unsplash.com/... or /images/..."
+                    className="w-full px-3 py-1.5 border border-stone-300 rounded-lg outline-none text-xs font-mono bg-white"
                   />
                 </div>
-
-                {/* Live Preview Box */}
-                {bImage && (
-                  <div className="relative aspect-[21/9] rounded-xl overflow-hidden border border-stone-200 shadow-inner max-h-48 bg-stone-900">
-                    <img src={bImage} alt="Banner Preview" className="w-full h-full object-contain" />
-                    <span className="absolute top-2 left-2 bg-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
-                      ✓ Live Upload Preview Ready
-                    </span>
-                  </div>
-                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">Banner Title / Name (Internal Reference)</label>
+                  <label className="block font-bold text-stone-700 mb-1">Headline Title *</label>
                   <input
                     type="text"
-                    value={bTitle}
-                    onChange={(e) => setBTitle(e.target.value)}
-                    placeholder="e.g. Royal Silk Saree Collection 2026"
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none"
+                    required
+                    value={adTitle}
+                    onChange={(e) => setAdTitle(e.target.value)}
+                    placeholder="e.g. Banarasi Silk Sarees"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none font-bold text-stone-900 focus:border-[#C0654B]"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-bold text-stone-700 mb-1">Placement Scope</label>
-                  <select
-                    value={bPosition}
-                    onChange={(e) => setBPosition(e.target.value as any)}
-                    className="w-full p-2 bg-white border border-stone-300 rounded-lg"
-                  >
-                    <option value="hero">Main Hero Slider (Homepage)</option>
-                    <option value="ad_banner">Ad Banner (Just Above Deals of the Day)</option>
-                    <option value="category">Category Segment</option>
-                    <option value="promo_strip">Bottom Promo Strip</option>
-                  </select>
+                  <label className="block font-bold text-stone-700 mb-1">Offer Subtitle / Promo Tagline</label>
+                  <input
+                    type="text"
+                    value={adSubtitle}
+                    onChange={(e) => setAdSubtitle(e.target.value)}
+                    placeholder="e.g. Flat 40% OFF Festive Discount | Code: FESTIVE40"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">CTA Button Text</label>
+                  <input
+                    type="text"
+                    value={adButtonText}
+                    onChange={(e) => setAdButtonText(e.target.value)}
+                    placeholder="e.g. EXPLORE COLLECTION or SHOP DEALS"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">Target Click Route / Destination Link</label>
+                  <input
+                    type="text"
+                    value={adLink}
+                    onChange={(e) => setAdLink(e.target.value)}
+                    placeholder="e.g. /category/women or /category/all?tag=deal_of_the_day"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none font-mono focus:border-[#C0654B]"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-stone-700 mb-1">Link Destination Target / Redirect Route</label>
-                <input
-                  type="text"
-                  value={bLink}
-                  onChange={(e) => setBLink(e.target.value)}
-                  placeholder="e.g. /category/women?sub=w-ethnic"
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsBannerFormOpen(false)}
-                  className="px-4 py-2 bg-stone-100 text-stone-700 font-bold rounded-xl cursor-pointer"
-                >
-                  Cancel
-                </button>
+              <div className="flex justify-end pt-2">
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-sm"
+                  className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-xs rounded-xl cursor-pointer shadow-md flex items-center gap-1.5"
                 >
-                  Save Slider
+                  <Save className="w-4 h-4" /> Save & Publish Ad Banner Live
                 </button>
               </div>
             </form>
-          )}
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {bannersList.map(ban => (
-              <div key={ban.id} className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
-                <div className="relative aspect-[16/5] bg-stone-900 overflow-hidden group">
-                  <img src={ban.image} alt="" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                  <span className="absolute top-2 left-2 text-[8px] bg-black/70 text-white font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-wider z-10">
-                    {ban.position} Slider
-                  </span>
-                  <span className="absolute top-2 right-2 text-[9px] bg-emerald-600 text-white font-mono font-black px-2 py-0.5 rounded-md uppercase tracking-wider z-10 shadow-xs border border-emerald-400">
+          {/* DEDICATED SECTION 2: ALL HERO SLIDERS & STORE BANNERS CATALOG */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200 shadow-sm space-y-6 text-left">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-stone-100 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-bold font-serif text-stone-900">All Sliders & Page Banners Catalog</h3>
+                  <span className="bg-emerald-50 text-emerald-600 border border-emerald-300 text-xs font-extrabold font-mono px-2 py-0.5 rounded-md shadow-2xs">
                     16:5
                   </span>
-                  
-                  {/* Upload photo overlay */}
-                  <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer gap-1.5 p-4 z-20">
-                    <Upload className="w-6 h-6 text-[#C0654B]" />
-                    <span className="text-xs font-bold bg-[#C0654B] px-3 py-1 rounded-full shadow-md">Replace Photo from Device</span>
+                </div>
+                <p className="text-xs text-stone-400 mt-0.5">
+                  Manage hero top sliders (recommended ratio <span className="text-emerald-600 font-extrabold font-mono">16:5</span>) and all promotional frames across the storefront
+                </p>
+              </div>
+              
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Filter Selector */}
+                <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setBannerFilter('all')}
+                    className={`px-3 py-1 rounded-lg cursor-pointer transition-colors ${bannerFilter === 'all' ? 'bg-[#C0654B] text-white' : 'text-stone-600'}`}
+                  >
+                    All ({banners.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBannerFilter('hero')}
+                    className={`px-3 py-1 rounded-lg cursor-pointer transition-colors ${bannerFilter === 'hero' ? 'bg-[#C0654B] text-white' : 'text-stone-600'}`}
+                  >
+                    Hero Sliders ({banners.filter(b => b.position === 'hero').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBannerFilter('ad_banner')}
+                    className={`px-3 py-1 rounded-lg cursor-pointer transition-colors ${bannerFilter === 'ad_banner' ? 'bg-[#C0654B] text-white' : 'text-stone-600'}`}
+                  >
+                    Ad Banners ({banners.filter(b => b.position === 'ad_banner' || b.position === 'promo_strip').length})
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsBannerFormOpen(true)}
+                  className="px-4 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white text-xs font-bold rounded-xl shadow-sm flex items-center gap-1 cursor-pointer shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> Add Slider Frame
+                </button>
+              </div>
+            </div>
+
+            {/* CREATE BANNER FORM DRAWER */}
+            {isBannerFormOpen && (
+              <form onSubmit={handleSaveBanner} className="bg-stone-50 p-5 rounded-2xl border border-stone-200 space-y-4 text-xs font-medium">
+                <span className="font-bold text-stone-900 block text-sm border-b border-stone-200 pb-2">Schedule New Promo Banner Frame</span>
+                
+                {/* Device Photo Upload Box */}
+                <div className="border border-dashed border-stone-300 rounded-xl p-4 bg-white space-y-3">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <label className="block font-bold text-stone-800 text-xs">Hero / Ad Banner Photo (Device Upload)</label>
+                        <span className="bg-emerald-50 text-emerald-600 border border-emerald-300 text-[10px] font-extrabold font-mono px-1.5 py-0.2 rounded">
+                          16:5
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-stone-500 mt-0.5">Upload high-resolution Indian model fashion photos in <span className="text-emerald-600 font-extrabold font-mono">16:5</span> ratio directly from your phone or computer.</p>
+                    </div>
+                    
                     <input
                       type="file"
+                      ref={bannerFileInputRef}
                       accept="image/*"
-                      onChange={(e) => handleEditBannerImageFromDevice(ban.id, e)}
+                      onChange={handleDeviceFileUpload}
                       className="hidden"
                     />
-                  </label>
-                </div>
-
-                <div className="p-4 space-y-2 text-left">
-                  <h4 className="font-extrabold text-stone-900 text-xs">{ban.title}</h4>
-                  {ban.subtitle && <p className="text-[10px] text-stone-400 leading-snug">{ban.subtitle}</p>}
-                  <p className="text-[9px] font-mono text-stone-400 truncate">Route: {ban.link}</p>
-                </div>
-
-                <div className="p-3 border-t border-stone-100 bg-stone-50 flex justify-between items-center text-xs font-bold">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-stone-500">Displaying:</span>
+                    
                     <button
-                      onClick={() => handleToggleBannerStatus(ban.id)}
-                      className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded-lg cursor-pointer ${
-                        ban.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-400'
-                      }`}
+                      type="button"
+                      onClick={() => bannerFileInputRef.current?.click()}
+                      className="px-4 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-sm cursor-pointer shrink-0"
                     >
-                      {ban.isActive ? 'Active' : 'Paused'}
+                      <Upload className="w-4 h-4" />
+                      <span>Upload Photo from Device</span>
                     </button>
                   </div>
 
+                  {/* Or image URL input */}
+                  <div className="pt-2 border-t border-stone-200/60 flex items-center gap-2">
+                    <span className="text-[10px] text-stone-400 font-bold uppercase shrink-0">Or Image URL:</span>
+                    <input
+                      type="text"
+                      value={bImage}
+                      onChange={(e) => setBImage(e.target.value)}
+                      placeholder="https://images.unsplash.com/... or data:image/..."
+                      className="w-full px-3 py-1.5 border border-stone-300 rounded-lg outline-none text-xs font-mono bg-stone-50"
+                    />
+                  </div>
+
+                  {/* Live Preview Box */}
+                  {bImage && (
+                    <div className="relative aspect-[21/9] rounded-xl overflow-hidden border border-stone-200 shadow-inner max-h-48 bg-stone-900">
+                      <img src={bImage} alt="Banner Preview" className="w-full h-full object-contain" />
+                      <span className="absolute top-2 left-2 bg-emerald-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full uppercase">
+                        ✓ Live Upload Preview Ready
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Banner Title / Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={bTitle}
+                      onChange={(e) => setBTitle(e.target.value)}
+                      placeholder="e.g. Royal Silk Saree Collection 2026"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none bg-white font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Placement Scope *</label>
+                    <select
+                      value={bPosition}
+                      onChange={(e) => setBPosition(e.target.value as any)}
+                      className="w-full p-2 bg-white border border-stone-300 rounded-lg font-bold"
+                    >
+                      <option value="hero">Main Hero Slider (Homepage Top)</option>
+                      <option value="ad_banner">Ad Banner (Just Above Deals of the Day)</option>
+                      <option value="category">Category Segment</option>
+                      <option value="promo_strip">Bottom Promo Strip</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Subtitle / Promo Line</label>
+                    <input
+                      type="text"
+                      value={bSubtitle}
+                      onChange={(e) => setBSubtitle(e.target.value)}
+                      placeholder="e.g. Unveil Your Royal Splendor"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">CTA Button Text</label>
+                    <input
+                      type="text"
+                      value={bButtonText}
+                      onChange={(e) => setBButtonText(e.target.value)}
+                      placeholder="e.g. EXPLORE THE COLLECTION"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none bg-white font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-stone-700 mb-1">Link Destination Target / Redirect Route</label>
+                  <input
+                    type="text"
+                    value={bLink}
+                    onChange={(e) => setBLink(e.target.value)}
+                    placeholder="e.g. /category/women?sub=w-ethnic"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none font-mono bg-white"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-stone-200">
                   <button
-                    onClick={() => handleDeleteBanner(ban.id)}
-                    className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                    type="button"
+                    onClick={() => setIsBannerFormOpen(false)}
+                    className="px-4 py-2 bg-white border border-stone-300 text-stone-700 font-bold rounded-xl cursor-pointer"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-sm"
+                  >
+                    Save Slider Frame
                   </button>
                 </div>
+              </form>
+            )}
+
+            {/* EDIT BANNER MODAL */}
+            {editingBanner && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+                <form onSubmit={handleUpdateExistingBanner} className="bg-white rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl border border-stone-200 text-left text-xs">
+                  <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+                    <h3 className="text-base font-bold font-serif text-stone-900">Edit Banner Frame</h3>
+                    <button type="button" onClick={() => setEditingBanner(null)} className="text-stone-400 hover:text-stone-800 cursor-pointer">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Banner Title *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingBanner.title}
+                      onChange={(e) => setEditingBanner({ ...editingBanner, title: e.target.value })}
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none font-bold text-stone-900 focus:border-[#C0654B]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Subtitle / Offer Description</label>
+                    <input
+                      type="text"
+                      value={editingBanner.subtitle || ''}
+                      onChange={(e) => setEditingBanner({ ...editingBanner, subtitle: e.target.value })}
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">Placement Scope</label>
+                      <select
+                        value={editingBanner.position}
+                        onChange={(e) => setEditingBanner({ ...editingBanner, position: e.target.value as any })}
+                        className="w-full p-2 bg-white border border-stone-300 rounded-lg font-bold"
+                      >
+                        <option value="hero">Hero Slider (Homepage Top)</option>
+                        <option value="ad_banner">Ad Banner (Above Deals of the Day)</option>
+                        <option value="promo_strip">Promo Strip</option>
+                        <option value="category">Category Segment</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-stone-700 mb-1">CTA Button Text</label>
+                      <input
+                        type="text"
+                        value={editingBanner.buttonText || ''}
+                        onChange={(e) => setEditingBanner({ ...editingBanner, buttonText: e.target.value })}
+                        className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Image URL or Base64</label>
+                    <input
+                      type="text"
+                      value={editingBanner.image}
+                      onChange={(e) => setEditingBanner({ ...editingBanner, image: e.target.value })}
+                      className="w-full px-3 py-1.5 border border-stone-300 rounded-lg outline-none font-mono text-[11px]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-stone-700 mb-1">Destination Route</label>
+                    <input
+                      type="text"
+                      value={editingBanner.link}
+                      onChange={(e) => setEditingBanner({ ...editingBanner, link: e.target.value })}
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none font-mono"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2 border-t border-stone-100">
+                    <button
+                      type="button"
+                      onClick={() => setEditingBanner(null)}
+                      className="px-4 py-2 bg-stone-100 text-stone-700 font-bold rounded-xl cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-sm"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
               </div>
-            ))}
+            )}
+
+            {/* Banners Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {banners
+                .filter(b => {
+                  if (bannerFilter === 'hero') return b.position === 'hero';
+                  if (bannerFilter === 'ad_banner') return b.position === 'ad_banner' || b.position === 'promo_strip';
+                  return true;
+                })
+                .map(ban => (
+                <div key={ban.id} className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between">
+                  <div className="relative aspect-[16/5] bg-stone-900 overflow-hidden group">
+                    <img src={ban.image} alt="" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                    <span className="absolute top-2 left-2 text-[8px] bg-black/70 text-white font-mono font-bold px-2 py-0.5 rounded-full uppercase tracking-wider z-10">
+                      {ban.position === 'ad_banner' ? 'Ad Banner (Above Deals)' : ban.position === 'hero' ? 'Hero Slider' : ban.position}
+                    </span>
+                    <span className="absolute top-2 right-2 text-[9px] bg-emerald-600 text-white font-mono font-black px-2 py-0.5 rounded-md uppercase tracking-wider z-10 shadow-xs border border-emerald-400">
+                      16:5
+                    </span>
+                    
+                    {/* Upload photo overlay */}
+                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer gap-1.5 p-4 z-20">
+                      <Upload className="w-6 h-6 text-[#C0654B]" />
+                      <span className="text-xs font-bold bg-[#C0654B] px-3 py-1 rounded-full shadow-md">Replace Photo from Device</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleEditBannerImageFromDevice(ban.id, e)}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="p-4 space-y-2 text-left">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-extrabold text-stone-900 text-xs">{ban.title}</h4>
+                      <button
+                        type="button"
+                        onClick={() => setEditingBanner(ban)}
+                        className="text-stone-400 hover:text-[#C0654B] cursor-pointer p-1"
+                        title="Edit Banner Details"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    {ban.subtitle && <p className="text-[10px] text-stone-500 leading-snug">{ban.subtitle}</p>}
+                    <div className="flex items-center justify-between text-[9px] font-mono text-stone-400 pt-1">
+                      <span className="truncate">Route: {ban.link}</span>
+                      {ban.buttonText && <span className="font-bold text-[#C0654B] shrink-0">CTA: {ban.buttonText}</span>}
+                    </div>
+                  </div>
+
+                  <div className="p-3 border-t border-stone-100 bg-stone-50 flex justify-between items-center text-xs font-bold">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-stone-500">Displaying:</span>
+                      <button
+                        onClick={() => handleToggleBannerStatus(ban.id)}
+                        className={`px-2.5 py-1 text-[10px] uppercase font-bold rounded-lg cursor-pointer ${
+                          ban.isActive !== false ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-400'
+                        }`}
+                      >
+                        {ban.isActive !== false ? 'Active' : 'Paused'}
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => handleDeleteBanner(ban.id)}
+                      className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                      title="Delete Banner"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
