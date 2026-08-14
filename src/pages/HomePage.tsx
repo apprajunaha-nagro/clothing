@@ -413,15 +413,15 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
       )}
 
       {/* 6. RECOMMENDED FOR YOU (4 Sub-category Themes: Women's, Men's, Kids', Innerwear with 12 Products Each) */}
-      <section className="max-w-7xl mx-auto px-2 sm:px-6">
-        <div className="bg-white border border-stone-200 rounded-2xl p-2 sm:p-6 shadow-xs space-y-3.5 sm:space-y-6">
-          <div className="border-b border-stone-200 pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-1 sm:px-0">
+      <section className="max-w-7xl mx-auto px-1 sm:px-6">
+        <div className="bg-white border border-stone-200 rounded-2xl p-1 sm:p-6 shadow-xs space-y-3 sm:space-y-6">
+          <div className="border-b border-stone-200 pb-2.5 sm:pb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-2 sm:px-0">
             <div>
               <div className="flex items-center gap-2">
                 <span className="bg-[#C0654B] text-white text-[10px] font-black px-2.5 py-0.5 rounded uppercase tracking-wider">
                   CURATED FOR YOU
                 </span>
-                <h2 className="text-lg sm:text-2xl font-extrabold font-serif text-stone-900 flex items-center gap-2">
+                <h2 className="text-base sm:text-2xl font-extrabold font-serif text-stone-900 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-[#C0654B]" />
                   <span>Recommended Collections</span>
                 </h2>
@@ -493,7 +493,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             return (
               <div key={sub.id} className={`rounded-xl border ${sub.borderAccent} overflow-hidden shadow-2xs space-y-0`}>
                 {/* THEMED HEADER BANNER */}
-                <div className={`bg-gradient-to-r ${sub.gradient} text-white p-2.5 sm:p-4.5 flex items-center justify-between flex-wrap gap-2`}>
+                <div className={`bg-gradient-to-r ${sub.gradient} text-white p-2.5 sm:p-4 flex items-center justify-between flex-wrap gap-2`}>
                   <div className="flex items-center gap-2 sm:gap-3">
                     <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 backdrop-blur-xs flex items-center justify-center shrink-0">
                       <SubIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-200" />
@@ -521,7 +521,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* VERTICAL PRODUCT LIST GRID */}
-                <div className="p-1.5 sm:p-5 bg-white grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
+                <div className="p-1 sm:p-5 bg-white grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-1 sm:gap-4">
                   {displayItems.map((product) => (
                     <ProductCard
                       key={product.id}

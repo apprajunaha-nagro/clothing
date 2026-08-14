@@ -168,7 +168,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
         </button>
 
         {/* PRODUCT IMAGE CONTAINER (Flipkart style contain/fit on crisp white bg) */}
-        <div className="relative aspect-[4/5] sm:aspect-square w-full overflow-hidden bg-white cursor-pointer border-b border-stone-100 flex items-center justify-center p-2">
+        <div className="relative aspect-[4/5] sm:aspect-square w-full overflow-hidden bg-white cursor-pointer border-b border-stone-100 flex items-center justify-center p-0.5 sm:p-2">
           <img
             src={getOptimizedImageUrl(primaryImage, { width: 450, quality: 75 })}
             alt={product.name}
@@ -193,7 +193,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(
         </div>
 
         {/* DETAILS SECTION (Dense Flipkart hierarchy) */}
-        <div className="p-2.5 sm:p-3 flex flex-col flex-1 justify-between bg-white text-left">
+        <div className="p-2 sm:p-3 flex flex-col flex-1 justify-between bg-white text-left">
           <div>
             {/* Brand / Short Descriptor */}
             <div className="flex items-center justify-between text-[11px] mb-0.5">
