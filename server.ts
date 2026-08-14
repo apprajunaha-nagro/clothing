@@ -33,18 +33,54 @@ import { GoogleGenAI } from '@google/genai';
 export const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Serve the /src/assets folder statically
-app.use('/src/assets', express.static(path.join(process.cwd(), 'src/assets')));
+// Ensure public/uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
-// Serve public folder (favicon, etc.)
+// Serve static asset folders
+app.use('/src/assets', express.static(path.join(process.cwd(), 'src', 'assets')));
+app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(process.cwd(), 'public')));
 
 // Redirect /favicon.ico to /favicon.svg to avoid 404
 app.get('/favicon.ico', (_req, res) => {
   res.redirect('/favicon.svg');
+});
+
+// ---------------- API ROUTE: IMAGE UPLOAD ----------------
+app.post('/api/upload', (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image || typeof image !== 'string') {
+      return res.status(400).json({ error: 'Valid image base64 data is required' });
+    }
+
+    const matches = image.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+    let ext = 'png';
+    let buffer: Buffer;
+
+    if (matches && matches.length === 3) {
+      ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+      buffer = Buffer.from(matches[2], 'base64');
+    } else {
+      buffer = Buffer.from(image, 'base64');
+    }
+
+    const filename = `upload_${Date.now()}_${Math.floor(Math.random() * 10000)}.${ext}`;
+    const filePath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filePath, buffer);
+
+    const publicUrl = `/uploads/${filename}`;
+    return res.json({ success: true, url: publicUrl });
+  } catch (err: any) {
+    console.error('[Upload Error]:', err);
+    return res.status(500).json({ error: 'Failed to save uploaded image.' });
+  }
 });
 
 // Helper to hash OTP code with SHA-256
