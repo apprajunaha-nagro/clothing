@@ -317,6 +317,22 @@ app.post('/api/settings', async (req, res) => {
   }
 });
 
+// PUT /api/settings
+app.put('/api/settings', async (req, res) => {
+  try {
+    const s = req.body;
+    const updated = await prisma.siteSettings.upsert({
+      where: { id: 'default' },
+      update: s,
+      create: { id: 'default', ...s }
+    });
+    return res.json({ success: true, settings: updated });
+  } catch (e: any) {
+    console.error('[PUT /api/settings Error]:', e);
+    return res.status(500).json({ error: e?.message || 'Failed to update settings' });
+  }
+});
+
 // GET /api/categories
 app.get('/api/categories', async (req, res) => {
   try {

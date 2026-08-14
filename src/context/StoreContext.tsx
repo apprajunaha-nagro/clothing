@@ -449,18 +449,26 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateSettings = async (newSettings: Partial<SiteSettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
+    const merged = { ...settings, ...newSettings };
+    setSettings(merged);
     try {
-      await adminFetch('/api/settings', {
+      const res = await adminFetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated)
+        body: JSON.stringify(newSettings)
       });
-      showToast('Site settings updated successfully');
-    } catch (err) {
-      console.error(err);
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data.success && data.settings) {
+          setSettings(prev => ({ ...prev, ...data.settings }));
+          showToast('Site settings updated in database');
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Backend sync failed for settings update', e);
     }
+    showToast('Site settings updated');
   };
 
   const addToCart = (product: Product, variant: ProductVariant, qty = 1) => {
