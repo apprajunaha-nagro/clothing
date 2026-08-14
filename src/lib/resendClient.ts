@@ -17,6 +17,27 @@ const getResendKey = (): string => {
 };
 
 export async function dispatchResendOtp(toEmail: string, otpCode: string): Promise<boolean> {
+  const sanitizedEmail = toEmail.trim().toLowerCase();
+
+  // 1. Primary: Send via backend Express endpoint (zero CORS, Resend + Nodemailer fallback)
+  try {
+    const serverRes = await fetch('/api/auth/send-resend-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: sanitizedEmail, code: otpCode })
+    });
+    if (serverRes.ok) {
+      const data = await serverRes.json();
+      if (data.success) {
+        console.log('[Server Resend Dispatch Success]:', data);
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('[Server OTP endpoint call failed, attempting direct Resend API call]:', e);
+  }
+
+  // 2. Secondary: Direct Resend API call from client
   const apiKey = getResendKey();
   try {
     const response = await fetch('https://api.resend.com/emails', {
@@ -27,7 +48,7 @@ export async function dispatchResendOtp(toEmail: string, otpCode: string): Promi
       },
       body: JSON.stringify({
         from: 'PGmart <noreply@pgmart.in>',
-        to: [toEmail],
+        to: [sanitizedEmail],
         subject: `Your PGmart Verification Code: ${otpCode}`,
         html: `
           <div style="font-family: Arial, sans-serif; padding: 28px; max-width: 500px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 16px; background-color: #ffffff;">
