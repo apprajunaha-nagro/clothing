@@ -25,10 +25,13 @@ A full-stack modern E-Commerce platform & Fashion Store built with **React**, **
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Live Infrastructure
 
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, Lucide Icons, Framer Motion
-- **Backend / API**: Node.js, Express, TSX
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, Lucide Icons, Framer Motion, `@supabase/supabase-js`
+- **Backend / API**: Node.js, Express, Prisma ORM
+- **Database**: Cloud PostgreSQL on **Supabase** (2,400+ Products, Orders, Users, Categories)
+- **Deployment**: **Hostinger Node.js Application** with automated GitHub CI/CD deployments
+- **Authentication & Email**: Supabase Auth + Hostinger SMTP (`noreply@pgmart.in`)
 - **AI Integration**: Google GenAI SDK (`@google/genai`)
 - **Data & Utilities**: PapaParse (CSV parsing), Recharts (Analytics dashboard)
 
