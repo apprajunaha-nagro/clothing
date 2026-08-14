@@ -1,0 +1,736 @@
+[
+  {
+    "id": "TC001",
+    "title": "Add an item to the cart and complete checkout",
+    "description": "A shopper can add a product to the cart, choose a shipping address, and finish checkout successfully.",
+    "category": "Shopping Cart & Checkout",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /products"
+      },
+      {
+        "type": "action",
+        "description": "Open a product from the product list"
+      },
+      {
+        "type": "action",
+        "description": "Add the product to the cart"
+      },
+      {
+        "type": "action",
+        "description": "Proceed to checkout"
+      },
+      {
+        "type": "action",
+        "description": "Select a shipping address"
+      },
+      {
+        "type": "action",
+        "description": "Complete the checkout process"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an order confirmation is visible"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify checkout success messaging is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Register a new account and verify the OTP",
+    "description": "A new shopper can complete registration, enter the 6-digit verification code, and land in an authenticated session.",
+    "category": "Account Registration & Email OTP Verification",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /account"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the name field with a new valid name"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the phone field with a valid phone number"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with a new valid email address"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with a valid password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the OTP field with a valid 6-digit code"
+      },
+      {
+        "type": "action",
+        "description": "Submit the OTP form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the account is verified and the user is logged in"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "Access the admin area after signing in",
+    "description": "An admin user can sign in and reach the protected admin experience.",
+    "category": "Admin Login and Access Control",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open the admin area"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the admin dashboard is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Admin can log in and reach the product inventory",
+    "description": "This verifies that an admin can authenticate and access the product inventory view in the management panel.",
+    "category": "Admin Management Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin management entry point"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the product inventory list is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Browse products and open a product detail page",
+    "description": "A shopper can search or browse the catalog and open a product detail view from the results.",
+    "category": "Product Search & Browsing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /products"
+      },
+      {
+        "type": "action",
+        "description": "Search for a product using a relevant keyword"
+      },
+      {
+        "type": "action",
+        "description": "Open a product from the search results"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the product detail view is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify product images and details are displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Apply a valid coupon during checkout",
+    "description": "A shopper can apply a valid promo code and see the discounted order total.",
+    "category": "Shopping Cart & Checkout",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /products"
+      },
+      {
+        "type": "action",
+        "description": "Open a product from the product list"
+      },
+      {
+        "type": "action",
+        "description": "Add the product to the cart"
+      },
+      {
+        "type": "action",
+        "description": "Proceed to checkout"
+      },
+      {
+        "type": "action",
+        "description": "Select a shipping address"
+      },
+      {
+        "type": "action",
+        "description": "Apply a valid coupon code"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the discounted total is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the coupon is applied successfully"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Require a shipping address before checkout completion",
+    "description": "A shopper cannot complete checkout until a shipping address is selected.",
+    "category": "Shopping Cart & Checkout",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /products"
+      },
+      {
+        "type": "action",
+        "description": "Open a product from the product list"
+      },
+      {
+        "type": "action",
+        "description": "Add the product to the cart"
+      },
+      {
+        "type": "action",
+        "description": "Proceed to checkout"
+      },
+      {
+        "type": "action",
+        "description": "Complete the checkout process without selecting a shipping address"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a checkout validation error is visible"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Admin can create a new product",
+    "description": "This verifies that an admin can add a new product and see it appear in the inventory list.",
+    "category": "Admin Management Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin management entry point"
+      },
+      {
+        "type": "action",
+        "description": "Open the product creation flow"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the required product details"
+      },
+      {
+        "type": "action",
+        "description": "Submit the product form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the newly created product appears in the inventory list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Filter products by category, subcategory, and brand",
+    "description": "A shopper can narrow the catalog using supported filters and see matching products.",
+    "category": "Product Search & Browsing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /products"
+      },
+      {
+        "type": "action",
+        "description": "Select a category filter"
+      },
+      {
+        "type": "action",
+        "description": "Select a subcategory filter"
+      },
+      {
+        "type": "action",
+        "description": "Select a brand filter"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify matching products are displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify pagination data is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Admin can update an existing product",
+    "description": "This verifies that an admin can edit a product and see the updated inventory information saved.",
+    "category": "Admin Management Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin management entry point"
+      },
+      {
+        "type": "action",
+        "description": "Open an existing product for editing"
+      },
+      {
+        "type": "action",
+        "description": "Change a product field"
+      },
+      {
+        "type": "action",
+        "description": "Save the product changes"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated product information is displayed in the inventory list"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC011",
+    "title": "Update cart quantity and see totals recalculate",
+    "description": "A shopper can change item quantity in the cart and see the updated totals reflected in the UI.",
+    "category": "Shopping Cart & Checkout",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /products"
+      },
+      {
+        "type": "action",
+        "description": "Open a product from the product list"
+      },
+      {
+        "type": "action",
+        "description": "Add the product to the cart"
+      },
+      {
+        "type": "action",
+        "description": "Proceed to checkout"
+      },
+      {
+        "type": "action",
+        "description": "Increase the item quantity"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the cart totals are recalculated"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the updated quantity is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC012",
+    "title": "Admin can manage orders from the dashboard",
+    "description": "This verifies that an admin can open the orders section and view the orders list.",
+    "category": "Admin Management Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin management entry point"
+      },
+      {
+        "type": "action",
+        "description": "Open the orders section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the orders list is displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC013",
+    "title": "Prevent checkout with an invalid coupon",
+    "description": "A shopper sees coupon validation feedback when an invalid or expired promo code is entered.",
+    "category": "Shopping Cart & Checkout",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /products"
+      },
+      {
+        "type": "action",
+        "description": "Open a product from the product list"
+      },
+      {
+        "type": "action",
+        "description": "Add the product to the cart"
+      },
+      {
+        "type": "action",
+        "description": "Proceed to checkout"
+      },
+      {
+        "type": "action",
+        "description": "Apply an invalid coupon code"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify coupon validation errors are visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC014",
+    "title": "Admin can manage coupons from the dashboard",
+    "description": "This verifies that an admin can open the coupons section and view the available coupons.",
+    "category": "Admin Management Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin management entry point"
+      },
+      {
+        "type": "action",
+        "description": "Open the coupons section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the coupons list is displayed"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC015",
+    "title": "Reject invalid registration details",
+    "description": "A shopper sees validation feedback when registration is submitted with missing or invalid details.",
+    "category": "Account Registration & Email OTP Verification",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /account"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form without completing the required details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify registration validation errors are visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC016",
+    "title": "Reject an incorrect OTP during verification",
+    "description": "A shopper who enters the wrong 6-digit code is prevented from verifying the account.",
+    "category": "Account Registration & Email OTP Verification",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /account"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the name field with a new valid name"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the phone field with a valid phone number"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with a new valid email address"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with a valid password"
+      },
+      {
+        "type": "action",
+        "description": "Submit the registration form"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the OTP field with an incorrect 6-digit code"
+      },
+      {
+        "type": "action",
+        "description": "Submit the OTP form"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify OTP verification errors are visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC017",
+    "title": "Show an empty state for a search with no matches",
+    "description": "A shopper sees an empty result state when a search returns no products.",
+    "category": "Product Search & Browsing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /products"
+      },
+      {
+        "type": "action",
+        "description": "Search for a product using a unique unavailable keyword"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty results message is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC018",
+    "title": "Block checkout when a cart item is out of stock or invalid",
+    "description": "A shopper is prevented from updating the cart with an out-of-stock product or invalid quantity.",
+    "category": "Shopping Cart & Checkout",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /products"
+      },
+      {
+        "type": "action",
+        "description": "Open a product from the product list"
+      },
+      {
+        "type": "action",
+        "description": "Add the product to the cart"
+      },
+      {
+        "type": "action",
+        "description": "Proceed to checkout"
+      },
+      {
+        "type": "action",
+        "description": "Update the item quantity to an invalid value"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a cart update validation error is visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC019",
+    "title": "Admin is blocked from protected orders access without authorization",
+    "description": "This verifies that accessing protected admin orders content without an admin session is blocked.",
+    "category": "Admin Management Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /admin"
+      },
+      {
+        "type": "action",
+        "description": "Open the orders section"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied to the orders section"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC020",
+    "title": "Prevent access to protected admin actions without permission",
+    "description": "A non-admin user is blocked from protected admin routes and sees an access denied state.",
+    "category": "Admin Login and Access Control",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the email field with {{LOGIN_USER}}"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the password field with {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Open a protected admin area"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an unauthorized access message is visible"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC021",
+    "title": "Admin is blocked from deleting coupons without permission",
+    "description": "This verifies that a restricted admin coupon action cannot be completed without proper permission.",
+    "category": "Admin Management Panel",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /login"
+      },
+      {
+        "type": "action",
+        "description": "Fill in the login credentials with {{LOGIN_USER}} and {{LOGIN_PASSWORD}}"
+      },
+      {
+        "type": "action",
+        "description": "Submit the login form"
+      },
+      {
+        "type": "action",
+        "description": "Click the admin management entry point"
+      },
+      {
+        "type": "action",
+        "description": "Open the coupons section"
+      },
+      {
+        "type": "action",
+        "description": "Attempt to delete a coupon without permission"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the coupon remains available and the deletion is blocked"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC022",
+    "title": "Handle an unsupported product filter value",
+    "description": "A shopper is shown a clear filter error when an unsupported filter value is used.",
+    "category": "Product Search & Browsing",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /products"
+      },
+      {
+        "type": "action",
+        "description": "Apply an unsupported filter value"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a filter validation error is visible"
+      }
+    ],
+    "priority": "Low"
+  }
+]

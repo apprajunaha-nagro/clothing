@@ -17,3 +17,5 @@ prisma/*.db
 
 # Scratch files
 scratch/
+testsprite_tests/tmp/
+testsprite_tests/tmp/config.json

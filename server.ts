@@ -92,6 +92,23 @@ app.post('/api/auth/send-resend-otp', async (req, res) => {
     }
     const targetEmail = email.trim().toLowerCase();
     const otpCode = (code && typeof code === 'string') ? code.trim() : Math.floor(100000 + Math.random() * 900000).toString();
+    const codeHash = hashOtpCode(otpCode);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    try {
+      await prisma.otp.create({
+        data: {
+          email: targetEmail,
+          codeHash,
+          purpose: 'signup_verification',
+          expiresAt,
+          attempts: 0,
+          verified: false
+        }
+      });
+    } catch (dbErr) {
+      console.warn('[DB OTP Save Warning]:', dbErr);
+    }
     
     console.log(`[Express OTP API] Dispatching OTP ${otpCode} to ${targetEmail}...`);
     const sent = await sendOtpEmail(targetEmail, otpCode);

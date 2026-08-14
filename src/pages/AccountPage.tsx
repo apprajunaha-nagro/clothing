@@ -455,9 +455,10 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                             setAuthError(null);
                             try {
                               const entered = enteredEmailOtp.trim();
+                              const savedCode = activeOtpCode || sessionStorage.getItem('activeOtpCode');
 
-                              // 1. Check if matches Resend OTP code dispatched
-                              if (activeOtpCode && entered === activeOtpCode) {
+                              // 1. Check if matches active OTP code
+                              if (savedCode && entered === savedCode) {
                                 setIsEmailVerified(true);
                                 setAuthError(null);
                                 showToast('✓ Email Verified! Completing account setup...');
@@ -468,7 +469,29 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                                 return;
                               }
 
-                              // 2. Try Supabase Auth OTP verification
+                              // 2. Check Database / Server verification endpoint
+                              try {
+                                const verifyRes = await fetch('/api/auth/verify-otp', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ email: signUpEmail.trim().toLowerCase(), code: entered })
+                                });
+                                if (verifyRes.ok) {
+                                  const verifyData = await verifyRes.json();
+                                  if (verifyData.verified) {
+                                    setIsEmailVerified(true);
+                                    setAuthError(null);
+                                    showToast('✓ Email Verified! Completing account setup...');
+                                    setTimeout(() => {
+                                      loginUser(signUpName || 'New Member', signUpEmail, signUpPhone || '');
+                                      if (redirectParam) onNavigate(redirectParam);
+                                    }, 800);
+                                    return;
+                                  }
+                                }
+                              } catch (e) {}
+
+                              // 3. Try Supabase Auth OTP verification
                               let { data: supaData, error: supaErr } = await supabase.auth.verifyOtp({
                                 email: signUpEmail,
                                 token: entered,
@@ -518,6 +541,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                             try {
                               const newCode = Math.floor(100000 + Math.random() * 900000).toString();
                               setActiveOtpCode(newCode);
+                              try { sessionStorage.setItem('activeOtpCode', newCode); } catch (e) {}
                               await dispatchResendOtp(signUpEmail, newCode);
                               setResendEmailTimer(60);
                               showToast('✉️ 6-digit Verification OTP code sent to ' + signUpEmail);
@@ -585,6 +609,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     const targetEmail = signUpEmail.trim().toLowerCase();
                     const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
                     setActiveOtpCode(generatedCode);
+                    try { sessionStorage.setItem('activeOtpCode', generatedCode); } catch (e) {}
 
                     // Send 6-digit numeric OTP code directly to customer's exact email via Resend API
                     await dispatchResendOtp(targetEmail, generatedCode);
