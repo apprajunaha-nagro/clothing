@@ -452,12 +452,22 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                             setIsVerifyingEmailOtp(true);
                             setAuthError(null);
                             try {
-                              // 1. Try Supabase Auth OTP verification
-                              const { data: supaData, error: supaErr } = await supabase.auth.verifyOtp({
+                              // 1. Try Supabase Auth OTP verification (type 'signup' then 'email')
+                              let { data: supaData, error: supaErr } = await supabase.auth.verifyOtp({
                                 email: signUpEmail,
                                 token: enteredEmailOtp.trim(),
-                                type: 'email'
+                                type: 'signup'
                               });
+
+                              if (supaErr) {
+                                const retry = await supabase.auth.verifyOtp({
+                                  email: signUpEmail,
+                                  token: enteredEmailOtp.trim(),
+                                  type: 'email'
+                                });
+                                supaData = retry.data;
+                                supaErr = retry.error;
+                              }
 
                               if (!supaErr && supaData?.user) {
                                 setIsEmailVerified(true);
@@ -589,30 +599,34 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   setAuthError(null);
                   setResendEmailTimer(60);
 
-                  // Dispatch OTP via Supabase Auth directly to user's email
+                  // Dispatch email verification via Supabase Auth
                   try {
-                    const { error: supaErr } = await supabase.auth.signInWithOtp({
+                    const { data: supaData, error: supaErr } = await supabase.auth.signUp({
                       email: signUpEmail,
+                      password: signUpPassword || 'PgmartPass2026!',
                       options: {
-                        shouldCreateUser: true,
                         data: {
                           name: signUpName,
                           phone: signUpPhone,
                         }
                       }
                     });
+
                     if (!supaErr) {
-                      showToast(`✉️ 6-Digit Verification OTP code sent to ${signUpEmail}! Check Inbox/Spam.`);
+                      showToast(`✉️ Verification email sent to ${signUpEmail}! Check your Inbox / Spam folder.`);
                     } else {
-                      await fetch('/api/auth/signup', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: signUpName, email: signUpEmail, phone: signUpPhone })
+                      const { error: otpErr } = await supabase.auth.signInWithOtp({
+                        email: signUpEmail,
+                        options: { shouldCreateUser: true }
                       });
-                      showToast(`✉️ Verification OTP code sent to ${signUpEmail}!`);
+                      if (otpErr) {
+                        setAuthError(supaErr.message || otpErr.message);
+                      } else {
+                        showToast(`✉️ Verification email sent to ${signUpEmail}! Check your Inbox / Spam folder.`);
+                      }
                     }
-                  } catch (err) {
-                    showToast(`✉️ Verification OTP code sent to ${signUpEmail}!`);
+                  } catch (err: any) {
+                    setAuthError(err.message || 'Failed to send verification email.');
                   }
                 }}
                 className="space-y-4 text-xs"
