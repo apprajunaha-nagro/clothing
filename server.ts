@@ -563,12 +563,26 @@ const handleCheckEmail = async (req: express.Request, res: express.Response) => 
       return res.status(400).json({ registered: false, error: 'Email parameter required' });
     }
     const email = rawEmail.trim().toLowerCase();
-    const existing = await prisma.user.findFirst({
-      where: { email }
-    });
-    if (existing) {
-      return res.json({ registered: true, email: existing.email });
+
+    // 1. Check Prisma public.User table
+    const existingPrisma = await prisma.user.findFirst({ where: { email } });
+    if (existingPrisma) {
+      return res.json({ registered: true, email: existingPrisma.email });
     }
+
+    // 2. Check Supabase auth.users table
+    try {
+      const authUsers: any[] = await prisma.$queryRawUnsafe(
+        `SELECT id, email FROM auth.users WHERE LOWER(email) = $1 LIMIT 1`,
+        email
+      );
+      if (authUsers && authUsers.length > 0) {
+        return res.json({ registered: true, email: authUsers[0].email });
+      }
+    } catch (dbErr) {
+      console.warn('[Check Email auth.users query warning]:', dbErr);
+    }
+
     return res.json({ registered: false });
   } catch (e: any) {
     console.error('[GET /api/auth/check-email Error]:', e);
@@ -580,6 +594,51 @@ app.get('/api/auth/check-email', handleCheckEmail);
 app.get('/api/check-email', handleCheckEmail);
 app.get('/api/users/check-email', handleCheckEmail);
 app.post('/api/auth/check-email', handleCheckEmail);
+
+// POST /api/auth/user-deleted (Supabase Webhook / Admin endpoint for user deletion cleanup)
+app.post('/api/auth/user-deleted', async (req, res) => {
+  try {
+    const webhookSecret = process.env.SUPABASE_WEBHOOK_SECRET || process.env.ADMIN_TOKEN || 'pgmart_webhook_secret_2026';
+    const reqHeaderSecret = req.headers['x-webhook-secret'] || req.headers['authorization'];
+
+    // Validate secret header if provided
+    if (reqHeaderSecret) {
+      const cleanHeader = String(reqHeaderSecret).replace('Bearer ', '').trim();
+      if (cleanHeader !== webhookSecret && cleanHeader !== process.env.ADMIN_TOKEN) {
+        return res.status(401).json({ error: 'Unauthorized webhook request' });
+      }
+    }
+
+    // Extract deleted user record from Supabase Webhook payload
+    const body = req.body || {};
+    const oldRecord = body.old_record || body.record || body;
+    const targetEmail = oldRecord?.email || body.email;
+    const targetUserId = oldRecord?.id || body.id || body.userId;
+
+    if (!targetEmail && !targetUserId) {
+      return res.status(400).json({ error: 'Email or User ID is required in webhook payload' });
+    }
+
+    let deletedCount = 0;
+    if (targetEmail) {
+      const result = await prisma.user.deleteMany({
+        where: { email: String(targetEmail).trim().toLowerCase() }
+      });
+      deletedCount = result.count;
+    } else if (targetUserId) {
+      const result = await prisma.user.deleteMany({
+        where: { id: String(targetUserId) }
+      });
+      deletedCount = result.count;
+    }
+
+    console.log(`[Webhook /api/auth/user-deleted]: Cleared ${deletedCount} user row(s) from Prisma User table for email: ${targetEmail || targetUserId}`);
+    return res.json({ success: true, deletedCount, email: targetEmail });
+  } catch (err: any) {
+    console.error('[POST /api/auth/user-deleted Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to process user deletion webhook' });
+  }
+});
 
 // GET /api/users
 app.get('/api/users', async (req, res) => {
