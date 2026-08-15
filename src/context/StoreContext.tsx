@@ -477,8 +477,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       try {
         const res = await fetch('/api/orders');
         if (res.ok) {
-          const dbOrders = await res.json();
-          if (Array.isArray(dbOrders) && dbOrders.length > 0) {
+          const dbData = await res.json();
+          const dbOrders: Order[] = Array.isArray(dbData) ? dbData : (dbData?.orders || []);
+          if (Array.isArray(dbOrders)) {
             setOrders(prev => {
               const prevMap = new Map<string, Order>(prev.map(o => [o.id, o]));
               const merged = dbOrders.map((dbOrd: Order) => {

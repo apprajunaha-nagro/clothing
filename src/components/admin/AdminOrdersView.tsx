@@ -74,8 +74,9 @@ export const AdminOrdersView: React.FC = () => {
         const res = await fetch('/api/orders');
         if (res.ok) {
           const data = await res.json();
-          if (data.success && Array.isArray(data.orders)) {
-            setAllDbOrders(data.orders);
+          const list: Order[] = Array.isArray(data) ? data : (data.orders || []);
+          if (Array.isArray(list)) {
+            setAllDbOrders(list);
             return;
           }
         }
@@ -84,9 +85,17 @@ export const AdminOrdersView: React.FC = () => {
       }
     }
     fetchAllDatabaseOrders();
-  }, []);
+  }, [orders.length]);
 
-  const ordersListToDisplay = allDbOrders;
+  const ordersListToDisplay = React.useMemo(() => {
+    const orderMap = new Map<string, Order>();
+    allDbOrders.forEach(o => orderMap.set(o.id, o));
+    orders.forEach(o => orderMap.set(o.id, o));
+
+    return Array.from(orderMap.values()).sort(
+      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+  }, [allDbOrders, orders]);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');

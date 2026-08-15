@@ -114,10 +114,23 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
       }
     }
     loadUserOrders();
-  }, [user?.email]);
+  }, [user?.email, orders.length]);
 
-  // Display real database orders fetched from GET /api/orders?email=...
-  const displayOrders = dbUserOrders;
+  // Display real database orders + store context orders for logged-in customer
+  const displayOrders = React.useMemo(() => {
+    const userEmailClean = (user?.email || '').trim().toLowerCase();
+    const storeMatchedOrders = userEmailClean
+      ? orders.filter(o => (o.customerEmail || '').trim().toLowerCase() === userEmailClean)
+      : [];
+
+    const orderMap = new Map<string, Order>();
+    dbUserOrders.forEach(o => orderMap.set(o.id, o));
+    storeMatchedOrders.forEach(o => orderMap.set(o.id, o));
+
+    return Array.from(orderMap.values()).sort(
+      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    );
+  }, [user?.email, dbUserOrders, orders]);
 
   // ─── STATE FOR ADDRESS MANAGEMENT ──────────────────────────────────────────
   const [addresses, setAddresses] = useState<Address[]>([]);
