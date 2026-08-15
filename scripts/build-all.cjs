@@ -1,6 +1,7 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const esbuild = require('esbuild');
 
 console.log('=== STARTING CROSS-PLATFORM PRODUCTION BUILD ===\n');
 
@@ -14,9 +15,18 @@ try {
   console.log('\n[1/4] Generating Prisma Client...');
   run('node node_modules/prisma/build/index.js generate');
 
-  // 2. Server Bundle Build (esbuild)
+  // 2. Server Bundle Build (esbuild Programmatic JS API - OS Independent)
   console.log('\n[2/4] Bundling Express Server (dist/server.cjs)...');
-  run('node node_modules/esbuild/bin/esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs');
+  esbuild.buildSync({
+    entryPoints: [path.join(__dirname, '..', 'server.ts')],
+    bundle: true,
+    platform: 'node',
+    format: 'cjs',
+    packages: 'external',
+    sourcemap: true,
+    outfile: path.join(__dirname, '..', 'dist', 'server.cjs')
+  });
+  console.log('✔ Express server bundled successfully to dist/server.cjs');
 
   // 3. Frontend Vite Build
   console.log('\n[3/4] Building Frontend Static Assets (dist/)...');
