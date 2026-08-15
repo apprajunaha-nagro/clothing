@@ -120,6 +120,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
 
     if (!street.trim() || !pincode.trim() || pincode.length !== 6 || !city.trim()) {
       showToast('Please enter and verify a complete delivery address.');
