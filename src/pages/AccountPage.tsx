@@ -116,10 +116,8 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
     loadUserOrders();
   }, [user?.email]);
 
-  // Fallback to store context orders filtered by customer email
-  const displayOrders = dbUserOrders.length > 0 
-    ? dbUserOrders 
-    : orders.filter(o => o.customerEmail?.toLowerCase() === user?.email?.toLowerCase());
+  // Display real database orders fetched from GET /api/orders?email=...
+  const displayOrders = dbUserOrders;
 
   // ─── STATE FOR ADDRESS MANAGEMENT ──────────────────────────────────────────
   const [addresses, setAddresses] = useState<Address[]>([]);

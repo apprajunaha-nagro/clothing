@@ -2207,7 +2207,7 @@ app.post('/api/orders', async (req, res) => {
       },
     });
 
-    res.json({ success: true, order: formatOrder(newOrder) });
+    return res.json({ success: true, order: formatOrderResponse(newOrder) });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
