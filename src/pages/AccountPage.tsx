@@ -890,7 +890,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                 </button>
               </form>
             ) : (
-              /* PART A — CREATE NEW ACCOUNT FORM (FULL DETAILS BEFORE OTP) */
+              /* PART A — CREATE NEW ACCOUNT FORM (EXACT 4 FIELDS: Name, Mobile, Email, Password) */
               <form
                 autoComplete="off"
                 onSubmit={async (e) => {
@@ -899,20 +899,16 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     setAuthError('Please enter your full name.');
                     return;
                   }
+                  if (!signUpPhone || signUpPhone.length !== 10) {
+                    setAuthError('Please enter a valid 10-digit mobile number.');
+                    return;
+                  }
                   if (!signUpEmail || !signUpEmail.includes('@')) {
                     setAuthError('Please enter a valid email address.');
                     return;
                   }
-                  if (signUpPhone.length < 10) {
-                    setAuthError('Please enter a valid 10-digit mobile number.');
-                    return;
-                  }
                   if (!signUpPassword || signUpPassword.length < 6) {
                     setAuthError('Password must be at least 6 characters long.');
-                    return;
-                  }
-                  if (signUpPassword !== signUpConfirmPassword) {
-                    setAuthError('Passwords do not match.');
                     return;
                   }
 
@@ -943,7 +939,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                         msg.includes('already exists') ||
                         msg.includes('user_already_exists') ||
                         status === 'user_already_exists' ||
-                        status === 400 && msg.includes('registered')
+                        (status === 400 && msg.includes('registered'))
                       ) {
                         setAuthError('An account with this email already exists. Please sign in instead.');
                       } else {
@@ -966,12 +962,13 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                 }}
                 className="space-y-4 text-xs"
               >
+                {/* 1. Full Name */}
                 <div>
                   <label className="block font-bold text-stone-800 mb-1">Full Name *</label>
                   <input
                     type="text"
                     required
-                    autoComplete="off"
+                    autoComplete="name"
                     value={signUpName}
                     onChange={(e) => setSignUpName(e.target.value)}
                     placeholder="Enter full name"
@@ -979,25 +976,13 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   />
                 </div>
 
-                <div>
-                  <label className="block font-bold text-stone-800 mb-1">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    autoComplete="off"
-                    value={signUpEmail}
-                    onChange={(e) => setSignUpEmail(e.target.value)}
-                    placeholder="Enter email address"
-                    className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
-                  />
-                </div>
-
+                {/* 2. Mobile Phone (+91) */}
                 <div>
                   <label className="block font-bold text-stone-800 mb-1">Mobile Phone (+91) *</label>
                   <input
                     type="tel"
                     required
-                    autoComplete="off"
+                    autoComplete="tel"
                     maxLength={10}
                     value={signUpPhone}
                     onChange={(e) => setSignUpPhone(e.target.value.replace(/\D/g, ''))}
@@ -1006,57 +991,32 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   />
                 </div>
 
-                {/* Street / House Address */}
+                {/* 3. Email Address */}
                 <div>
-                  <label className="block font-bold text-stone-800 mb-1">House / Flat No. & Street Address *</label>
+                  <label className="block font-bold text-stone-800 mb-1">Email Address *</label>
                   <input
-                    type="text"
+                    type="email"
                     required
-                    autoComplete="off"
-                    value={signUpStreet}
-                    onChange={(e) => setSignUpStreet(e.target.value)}
-                    placeholder="Flat No. / Street Address"
+                    autoComplete="email"
+                    value={signUpEmail}
+                    onChange={(e) => setSignUpEmail(e.target.value)}
+                    placeholder="Enter email address"
                     className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
                   />
                 </div>
 
-                {/* PIN Code, District/City, & State with auto-fetch */}
-                <PincodeField
-                  pincode={signUpPincode}
-                  city={signUpCity}
-                  stateName={signUpState}
-                  locality={signUpLocality}
-                  onPincodeChange={(val) => setSignUpPincode(val)}
-                  onCityChange={(val) => setSignUpCity(val)}
-                  onStateChange={(val) => setSignUpState(val)}
-                  onLocalityChange={(val) => setSignUpLocality(val)}
-                />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-stone-800 mb-1">Password *</label>
-                    <input
-                      type="password"
-                      required
-                      autoComplete="new-password"
-                      value={signUpPassword}
-                      onChange={(e) => setSignUpPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-stone-800 mb-1">Confirm Password *</label>
-                    <input
-                      type="password"
-                      required
-                      autoComplete="new-password"
-                      value={signUpConfirmPassword}
-                      onChange={(e) => setSignUpConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
-                    />
-                  </div>
+                {/* 4. Password */}
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">Password *</label>
+                  <input
+                    type="password"
+                    required
+                    autoComplete="new-password"
+                    value={signUpPassword}
+                    onChange={(e) => setSignUpPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
+                  />
                 </div>
 
                 <button
