@@ -2093,12 +2093,20 @@ app.delete('/api/products/:id', adminAuth, async (req, res) => {
 // Orders
 app.get('/api/orders', async (req, res) => {
   try {
+    const rawEmail = req.query.email;
+    let where: any = {};
+    if (rawEmail && typeof rawEmail === 'string') {
+      where.customerEmail = { equals: rawEmail.trim().toLowerCase(), mode: 'insensitive' };
+    }
     const orders = await prisma.order.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
     });
-    res.json(orders.map(formatOrder));
+    const formatted = orders.map(formatOrderResponse);
+    return res.json({ success: true, orders: formatted });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('[GET /api/orders Error]:', err);
+    return res.status(500).json({ success: false, error: err.message, orders: [] });
   }
 });
 

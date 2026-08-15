@@ -375,7 +375,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Fetch live state from backend on load
   const reloadCatalog = async () => {
     try {
-      const [resSet, resCat, resProd, resOrd, resBrs] = await Promise.all([
+      const [resSet, resCat, resProd, resOrd, resBrs, resBan] = await Promise.all([
         safeJsonFetch('/api/settings'),
         safeJsonFetch('/api/categories'),
         safeJsonFetch('/api/products'),
