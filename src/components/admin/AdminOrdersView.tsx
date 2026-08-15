@@ -178,6 +178,8 @@ export const AdminOrdersView: React.FC = () => {
     };
   }, [orders.length]);
 
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // Default 'asc' so earliest order shows on top!
+
   const ordersListToDisplay = React.useMemo(() => {
     const orderMap = new Map<string, Order>();
     allDbOrders.forEach(o => {
@@ -189,10 +191,13 @@ export const AdminOrdersView: React.FC = () => {
       if (parsed.id) orderMap.set(parsed.id, parsed);
     });
 
-    return Array.from(orderMap.values()).sort(
-      (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-    );
-  }, [allDbOrders, orders]);
+    const list = Array.from(orderMap.values());
+    return list.sort((a, b) => {
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
+      return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+    });
+  }, [allDbOrders, orders, sortOrder]);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -462,16 +467,26 @@ export const AdminOrdersView: React.FC = () => {
           <option value="week">Past 7 Days</option>
           <option value="month">This Month</option>
         </select>
+
+        <select
+          value={sortOrder}
+          onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+          className="p-2 border border-amber-300 bg-amber-50/80 rounded-xl font-bold text-amber-900 shadow-xs cursor-pointer"
+        >
+          <option value="asc">⏰ Earliest First (Oldest on Top)</option>
+          <option value="desc">🆕 Latest First (Newest on Top)</option>
+        </select>
       </div>
 
       {/* TABLE DATA LIST */}
       <div className="bg-white rounded-2xl border border-stone-200/80 shadow-sm overflow-hidden">
         <div className="overflow-x-auto touch-scroll">
-          <table className="w-full text-xs text-left min-w-[640px]">
+          <table className="w-full text-xs text-left min-w-[780px]">
             <thead className="bg-stone-50 text-stone-500 font-bold border-b border-stone-200">
               <tr>
                 <th className="p-3">Order Number</th>
                 <th className="p-3">Customer details</th>
+                <th className="p-3 min-w-[240px]">Ordered Items (Product Image & Name)</th>
                 <th className="p-3">Placed Date</th>
                 <th className="p-3">Method</th>
                 <th className="p-3">Payment</th>
@@ -483,7 +498,7 @@ export const AdminOrdersView: React.FC = () => {
             <tbody className="divide-y divide-stone-100 font-semibold text-stone-700">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center text-stone-400">No client orders placed under specified parameters yet.</td>
+                  <td colSpan={9} className="p-12 text-center text-stone-400">No client orders placed under specified parameters yet.</td>
                 </tr>
               ) : (
                 filteredOrders.map(order => (
@@ -491,9 +506,44 @@ export const AdminOrdersView: React.FC = () => {
                     <td className="p-3 font-mono font-bold text-stone-900">#{order.orderNumber}</td>
                     <td className="p-3">
                       <div className="font-bold text-stone-800">{order.customerName}</div>
-                      <div className="text-[10px] text-stone-400">{order.customerPhone}</div>
+                      <div className="text-[10px] text-stone-400 font-mono">{order.customerPhone}</div>
                     </td>
-                    <td className="p-3 text-stone-500 font-medium">
+                    <td className="p-3 min-w-[240px]">
+                      <div className="flex flex-col gap-1.5 max-w-[280px]">
+                        {Array.isArray(order.items) && order.items.length > 0 ? (
+                          order.items.map((item, idx) => {
+                            const prod = products.find(p => p.id === item.productId || p.name === item.name);
+                            const imgUrl = item.image || item.imageUrl || (prod ? (prod.images?.[0] || prod.image) : '') || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=150&q=80';
+                            return (
+                              <div key={item.id || idx} className="flex items-center gap-2 bg-stone-50/80 p-1.5 rounded-lg border border-stone-200/70 shadow-xs">
+                                <img 
+                                  src={imgUrl} 
+                                  alt={item.name || 'Product'} 
+                                  className="w-10 h-10 object-cover rounded-md border border-stone-200 shrink-0" 
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=150&q=80';
+                                  }}
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-bold text-stone-900 truncate text-[11px]" title={item.name}>
+                                    {item.name || 'Product Item'}
+                                  </div>
+                                  <div className="text-[10px] text-stone-500 font-medium flex items-center gap-1.5 flex-wrap">
+                                    {item.size && <span className="bg-stone-200/80 text-stone-700 px-1 py-0.2 rounded font-mono font-bold">{item.size}</span>}
+                                    {item.color && <span className="text-stone-500">{item.color}</span>}
+                                    <span className="font-bold text-stone-700 font-mono">Qty: {item.quantity || 1}</span>
+                                    <span className="font-bold text-[#C0654B] font-mono">₹{item.price}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <span className="text-stone-400 italic text-[11px]">No items specified</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-3 text-stone-500 font-medium whitespace-nowrap">
                       {new Date(order.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td className="p-3 uppercase font-mono font-bold text-[10px] text-stone-500">{order.paymentMethod}</td>
@@ -504,7 +554,7 @@ export const AdminOrdersView: React.FC = () => {
                         {order.paymentStatus}
                       </span>
                     </td>
-                    <td className="p-3 font-mono font-bold text-stone-900">₹{order.total.toLocaleString()}</td>
+                    <td className="p-3 font-mono font-bold text-stone-900 whitespace-nowrap">₹{order.total.toLocaleString()}</td>
                     <td className="p-3">
                       <select
                         value={order.status}
