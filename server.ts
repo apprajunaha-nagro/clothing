@@ -36,6 +36,16 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Strip Phusion Passenger / Apache prepended prefix (/app.js or /index.html) from req.url
+app.use((req, _res, next) => {
+  if (req.url.startsWith('/app.js')) {
+    req.url = req.url.replace(/^\/app\.js/, '') || '/';
+  } else if (req.url.startsWith('/index.html')) {
+    req.url = req.url.replace(/^\/index\.html/, '') || '/';
+  }
+  next();
+});
+
 // Ensure public/uploads directory exists
 const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -1601,60 +1611,6 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
-app.post('/api/orders', async (req, res) => {
-  try {
-    const { customerName, customerEmail, customerPhone, subtotal, total } = req.body || {};
-
-    if (!customerName || typeof customerName !== 'string' || !customerName.trim()) {
-      return res.status(400).json({ success: false, error: 'Customer name is required.' });
-    }
-    if (!customerEmail || typeof customerEmail !== 'string' || !customerEmail.includes('@')) {
-      return res.status(400).json({ success: false, error: 'Valid customer email is required.' });
-    }
-
-    const parsedSubtotal = Number(subtotal);
-    const parsedTotal = Number(total);
-
-    if (isNaN(parsedSubtotal) || isNaN(parsedTotal) || parsedTotal < 0) {
-      return res.status(400).json({ success: false, error: 'Invalid or non-numeric order total.' });
-    }
-
-    const shippingAddressStr = typeof req.body.shippingAddress === 'string'
-      ? req.body.shippingAddress
-      : JSON.stringify(req.body.shippingAddress || {});
-
-    const itemsStr = typeof req.body.items === 'string'
-      ? req.body.items
-      : JSON.stringify(req.body.items || []);
-
-    const newOrder = await prisma.order.create({
-      data: {
-        id: `ord-${Date.now()}`,
-        orderNumber: `TC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
-        customerId: req.body.customerId || 'guest',
-        customerName: customerName.trim(),
-        customerEmail: customerEmail.trim().toLowerCase(),
-        customerPhone: (customerPhone || '').trim(),
-        shippingAddress: shippingAddressStr,
-        items: itemsStr,
-        subtotal: parsedSubtotal,
-        discount: Number(req.body.discount || 0),
-        shippingFee: Number(req.body.shippingFee || 0),
-        tax: Number(req.body.tax || 0),
-        total: parsedTotal,
-        status: 'pending',
-        paymentStatus: req.body.paymentMethod === 'cod' ? 'pending' : 'paid',
-        paymentMethod: req.body.paymentMethod || 'cod',
-        couponCode: req.body.couponCode || null,
-      },
-    });
-
-    return res.json({ success: true, order: formatOrderResponse(newOrder) });
-  } catch (err: any) {
-    console.error('[POST /api/orders Error]:', err);
-    return res.status(400).json({ success: false, error: err.message || 'Failed to create order in database.' });
-  }
-});
 
 app.put('/api/orders/:id/status', adminAuth, async (req, res) => {
   try {

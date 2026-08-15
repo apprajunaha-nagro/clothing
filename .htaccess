@@ -2,25 +2,21 @@
 # Phusion Passenger / Apache Node.js Routing Configuration for Hostinger
 # ----------------------------------------------------------------------
 
-# Enable Passenger Engine for Node.js Application
 PassengerEnabled on
 PassengerAppEngine node
 PassengerAppType node
 PassengerStartupFile app.js
 
-# URL Rewriting to Node.js App
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # 1. ALWAYS route all /api/* requests directly to Node.js (app.js)
-  RewriteRule ^api/(.*)$ app.js/api/$1 [QSA,L]
-
-  # 2. Allow existing static assets (JS, CSS, images, favicons) directly
+  # 1. Allow existing static files (dist/, public/, uploads, JS, CSS) directly
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # 3. Pass all remaining requests to Phusion Passenger Node.js entry app.js
+  # 2. Pass all remaining requests to Phusion Passenger Node.js app.js
   RewriteRule ^(.*)$ app.js/$1 [QSA,L]
 </IfModule>
+
