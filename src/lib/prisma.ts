@@ -1,12 +1,11 @@
 import { PrismaClient } from '@prisma/client';
 import path from 'path';
 
-// If DATABASE_URL is not set or relative, resolve to absolute path
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = `file:${path.join(process.cwd(), 'prisma', 'dev.db')}`;
-} else if (process.env.DATABASE_URL.startsWith('file:.') && !process.env.DATABASE_URL.startsWith('file:/') && !process.env.DATABASE_URL.includes(':')) {
-  const relativeDb = process.env.DATABASE_URL.replace(/^file:/, '');
-  process.env.DATABASE_URL = `file:${path.resolve(process.cwd(), relativeDb)}`;
+const SUPABASE_DEFAULT_DB = "postgresql://postgres:pgmartjharia2026@db.jgyiqbdplrisupvqkiqv.supabase.co:5432/postgres";
+
+// Guarantee connection to Supabase PostgreSQL database even if .env is omitted in production
+if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('dev.db') || process.env.DATABASE_URL.includes('file:')) {
+  process.env.DATABASE_URL = SUPABASE_DEFAULT_DB;
 }
 
 declare global {

@@ -1,5 +1,10 @@
 import dotenv from 'dotenv';
 dotenv.config();
+
+const SUPABASE_DEFAULT_DB = "postgresql://postgres:pgmartjharia2026@db.jgyiqbdplrisupvqkiqv.supabase.co:5432/postgres";
+if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('dev.db') || process.env.DATABASE_URL.includes('file:')) {
+  process.env.DATABASE_URL = SUPABASE_DEFAULT_DB;
+}
 import crypto from 'crypto';
 import express from 'express';
 import path from 'path';
