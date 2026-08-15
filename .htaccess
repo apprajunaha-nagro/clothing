@@ -1,0 +1,23 @@
+# ----------------------------------------------------------------------
+# Phusion Passenger / Apache Node.js Routing Configuration for Hostinger
+# ----------------------------------------------------------------------
+
+# Enable Passenger Engine for Node.js Application
+PassengerEnabled on
+PassengerAppEngine node
+PassengerAppType node
+PassengerStartupFile app.js
+
+# URL Rewriting to Node.js App
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Allow static files directly from dist or public
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Pass all other requests to Phusion Passenger Node.js entry app.js
+  RewriteRule ^(.*)$ app.js/$1 [QSA,L]
+</IfModule>

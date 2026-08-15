@@ -6,12 +6,15 @@
   "scripts": {
     "postinstall": "prisma generate",
     "dev": "node node_modules/tsx/dist/cli.mjs server.ts",
-    "build": "prisma generate && vite build && node scripts/copy-assets.js",
+    "build": "prisma generate && node node_modules/esbuild/bin/esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && vite build && node scripts/copy-assets.js",
     "build:server": "node node_modules/esbuild/bin/esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "start": "node dist/server.cjs",
+    "start": "node app.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "db:seed": "node node_modules/tsx/dist/cli.mjs prisma/seed.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "prisma": {
     "seed": "node node_modules/tsx/dist/cli.mjs prisma/seed.ts"
