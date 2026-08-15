@@ -201,19 +201,34 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
 
-  // Fetch reviews from PostgreSQL DB on mount
+  // Fetch reviews from PostgreSQL DB / Supabase on mount
   useEffect(() => {
     async function loadDbReviews() {
+      let fetched: Review[] = [];
       try {
         const res = await fetch('/api/reviews');
         if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setReviews(data);
+          const text = await res.text();
+          if (text.startsWith('{') || text.startsWith('[')) {
+            const data = JSON.parse(text);
+            if (Array.isArray(data) && data.length > 0) {
+              fetched = data;
+            }
           }
         }
-      } catch (e) {
-        console.warn('DB reviews fetch warning:', e);
+      } catch (e) {}
+
+      if (fetched.length === 0) {
+        try {
+          const { data: sbReviews, error } = await supabase.from('Review').select('*').order('createdAt', { ascending: false });
+          if (!error && Array.isArray(sbReviews) && sbReviews.length > 0) {
+            fetched = sbReviews;
+          }
+        } catch (sbErr) {}
+      }
+
+      if (fetched.length > 0) {
+        setReviews(fetched);
       }
     }
     loadDbReviews();

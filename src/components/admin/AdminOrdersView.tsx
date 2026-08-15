@@ -147,19 +147,20 @@ export const AdminOrdersView: React.FC = () => {
         try {
           const res = await fetch('/api/orders');
           if (res.ok) {
-            const data = await res.json();
-            const list: Order[] = Array.isArray(data) ? data : (data.orders || []);
-            if (Array.isArray(list) && list.length > 0) {
-              const apiParsed = list.map(safeParseOrder);
-              const existingIds = new Set(fetchedList.map(o => o.id));
-              apiParsed.forEach(o => {
-                if (!existingIds.has(o.id)) fetchedList.push(o);
-              });
+            const text = await res.text();
+            if (text.startsWith('{') || text.startsWith('[')) {
+              const data = JSON.parse(text);
+              const list: Order[] = Array.isArray(data) ? data : (data.orders || []);
+              if (Array.isArray(list) && list.length > 0) {
+                const apiParsed = list.map(safeParseOrder);
+                const existingIds = new Set(fetchedList.map(o => o.id));
+                apiParsed.forEach(o => {
+                  if (!existingIds.has(o.id)) fetchedList.push(o);
+                });
+              }
             }
           }
-        } catch (apiErr) {
-          console.warn('Admin API fetch note:', apiErr);
-        }
+        } catch (apiErr) {}
 
         if (isSubscribed) {
           setAllDbOrders(fetchedList);
