@@ -93,7 +93,24 @@ const safeParseOrder = (raw: any): Order => {
       pincode: safeAddr.pincode || '',
       type: safeAddr.type || 'home'
     },
-    items: Array.isArray(items) ? items : [],
+    items: Array.isArray(items) ? items.map((it: any) => {
+      const name = String(it.productName || it.name || it.title || 'Purchased Product');
+      const image = String(it.productImage || it.image || it.imageUrl || '');
+      return {
+        id: String(it.id || `oi-${Date.now()}`),
+        productId: String(it.productId || ''),
+        variantId: String(it.variantId || ''),
+        productName: name,
+        name: name,
+        productImage: image,
+        image: image,
+        imageUrl: image,
+        size: String(it.size || 'Standard'),
+        color: String(it.color || 'Default'),
+        price: Number(it.price) || 0,
+        quantity: Number(it.quantity) || 1
+      };
+    }) : [],
     subtotal: Number(raw.subtotal) || 0,
     discount: Number(raw.discount) || 0,
     shippingFee: Number(raw.shippingFee) || 0,
@@ -807,21 +824,33 @@ export const AdminOrdersView: React.FC = () => {
             <div className="border border-stone-200 rounded-xl overflow-hidden text-xs">
               <div className="bg-stone-100/50 p-2 border-b border-stone-200 font-bold text-stone-600">Apparel Items Breakdown</div>
               <div className="divide-y divide-stone-100">
-                {activeOrder.items.map(item => (
-                  <div key={item.id} className="p-3 flex items-center justify-between gap-3 bg-white font-semibold">
-                    <div className="flex items-center gap-2.5">
-                      <img src={item.productImage} alt="" className="w-10 h-10 object-cover rounded-lg border border-stone-200" referrerPolicy="referrer" />
-                      <div>
-                        <h4 className="font-bold text-stone-800">{item.productName}</h4>
-                        <span className="text-[10px] text-stone-400 font-mono">Col: {item.color} | Sz: {item.size}</span>
+                {activeOrder.items.map((item, idx) => {
+                  const prod = products.find(p => p.id === item.productId || p.name === (item.productName || item.name));
+                  const imgUrl = item.productImage || item.image || item.imageUrl || (prod ? (prod.images?.[0] || prod.image) : '') || 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=150&q=80';
+                  const title = item.productName || item.name || (prod ? prod.name : 'Purchased Item');
+                  return (
+                    <div key={item.id || idx} className="p-3 flex items-center justify-between gap-3 bg-white font-semibold">
+                      <div className="flex items-center gap-2.5">
+                        <img 
+                          src={imgUrl} 
+                          alt={title} 
+                          className="w-12 h-12 object-cover rounded-lg border border-stone-200 shrink-0" 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=150&q=80';
+                          }}
+                        />
+                        <div>
+                          <h4 className="font-bold text-stone-900 text-xs">{title}</h4>
+                          <span className="text-[10px] text-stone-500 font-mono">Col: {item.color} | Sz: {item.size}</span>
+                        </div>
+                      </div>
+                      <div className="text-right font-mono">
+                        <span>₹{item.price} x {item.quantity}</span>
+                        <p className="text-[#C0654B] font-bold text-sm">₹{item.price * item.quantity}</p>
                       </div>
                     </div>
-                    <div className="text-right font-mono">
-                      <span>₹{item.price} x {item.quantity}</span>
-                      <p className="text-[#C0654B] font-bold">₹{item.price * item.quantity}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="p-3.5 bg-stone-50 border-t border-stone-200 flex flex-wrap justify-between items-center text-stone-700 font-semibold font-mono text-xs">
                 <span>Total Gst Included: ₹{activeOrder.tax}</span>

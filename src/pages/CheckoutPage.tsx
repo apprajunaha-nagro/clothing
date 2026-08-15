@@ -190,12 +190,18 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
         item.product?.basePrice ??
         0
       );
+      const displayImage = getItemDisplayImage(item.product, item.selectedColor, item.variant);
+      const displayName = item.product?.name || 'Purchased Product';
+
       return {
         id: `oi-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
         productId: item.product.id,
         variantId: item.variant?.id || `var-fallback-${Date.now()}`,
-        productName: item.product.name,
-        productImage: getItemDisplayImage(item.product, item.selectedColor, item.variant),
+        name: displayName,
+        productName: displayName,
+        image: displayImage,
+        productImage: displayImage,
+        imageUrl: displayImage,
         size: item.selectedSize || 'Standard',
         color: item.selectedColor || 'Default',
         price,
