@@ -6,16 +6,20 @@ const path = require('path');
 
 const bundlePath = path.join(__dirname, 'dist', 'server.cjs');
 
+let serverApp;
 if (fs.existsSync(bundlePath)) {
   console.log('[Passenger Startup]: Loading compiled bundle dist/server.cjs...');
-  module.exports = require(bundlePath);
+  serverApp = require(bundlePath);
 } else {
   console.log('[Passenger Startup]: dist/server.cjs not found, attempting tsx execution of server.ts...');
   try {
     require('tsx/cjs');
-    module.exports = require('./server.ts');
+    serverApp = require('./server.ts');
   } catch (err) {
     console.error('[Passenger Startup Error]: Failed to start Node application:', err);
     throw err;
   }
 }
+
+const expressApp = serverApp?.app || serverApp?.default || serverApp;
+module.exports = expressApp;

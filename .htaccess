@@ -13,11 +13,14 @@ PassengerStartupFile app.js
   RewriteEngine On
   RewriteBase /
 
-  # Allow static files directly from dist or public
+  # 1. ALWAYS route all /api/* requests directly to Node.js (app.js)
+  RewriteRule ^api/(.*)$ app.js/api/$1 [QSA,L]
+
+  # 2. Allow existing static assets (JS, CSS, images, favicons) directly
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Pass all other requests to Phusion Passenger Node.js entry app.js
+  # 3. Pass all remaining requests to Phusion Passenger Node.js entry app.js
   RewriteRule ^(.*)$ app.js/$1 [QSA,L]
 </IfModule>
