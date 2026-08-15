@@ -63,6 +63,59 @@ const getStatusColorStyle = (status: OrderStatus) => {
   }
 };
 
+const safeParseOrder = (raw: any): Order => {
+  if (!raw) return {} as any;
+  let shippingAddress = raw.shippingAddress;
+  if (typeof shippingAddress === 'string') {
+    try { shippingAddress = JSON.parse(shippingAddress); } catch {}
+  }
+  let items = raw.items;
+  if (typeof items === 'string') {
+    try { items = JSON.parse(items); } catch {}
+  }
+
+  const safeAddr = typeof shippingAddress === 'object' && shippingAddress !== null ? shippingAddress : {};
+
+  return {
+    id: String(raw.id || `ord-${Date.now()}`),
+    orderNumber: String(raw.orderNumber || `PGM-${Math.floor(100000 + Math.random() * 900000)}`),
+    customerId: String(raw.customerId || 'guest'),
+    customerName: String(raw.customerName || 'Valued Customer'),
+    customerEmail: String(raw.customerEmail || '').trim(),
+    customerPhone: String(raw.customerPhone || '').trim(),
+    shippingAddress: {
+      id: safeAddr.id || `addr-${Date.now()}`,
+      fullName: safeAddr.fullName || raw.customerName || 'Customer',
+      phone: safeAddr.phone || raw.customerPhone || '',
+      street: safeAddr.street || 'Address not specified',
+      city: safeAddr.city || 'City',
+      state: safeAddr.state || 'State',
+      pincode: safeAddr.pincode || '',
+      type: safeAddr.type || 'home'
+    },
+    items: Array.isArray(items) ? items : [],
+    subtotal: Number(raw.subtotal) || 0,
+    discount: Number(raw.discount) || 0,
+    shippingFee: Number(raw.shippingFee) || 0,
+    tax: Number(raw.tax) || 0,
+    total: Number(raw.total) || 0,
+    status: (raw.status || 'pending') as OrderStatus,
+    paymentStatus: raw.paymentStatus || 'pending',
+    paymentMethod: raw.paymentMethod || 'cod',
+    trackingNumber: raw.trackingNumber || undefined,
+    courierPartner: raw.courierPartner || undefined,
+    couponCode: raw.couponCode || undefined,
+    createdAt: raw.createdAt ? String(raw.createdAt) : new Date().toISOString(),
+    updatedAt: raw.updatedAt ? String(raw.updatedAt) : new Date().toISOString(),
+    returnStatus: raw.returnStatus || 'none',
+    returnType: raw.returnType || undefined,
+    returnReason: raw.returnReason || undefined,
+    returnComments: raw.returnComments || undefined,
+    exchangeSize: raw.exchangeSize || undefined,
+    exchangeColor: raw.exchangeColor || undefined
+  };
+};
+
 export const AdminOrdersView: React.FC = () => {
   const { orders, createOrder, updateOrderStatus, updateReturnStatus, products, setProducts, showToast, settings } = useStore();
 
@@ -76,47 +129,39 @@ export const AdminOrdersView: React.FC = () => {
       try {
         let fetchedList: Order[] = [];
 
-        // 1. Try Express API
+        // 1. Primary Source: Direct Supabase JS Client (Contains all live database orders)
         try {
-          const res = await fetch('/api/orders');
-          if (res.ok) {
-            const data = await res.json();
-            const list: Order[] = Array.isArray(data) ? data : (data.orders || []);
-            if (Array.isArray(list) && list.length > 0) {
-              fetchedList = list;
-            }
-          }
-        } catch (apiErr) {
-          console.warn('Admin API fetch note:', apiErr);
-        }
-
-        // 2. Direct Supabase JS Client fallback / sync
-        if (fetchedList.length === 0) {
           const { data: sbOrders, error: sbErr } = await supabase
             .from('Order')
             .select('*')
             .order('createdAt', { ascending: false });
 
           if (!sbErr && Array.isArray(sbOrders)) {
-            fetchedList = sbOrders.map(raw => {
-              let shippingAddress = raw.shippingAddress;
-              if (typeof shippingAddress === 'string') {
-                try { shippingAddress = JSON.parse(shippingAddress); } catch {}
-              }
-              let items = raw.items;
-              if (typeof items === 'string') {
-                try { items = JSON.parse(items); } catch {}
-              }
-              return {
-                ...raw,
-                shippingAddress: typeof shippingAddress === 'object' && shippingAddress !== null ? shippingAddress : {},
-                items: Array.isArray(items) ? items : []
-              };
-            });
+            fetchedList = sbOrders.map(safeParseOrder);
           }
+        } catch (sbEx) {
+          console.warn('Admin Supabase direct query note:', sbEx);
         }
 
-        if (isSubscribed && fetchedList.length > 0) {
+        // 2. Secondary Source: Express /api/orders endpoint
+        try {
+          const res = await fetch('/api/orders');
+          if (res.ok) {
+            const data = await res.json();
+            const list: Order[] = Array.isArray(data) ? data : (data.orders || []);
+            if (Array.isArray(list) && list.length > 0) {
+              const apiParsed = list.map(safeParseOrder);
+              const existingIds = new Set(fetchedList.map(o => o.id));
+              apiParsed.forEach(o => {
+                if (!existingIds.has(o.id)) fetchedList.push(o);
+              });
+            }
+          }
+        } catch (apiErr) {
+          console.warn('Admin API fetch note:', apiErr);
+        }
+
+        if (isSubscribed) {
           setAllDbOrders(fetchedList);
         }
       } catch (e) {
@@ -134,8 +179,14 @@ export const AdminOrdersView: React.FC = () => {
 
   const ordersListToDisplay = React.useMemo(() => {
     const orderMap = new Map<string, Order>();
-    allDbOrders.forEach(o => orderMap.set(o.id, o));
-    orders.forEach(o => orderMap.set(o.id, o));
+    allDbOrders.forEach(o => {
+      const parsed = safeParseOrder(o);
+      if (parsed.id) orderMap.set(parsed.id, parsed);
+    });
+    orders.forEach(o => {
+      const parsed = safeParseOrder(o);
+      if (parsed.id) orderMap.set(parsed.id, parsed);
+    });
 
     return Array.from(orderMap.values()).sort(
       (a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
@@ -174,24 +225,31 @@ export const AdminOrdersView: React.FC = () => {
 
   // Filtering orders
   const filteredOrders = ordersListToDisplay.filter(o => {
-    const matchesSearch = o.orderNumber.includes(searchQuery) || 
-                          o.customerName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          o.customerPhone.includes(searchQuery);
+    const q = searchQuery.toLowerCase().trim();
+    const orderNum = (o.orderNumber || '').toLowerCase();
+    const custName = (o.customerName || '').toLowerCase();
+    const custPhone = (o.customerPhone || '').toLowerCase();
+
+    const matchesSearch = !q || orderNum.includes(q) || custName.includes(q) || custPhone.includes(q);
     const matchesStatus = filterStatus ? o.status === filterStatus : true;
     const matchesPayment = filterPayment ? o.paymentStatus === filterPayment : true;
 
     // Date filters
     let matchesDate = true;
-    const orderDate = new Date(o.createdAt);
-    const today = new Date();
-    if (filterDate === 'today') {
-      matchesDate = orderDate.toDateString() === today.toDateString();
-    } else if (filterDate === 'week') {
-      const diffTime = Math.abs(today.getTime() - orderDate.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      matchesDate = diffDays <= 7;
-    } else if (filterDate === 'month') {
-      matchesDate = orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
+    if (o.createdAt && filterDate !== 'all') {
+      const orderDate = new Date(o.createdAt);
+      const today = new Date();
+      if (!isNaN(orderDate.getTime())) {
+        if (filterDate === 'today') {
+          matchesDate = orderDate.toDateString() === today.toDateString();
+        } else if (filterDate === 'week') {
+          const diffTime = Math.abs(today.getTime() - orderDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          matchesDate = diffDays <= 7;
+        } else if (filterDate === 'month') {
+          matchesDate = orderDate.getMonth() === today.getMonth() && orderDate.getFullYear() === today.getFullYear();
+        }
+      }
     }
 
     return matchesSearch && matchesStatus && matchesPayment && matchesDate;
@@ -323,14 +381,14 @@ export const AdminOrdersView: React.FC = () => {
       {/* QUICK ORDER STATUS FILTER TABS BAR */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
         {[
-          { label: 'All Orders', value: '' as OrderStatus | '', count: orders.length },
-          { label: 'Pending', value: 'pending' as OrderStatus, count: orders.filter(o => o.status === 'pending').length },
-          { label: 'Confirmed', value: 'confirmed' as OrderStatus, count: orders.filter(o => o.status === 'confirmed').length },
-          { label: 'Processing', value: 'processing' as OrderStatus, count: orders.filter(o => o.status === 'processing').length },
-          { label: 'Shipped', value: 'shipped' as OrderStatus, count: orders.filter(o => o.status === 'shipped').length },
-          { label: 'Delivered', value: 'delivered' as OrderStatus, count: orders.filter(o => o.status === 'delivered').length },
-          { label: 'Cancelled', value: 'cancelled' as OrderStatus, count: orders.filter(o => o.status === 'cancelled').length },
-          { label: 'Returned', value: 'returned' as OrderStatus, count: orders.filter(o => o.status === 'returned').length },
+          { label: 'All Orders', value: '' as OrderStatus | '', count: ordersListToDisplay.length },
+          { label: 'Pending', value: 'pending' as OrderStatus, count: ordersListToDisplay.filter(o => o.status === 'pending').length },
+          { label: 'Confirmed', value: 'confirmed' as OrderStatus, count: ordersListToDisplay.filter(o => o.status === 'confirmed').length },
+          { label: 'Processing', value: 'processing' as OrderStatus, count: ordersListToDisplay.filter(o => o.status === 'processing').length },
+          { label: 'Shipped', value: 'shipped' as OrderStatus, count: ordersListToDisplay.filter(o => o.status === 'shipped').length },
+          { label: 'Delivered', value: 'delivered' as OrderStatus, count: ordersListToDisplay.filter(o => o.status === 'delivered').length },
+          { label: 'Cancelled', value: 'cancelled' as OrderStatus, count: ordersListToDisplay.filter(o => o.status === 'cancelled').length },
+          { label: 'Returned', value: 'returned' as OrderStatus, count: ordersListToDisplay.filter(o => o.status === 'returned').length },
         ].map(tab => {
           const isActive = filterStatus === tab.value;
           const statusStyle = tab.value ? getStatusColorStyle(tab.value) : null;
