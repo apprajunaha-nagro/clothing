@@ -338,7 +338,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
             {/* Mode Toggle Tabs */}
             <div className="grid grid-cols-2 p-1 bg-stone-100 rounded-2xl text-xs font-bold">
               <button
-                onClick={() => { setAuthMode('signin'); setAuthError(null); }}
+                onClick={() => { setAuthMode('signin'); setAuthError(null); setIsVerifyingOtp(false); setEnteredEmailOtp(''); }}
                 className={`py-2.5 rounded-xl transition-all cursor-pointer ${
                   authMode === 'signin'
                     ? 'bg-[#C0654B] text-white shadow-xs'
@@ -348,7 +348,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                 Sign In
               </button>
               <button
-                onClick={() => { setAuthMode('signup'); setAuthError(null); }}
+                onClick={() => { setAuthMode('signup'); setAuthError(null); setIsVerifyingOtp(false); setEnteredEmailOtp(''); }}
                 className={`py-2.5 rounded-xl transition-all cursor-pointer ${
                   authMode === 'signup'
                     ? 'bg-[#C0654B] text-white shadow-xs'
@@ -366,74 +366,8 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
               </div>
             )}
 
-            {/* SIGN IN FORM (EMAIL & PASSWORD ONLY) */}
-            {authMode === 'signin' ? (
-              <form
-                autoComplete="off"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!signInEmail || !signInEmail.includes('@')) {
-                    setAuthError('Please enter a valid registered email address.');
-                    return;
-                  }
-                  if (!signInPassword) {
-                    setAuthError('Please enter your account password.');
-                    return;
-                  }
-                  const displayName = signInEmail.split('@')[0];
-                  loginUser(displayName, signInEmail);
-                  showToast('Welcome back! Signed in successfully.');
-                  if (redirectParam) {
-                    onNavigate(redirectParam);
-                  }
-                }}
-                className="space-y-4 text-xs"
-              >
-                <div>
-                  <label className="block font-bold text-stone-800 mb-1">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    autoComplete="off"
-                    value={signInEmail}
-                    onChange={(e) => setSignInEmail(e.target.value)}
-                    placeholder="Enter your registered email"
-                    className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-stone-800 mb-1">Password *</label>
-                  <input
-                    type="password"
-                    required
-                    autoComplete="new-password"
-                    value={signInPassword}
-                    onChange={(e) => setSignInPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
-                  />
-                </div>
-
-                <div className="flex justify-between items-center text-[11px]">
-                  <label className="flex items-center gap-1.5 font-medium text-stone-600 cursor-pointer">
-                    <input type="checkbox" defaultChecked className="accent-[#C0654B]" />
-                    <span>Remember me</span>
-                  </label>
-                  <button type="button" onClick={() => showToast('Password reset link sent to your email!')} className="text-[#C0654B] font-bold hover:underline cursor-pointer">
-                    Forgot Password?
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md cursor-pointer"
-                >
-                  Sign In to Account
-                </button>
-              </form>
-            ) : isVerifyingOtp ? (
-              /* EMAIL OTP VERIFICATION SCREEN FOR FIRST-TIME SIGNUP */
+            {isVerifyingOtp ? (
+              /* EMAIL OTP VERIFICATION SCREEN FOR BOTH SIGNIN AND SIGNUP */
               <div className="space-y-5 text-xs text-left animate-fade-in">
                 <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-amber-900 font-medium">
                   <p className="font-bold flex items-center gap-1.5 text-xs text-amber-900">
@@ -441,7 +375,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     <span>Security Verification Required</span>
                   </p>
                   <p className="text-[11px] text-amber-800 mt-1">
-                    To complete your registration, please enter the 6-digit OTP code sent to your email address.
+                    {authMode === 'signin' 
+                      ? 'Please enter the 6-digit OTP code sent to your registered email to log in.' 
+                      : 'To complete your registration, please enter the 6-digit OTP code sent to your email address.'}
                   </p>
                 </div>
 
@@ -450,7 +386,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
                       <Bell className="w-3.5 h-3.5 text-[#C0654B]" />
-                      <span>Verify Email: <span className="text-stone-600 font-normal">{signUpEmail}</span></span>
+                      <span>Verify Email: <span className="text-stone-600 font-normal">{authMode === 'signin' ? signInEmail : signUpEmail}</span></span>
                     </span>
                     {isEmailVerified ? (
                       <span className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -464,7 +400,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   {!isEmailVerified ? (
                     <div className="space-y-2">
                       <p className="text-[10px] text-stone-500">
-                        An email verification code has been dispatched to <span className="font-semibold text-stone-800">{signUpEmail}</span>. Please check your <span className="font-bold text-stone-900 underline decoration-[#C0654B]">Inbox</span> or <span className="font-bold text-amber-700 underline">Spam / Junk Folder</span>.
+                        An email verification code has been dispatched to <span className="font-semibold text-stone-800">{authMode === 'signin' ? signInEmail : signUpEmail}</span>. Please check your <span className="font-bold text-stone-900 underline decoration-[#C0654B]">Inbox</span> or <span className="font-bold text-amber-700 underline">Spam / Junk Folder</span>.
                       </p>
 
                       <div className="flex gap-2">
@@ -487,7 +423,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                             }
                             setIsVerifyingEmailOtp(true);
                             setAuthError(null);
-                            const targetEmail = signUpEmail.trim().toLowerCase();
+                            const targetEmail = (authMode === 'signin' ? signInEmail : signUpEmail).trim().toLowerCase();
 
                             try {
                               // Native Supabase Auth OTP Verification
@@ -513,9 +449,14 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                               } else if (data?.user || data?.session) {
                                 setIsEmailVerified(true);
                                 setAuthError(null);
-                                showToast('✓ Email Verified! Completing account setup...');
+                                showToast('✓ Email Verified! Logging in...');
+                                const displayName = authMode === 'signin'
+                                  ? (data.user?.user_metadata?.name || targetEmail.split('@')[0])
+                                  : (signUpName || data.user?.user_metadata?.name || 'New Member');
+                                const phone = authMode === 'signin' ? (data.user?.phone || '') : signUpPhone;
+
                                 setTimeout(() => {
-                                  loginUser(signUpName || data.user?.user_metadata?.name || 'New Member', targetEmail, signUpPhone || '');
+                                  loginUser(displayName, targetEmail, phone);
                                   if (redirectParam) onNavigate(redirectParam);
                                 }, 800);
                               } else {
@@ -539,11 +480,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                           onClick={async () => {
                             setIsResendingEmail(true);
                             setAuthError(null);
-                            const targetEmail = signUpEmail.trim().toLowerCase();
+                            const targetEmail = (authMode === 'signin' ? signInEmail : signUpEmail).trim().toLowerCase();
                             try {
                               const { error } = await supabase.auth.signInWithOtp({
                                 email: targetEmail,
-                                options: { shouldCreateUser: true }
+                                options: { shouldCreateUser: authMode === 'signup' }
                               });
 
                               if (error) {
@@ -574,13 +515,16 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   )}
                 </div>
 
-                {/* COMPLETE SIGNUP BUTTON */}
+                {/* COMPLETE LOGIN / SETUP BUTTON */}
                 <button
                   type="button"
                   disabled={!isEmailVerified}
                   onClick={() => {
-                    loginUser(signUpName || 'New Member', signUpEmail || 'user@pgmart.in', signUpPhone || '');
-                    showToast('🎉 Account Verified! Welcome to PGmart.');
+                    const targetEmail = (authMode === 'signin' ? signInEmail : signUpEmail).trim().toLowerCase();
+                    const displayName = authMode === 'signin' ? targetEmail.split('@')[0] : (signUpName || 'New Member');
+                    const phone = authMode === 'signin' ? '' : signUpPhone;
+                    loginUser(displayName, targetEmail, phone);
+                    showToast('🎉 Verified! Welcome to PGmart.');
                     if (redirectParam) {
                       onNavigate(redirectParam);
                     }
@@ -591,9 +535,65 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                       : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                   }`}
                 >
-                  {isEmailVerified ? 'Complete Setup & Login to PGmart' : 'Verify Email to Complete Registration'}
+                  {isEmailVerified ? (authMode === 'signin' ? 'Proceed to Account' : 'Complete Setup & Login to PGmart') : 'Verify Email to Continue'}
                 </button>
               </div>
+            ) : authMode === 'signin' ? (
+              /* PASSWORDLESS EMAIL OTP SIGN IN FORM */
+              <form
+                autoComplete="off"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const targetEmail = signInEmail.trim().toLowerCase();
+                  if (!targetEmail || !targetEmail.includes('@')) {
+                    setAuthError('Please enter a valid registered email address.');
+                    return;
+                  }
+                  setIsVerifyingOtp(true);
+                  setAuthError(null);
+
+                  try {
+                    const { error } = await supabase.auth.signInWithOtp({
+                      email: targetEmail,
+                      options: { shouldCreateUser: false }
+                    });
+
+                    if (error) {
+                      console.error('[Supabase signInWithOtp Error]:', error);
+                      setAuthError('No account found with this email. Please sign up instead.');
+                      setIsVerifyingOtp(false);
+                    } else {
+                      setResendEmailTimer(60);
+                      showToast(`✉️ 6-digit Login OTP sent to ${targetEmail}! Check Inbox/Spam.`);
+                    }
+                  } catch (err: any) {
+                    console.error('[Signin Submit Error]:', err);
+                    setAuthError(err?.message || 'Failed to request login code.');
+                    setIsVerifyingOtp(false);
+                  }
+                }}
+                className="space-y-4 text-xs"
+              >
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    autoComplete="off"
+                    value={signInEmail}
+                    onChange={(e) => setSignInEmail(e.target.value)}
+                    placeholder="Enter your registered email"
+                    className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md cursor-pointer"
+                >
+                  Send OTP Code to Sign In
+                </button>
+              </form>
             ) : (
               /* CREATE NEW ACCOUNT FORM */
               <form
