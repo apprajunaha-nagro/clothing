@@ -3197,6 +3197,17 @@ app.delete('/api/blog-posts/:id', adminAuth, async (req, res) => {
 });
 
 // ---------------- GLOBAL ERROR HANDLING MIDDLEWARE ----------------
+// ---------------- UNHANDLED API 404 HANDLER ----------------
+// Guarantees any unmatched /api/* route returns clean JSON 404, never HTML
+app.all('/api/*', (req, res) => {
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  return res.status(404).json({
+    success: false,
+    error: `API endpoint ${req.method} ${req.path} not found`
+  });
+});
+
+// ---------------- GLOBAL ERROR HANDLING MIDDLEWARE ----------------
 // Catches unhandled exceptions across all /api/* routes and guarantees JSON response (no HTML)
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (req.path.startsWith('/api') || req.xhr || req.headers.accept?.includes('json')) {
@@ -3211,7 +3222,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   next(err);
 });
 
-// ---------------- SERVER STARTUP ----------------
+// ==============================================================================
+// ⚠️ SPA CATCH-ALL — MUST REMAIN THE LAST ROUTE REGISTERED.
+// Do not add new routes below this line.
+// ==============================================================================
 async function startServer() {
   if (!process.env.VERCEL) {
     if (process.env.NODE_ENV !== 'production') {
@@ -3219,12 +3233,19 @@ async function startServer() {
         server: { middlewareMode: true },
         appType: 'spa',
       });
-      app.use(vite.middlewares);
+      // Guard Vite dev middleware so it only handles non-API requests
+      app.use((req, res, next) => {
+        if (req.path.startsWith('/api')) {
+          return next();
+        }
+        vite.middlewares(req, res, next);
+      });
     } else {
       const distPath = path.join(process.cwd(), 'dist');
       app.use(express.static(distPath));
       app.get('*', (req, res) => {
         if (req.path.startsWith('/api')) {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
           return res.status(404).json({ error: `API endpoint ${req.path} not found` });
         }
         res.sendFile(path.join(distPath, 'index.html'));
