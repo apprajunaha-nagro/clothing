@@ -281,9 +281,39 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   };
 
   // ─── PROFILE UPDATE HANDLER ────────────────────────────────────────────────
-  const handleProfileSubmit = (e: React.FormEvent) => {
+  const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    showToast('Profile details updated successfully!');
+    try {
+      // 1. Update Supabase Auth user metadata
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          name: profileForm.name.trim(),
+          phone: profileForm.phone.trim()
+        }
+      });
+      if (error) {
+        console.error('[Supabase updateUser Profile Error]:', error);
+      }
+
+      // 2. Sync to Prisma User database table
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: profileForm.email.trim().toLowerCase(),
+          name: profileForm.name.trim(),
+          phone: profileForm.phone.trim()
+        })
+      });
+
+      if (setUser) {
+        setUser(prev => prev ? { ...prev, name: profileForm.name, email: profileForm.email, phone: profileForm.phone } : null);
+      }
+      showToast('Profile details updated successfully!');
+    } catch (err: any) {
+      console.error('[handleProfileSubmit Error]:', err);
+      showToast('Failed to update profile details.');
+    }
   };
 
   // ─── PASSWORD UPDATE HANDLER ──────────────────────────────────────────────

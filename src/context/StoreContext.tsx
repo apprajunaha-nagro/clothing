@@ -307,6 +307,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     setUser(newUser);
     localStorage.setItem('terra_user', JSON.stringify(newUser));
+
+    // Sync to PostgreSQL Prisma User table asynchronously
+    if (email) {
+      fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name || 'Valued Customer', email: email.toLowerCase().trim(), phone: phone || null })
+      }).catch(err => console.warn('[PostgreSQL User Sync Error]:', err));
+    }
   };
   const [adminToken, setAdminToken] = useState<string | null>(() => {
     return localStorage.getItem('pgmart_admin_token') || sessionStorage.getItem('pgmart_admin_token');
