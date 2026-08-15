@@ -263,3 +263,25 @@ model Otp {
   @@index([email, purpose])
 }
 
+model BlogPost {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  title               String
+  excerpt             String
+  content             String   // JSON string of string[] paragraphs or markdown
+  category            String   @default("Styling Tips")
+  author              String   @default("Priyam Ghoshal")
+  authorRole          String   @default("Founder & CEO, PGmart")
+  authorAvatar        String   @default("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80")
+  publishedDate       String
+  readTime            String   @default("5 min read")
+  featuredImage       String
+  relatedCategorySlug String   @default("women")
+  tags                String   @default("[]") // JSON string of string[]
+  isPublished         Boolean  @default(true)
+  metaTitle           String?
+  metaDesc            String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+

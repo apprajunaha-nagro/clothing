@@ -2982,13 +2982,217 @@ app.post('/api/admin/coupons', (req, res) => {
   }
 });
 
-app.delete('/api/admin/coupons/:id', (req, res) => {
+// ---------------- API ROUTES: REVIEWS ----------------
+
+// GET /api/reviews?productId=...
+app.get('/api/reviews', async (req, res) => {
+  try {
+    const { productId } = req.query;
+    let where: any = {};
+    if (productId && typeof productId === 'string') {
+      where.productId = productId;
+    }
+    const reviews = await prisma.review.findMany({
+      where,
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json(reviews);
+  } catch (err: any) {
+    console.error('[GET /api/reviews Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to fetch reviews' });
+  }
+});
+
+// POST /api/reviews (Customer or Admin create review)
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const { productId, customerName, rating, title, comment, photos, isVerifiedPurchase, status } = req.body || {};
+    if (!customerName || !comment) {
+      return res.status(400).json({ error: 'Customer name and review comment are required' });
+    }
+
+    const created = await prisma.review.create({
+      data: {
+        productId: productId || 'w-1',
+        customerName: String(customerName).trim(),
+        rating: Number(rating) || 5,
+        title: String(title || `${rating || 5} Star Experience`).trim(),
+        comment: String(comment).trim(),
+        photos: typeof photos === 'string' ? photos : JSON.stringify(photos || []),
+        isVerifiedPurchase: isVerifiedPurchase !== false,
+        status: status || 'approved'
+      }
+    });
+
+    return res.json({ success: true, review: created });
+  } catch (err: any) {
+    console.error('[POST /api/reviews Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to save review' });
+  }
+});
+
+// PUT /api/reviews/:id/status (Admin approve/reject review)
+app.put('/api/reviews/:id/status', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    serverCoupons = serverCoupons.filter(c => c.id !== id);
-    res.json({ success: true, coupons: serverCoupons });
+    const { status } = req.body || {};
+    if (!status || !['approved', 'pending', 'rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Valid status (approved, pending, rejected) required' });
+    }
+
+    const updated = await prisma.review.update({
+      where: { id },
+      data: { status }
+    });
+
+    return res.json({ success: true, review: updated });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('[PUT /api/reviews/:id/status Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to update review status' });
+  }
+});
+
+// DELETE /api/reviews/:id (Admin delete review)
+// ---------------- API ROUTES: BLOG POSTS ----------------
+
+function formatBlogPost(post: any) {
+  let parsedContent: string[] = [];
+  try {
+    parsedContent = typeof post.content === 'string' ? JSON.parse(post.content) : post.content;
+  } catch {
+    parsedContent = [post.content];
+  }
+
+  let parsedTags: string[] = [];
+  try {
+    parsedTags = typeof post.tags === 'string' ? JSON.parse(post.tags) : post.tags;
+  } catch {
+    parsedTags = [];
+  }
+
+  return {
+    ...post,
+    content: parsedContent,
+    tags: parsedTags
+  };
+}
+
+// GET /api/blog-posts
+app.get('/api/blog-posts', async (req, res) => {
+  try {
+    const posts = await prisma.blogPost.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json(posts.map(formatBlogPost));
+  } catch (err: any) {
+    console.error('[GET /api/blog-posts Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to fetch blog posts' });
+  }
+});
+
+// GET /api/blog-posts/:id (By ID or Slug)
+app.get('/api/blog-posts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const post = await prisma.blogPost.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }]
+      }
+    });
+    if (!post) {
+      return res.status(404).json({ error: 'Blog post not found' });
+    }
+    return res.json(formatBlogPost(post));
+  } catch (err: any) {
+    console.error('[GET /api/blog-posts/:id Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to fetch blog post' });
+  }
+});
+
+// POST /api/blog-posts (Admin create post)
+app.post('/api/blog-posts', adminAuth, async (req, res) => {
+  try {
+    const body = req.body || {};
+    if (!body.title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    const slug = body.slug || String(body.title).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const content = typeof body.content === 'string' ? body.content : JSON.stringify(body.content || []);
+    const tags = typeof body.tags === 'string' ? body.tags : JSON.stringify(body.tags || []);
+
+    const created = await prisma.blogPost.create({
+      data: {
+        id: body.id || `post-${Date.now()}`,
+        slug,
+        title: String(body.title).trim(),
+        excerpt: String(body.excerpt || '').trim(),
+        content,
+        category: body.category || 'Styling Tips',
+        author: body.author || 'Priyam Ghoshal',
+        authorRole: body.authorRole || 'Founder & CEO, PGmart',
+        authorAvatar: body.authorAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+        publishedDate: body.publishedDate || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        readTime: body.readTime || '5 min read',
+        featuredImage: body.featuredImage || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
+        relatedCategorySlug: body.relatedCategorySlug || 'women',
+        tags,
+        isPublished: body.isPublished !== false,
+        metaTitle: body.metaTitle || null,
+        metaDesc: body.metaDesc || null
+      }
+    });
+
+    return res.json({ success: true, post: formatBlogPost(created) });
+  } catch (err: any) {
+    console.error('[POST /api/blog-posts Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to create blog post' });
+  }
+});
+
+// PUT /api/blog-posts/:id (Admin update post)
+app.put('/api/blog-posts/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const body = req.body || {};
+
+    const updateData: any = {};
+    if (body.title !== undefined) updateData.title = String(body.title).trim();
+    if (body.slug !== undefined) updateData.slug = String(body.slug).trim();
+    if (body.excerpt !== undefined) updateData.excerpt = String(body.excerpt).trim();
+    if (body.content !== undefined) updateData.content = typeof body.content === 'string' ? body.content : JSON.stringify(body.content);
+    if (body.category !== undefined) updateData.category = body.category;
+    if (body.author !== undefined) updateData.author = body.author;
+    if (body.authorRole !== undefined) updateData.authorRole = body.authorRole;
+    if (body.authorAvatar !== undefined) updateData.authorAvatar = body.authorAvatar;
+    if (body.publishedDate !== undefined) updateData.publishedDate = body.publishedDate;
+    if (body.readTime !== undefined) updateData.readTime = body.readTime;
+    if (body.featuredImage !== undefined) updateData.featuredImage = body.featuredImage;
+    if (body.relatedCategorySlug !== undefined) updateData.relatedCategorySlug = body.relatedCategorySlug;
+    if (body.tags !== undefined) updateData.tags = typeof body.tags === 'string' ? body.tags : JSON.stringify(body.tags);
+    if (body.isPublished !== undefined) updateData.isPublished = Boolean(body.isPublished);
+
+    const updated = await prisma.blogPost.update({
+      where: { id },
+      data: updateData
+    });
+
+    return res.json({ success: true, post: formatBlogPost(updated) });
+  } catch (err: any) {
+    console.error('[PUT /api/blog-posts/:id Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to update blog post' });
+  }
+});
+
+// DELETE /api/blog-posts/:id (Admin delete post)
+app.delete('/api/blog-posts/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.blogPost.delete({ where: { id } });
+    return res.json({ success: true, deletedId: id });
+  } catch (err: any) {
+    console.error('[DELETE /api/blog-posts/:id Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to delete blog post' });
   }
 });
 

@@ -200,42 +200,90 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   });
 
-  const addReview = (reviewData: Partial<Review>) => {
-    const newRev: Review = {
-      id: `rev-${Date.now()}`,
+  // Fetch reviews from PostgreSQL DB on mount
+  useEffect(() => {
+    async function loadDbReviews() {
+      try {
+        const res = await fetch('/api/reviews');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setReviews(data);
+          }
+        }
+      } catch (e) {
+        console.warn('DB reviews fetch warning:', e);
+      }
+    }
+    loadDbReviews();
+  }, []);
+
+  const addReview = async (reviewData: Partial<Review>) => {
+    const payload = {
       productId: reviewData.productId || 'w-1',
       customerName: reviewData.customerName || 'PGmart Shopper',
       rating: reviewData.rating || 5,
       title: reviewData.title || 'Excellent purchase!',
       comment: reviewData.comment || '',
       isVerifiedPurchase: reviewData.isVerifiedPurchase !== false,
-      status: reviewData.status || 'approved',
-      createdAt: new Date().toISOString()
+      status: reviewData.status || 'approved'
     };
-    setReviews(prev => {
-      const updated = [newRev, ...prev];
-      try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(updated)); } catch {}
-      return updated;
-    });
-    showToast('Customer review created and updated live!');
+
+    try {
+      const res = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.review) {
+          setReviews(prev => [data.review, ...prev]);
+          showToast('Customer review created and saved to database!');
+          return data.review;
+        }
+      }
+    } catch (e) {
+      console.warn('API review creation failed, using local state fallback', e);
+    }
+
+    // Fallback if offline
+    const newRev: Review = {
+      id: `rev-${Date.now()}`,
+      ...payload,
+      createdAt: new Date().toISOString()
+    } as any;
+    setReviews(prev => [newRev, ...prev]);
+    showToast('Customer review created!');
+    return newRev;
   };
 
-  const updateReviewStatus = (id: string, status: 'approved' | 'pending' | 'rejected') => {
-    setReviews(prev => {
-      const updated = prev.map(r => r.id === id ? { ...r, status } : r);
-      try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(updated)); } catch {}
-      return updated;
-    });
+  const updateReviewStatus = async (id: string, status: 'approved' | 'pending' | 'rejected') => {
+    setReviews(prev => prev.map(r => r.id === id ? { ...r, status } : r));
     showToast(`Review status updated to ${status.toUpperCase()}`);
+
+    try {
+      await adminFetch(`/api/reviews/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+    } catch (e) {
+      console.warn('Backend sync for review status update failed', e);
+    }
   };
 
-  const deleteReview = (id: string) => {
-    setReviews(prev => {
-      const updated = prev.filter(r => r.id !== id);
-      try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(updated)); } catch {}
-      return updated;
-    });
+  const deleteReview = async (id: string) => {
+    setReviews(prev => prev.filter(r => r.id !== id));
     showToast('Review removed.');
+
+    try {
+      await adminFetch(`/api/reviews/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (e) {
+      console.warn('Backend sync for review deletion failed', e);
+    }
   };
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {

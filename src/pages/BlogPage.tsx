@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { initialBlogPosts, BlogPost } from '../data/blogPosts';
 import { Sparkles, Calendar, Clock, ArrowRight, User, Filter, BookOpen } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -8,18 +8,36 @@ interface BlogPageProps {
 }
 
 export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate }) => {
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(initialBlogPosts);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [visibleCount, setVisibleCount] = useState<number>(6);
+
+  useEffect(() => {
+    async function loadPosts() {
+      try {
+        const res = await fetch('/api/blog-posts');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setBlogPosts(data.filter((p: any) => p.isPublished !== false));
+          }
+        }
+      } catch (e) {
+        console.warn('DB blog posts fetch warning:', e);
+      }
+    }
+    loadPosts();
+  }, []);
 
   const categories = ['All', 'Our Story', 'Styling Tips', 'Behind the Brand', 'Fabric Guide', 'Seasonal Edit'];
 
   const filteredPosts = selectedCategory === 'All'
-    ? initialBlogPosts
-    : initialBlogPosts.filter(p => p.category === selectedCategory);
+    ? blogPosts
+    : blogPosts.filter(p => p.category === selectedCategory);
 
   const displayedPosts = filteredPosts.slice(0, visibleCount);
 
-  const featuredPost = initialBlogPosts[0];
+  const featuredPost = blogPosts[0] || initialBlogPosts[0];
 
   return (
     <div className="min-h-screen bg-[#FAF7F5] font-sans text-left">
