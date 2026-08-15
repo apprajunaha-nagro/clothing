@@ -34,7 +34,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   }, [user, redirectParam, onNavigate]);
 
   // Auth form state for logged-out state
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot' | 'reset'>('signin');
   const [signInEmail, setSignInEmail] = useState('');
   const [signInPassword, setSignInPassword] = useState('');
   const [signUpName, setSignUpName] = useState('');
@@ -47,6 +47,10 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
   const [signUpLocality, setSignUpLocality] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeOtpCode, setActiveOtpCode] = useState<string>('');
 
@@ -335,29 +339,31 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
 
           {/* Auth Card Box */}
           <div className="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm space-y-6 relative">
-            {/* Mode Toggle Tabs */}
-            <div className="grid grid-cols-2 p-1 bg-stone-100 rounded-2xl text-xs font-bold">
-              <button
-                onClick={() => { setAuthMode('signin'); setAuthError(null); setIsVerifyingOtp(false); setEnteredEmailOtp(''); }}
-                className={`py-2.5 rounded-xl transition-all cursor-pointer ${
-                  authMode === 'signin'
-                    ? 'bg-[#C0654B] text-white shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => { setAuthMode('signup'); setAuthError(null); setIsVerifyingOtp(false); setEnteredEmailOtp(''); }}
-                className={`py-2.5 rounded-xl transition-all cursor-pointer ${
-                  authMode === 'signup'
-                    ? 'bg-[#C0654B] text-white shadow-xs'
-                    : 'text-stone-600 hover:text-stone-900'
-                }`}
-              >
-                Create Account
-              </button>
-            </div>
+            {/* Mode Toggle Tabs (Hidden when verifying OTP or resetting password) */}
+            {authMode !== 'reset' && !isVerifyingOtp && (
+              <div className="grid grid-cols-2 p-1 bg-stone-100 rounded-2xl text-xs font-bold">
+                <button
+                  onClick={() => { setAuthMode('signin'); setAuthError(null); setIsVerifyingOtp(false); setEnteredEmailOtp(''); }}
+                  className={`py-2.5 rounded-xl transition-all cursor-pointer ${
+                    authMode === 'signin'
+                      ? 'bg-[#C0654B] text-white shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => { setAuthMode('signup'); setAuthError(null); setIsVerifyingOtp(false); setEnteredEmailOtp(''); }}
+                  className={`py-2.5 rounded-xl transition-all cursor-pointer ${
+                    authMode === 'signup'
+                      ? 'bg-[#C0654B] text-white shadow-xs'
+                      : 'text-stone-600 hover:text-stone-900'
+                  }`}
+                >
+                  Create Account
+                </button>
+              </div>
+            )}
 
             {authError && (
               <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-xl flex items-center gap-2 text-xs font-semibold">
@@ -367,7 +373,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
             )}
 
             {isVerifyingOtp ? (
-              /* EMAIL OTP VERIFICATION SCREEN FOR BOTH SIGNIN AND SIGNUP */
+              /* OTP VERIFICATION SCREEN FOR SIGNUP / RECOVERY */
               <div className="space-y-5 text-xs text-left animate-fade-in">
                 <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl text-amber-900 font-medium">
                   <p className="font-bold flex items-center gap-1.5 text-xs text-amber-900">
@@ -375,8 +381,8 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                     <span>Security Verification Required</span>
                   </p>
                   <p className="text-[11px] text-amber-800 mt-1">
-                    {authMode === 'signin' 
-                      ? 'Please enter the 6-digit OTP code sent to your registered email to log in.' 
+                    {authMode === 'forgot'
+                      ? 'Please enter the 6-digit OTP code sent to your registered email to reset your password.'
                       : 'To complete your registration, please enter the 6-digit OTP code sent to your email address.'}
                   </p>
                 </div>
@@ -386,7 +392,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-bold text-stone-900 text-xs flex items-center gap-1.5">
                       <Bell className="w-3.5 h-3.5 text-[#C0654B]" />
-                      <span>Verify Email: <span className="text-stone-600 font-normal">{authMode === 'signin' ? signInEmail : signUpEmail}</span></span>
+                      <span>Verify Email: <span className="text-stone-600 font-normal">{authMode === 'forgot' ? forgotEmail : signUpEmail}</span></span>
                     </span>
                     {isEmailVerified ? (
                       <span className="bg-emerald-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -400,7 +406,7 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   {!isEmailVerified ? (
                     <div className="space-y-2">
                       <p className="text-[10px] text-stone-500">
-                        An email verification code has been dispatched to <span className="font-semibold text-stone-800">{authMode === 'signin' ? signInEmail : signUpEmail}</span>. Please check your <span className="font-bold text-stone-900 underline decoration-[#C0654B]">Inbox</span> or <span className="font-bold text-amber-700 underline">Spam / Junk Folder</span>.
+                        An email verification code has been dispatched to <span className="font-semibold text-stone-800">{authMode === 'forgot' ? forgotEmail : signUpEmail}</span>. Please check your <span className="font-bold text-stone-900 underline decoration-[#C0654B]">Inbox</span> or <span className="font-bold text-amber-700 underline">Spam / Junk Folder</span>.
                       </p>
 
                       <div className="flex gap-2">
@@ -423,21 +429,21 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                             }
                             setIsVerifyingEmailOtp(true);
                             setAuthError(null);
-                            const targetEmail = (authMode === 'signin' ? signInEmail : signUpEmail).trim().toLowerCase();
+                            const targetEmail = (authMode === 'forgot' ? forgotEmail : signUpEmail).trim().toLowerCase();
 
                             try {
-                              // Native Supabase Auth OTP Verification
+                              const otpType = authMode === 'forgot' ? 'recovery' : 'signup';
                               let { data, error } = await supabase.auth.verifyOtp({
                                 email: targetEmail,
                                 token: userEnteredCode,
-                                type: 'email'
+                                type: otpType
                               });
 
-                              if (error) {
+                              if (error && authMode !== 'forgot') {
                                 const retry = await supabase.auth.verifyOtp({
                                   email: targetEmail,
                                   token: userEnteredCode,
-                                  type: 'signup'
+                                  type: 'email'
                                 });
                                 data = retry.data;
                                 error = retry.error;
@@ -449,16 +455,20 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                               } else if (data?.user || data?.session) {
                                 setIsEmailVerified(true);
                                 setAuthError(null);
-                                showToast('✓ Email Verified! Logging in...');
-                                const displayName = authMode === 'signin'
-                                  ? (data.user?.user_metadata?.name || targetEmail.split('@')[0])
-                                  : (signUpName || data.user?.user_metadata?.name || 'New Member');
-                                const phone = authMode === 'signin' ? (data.user?.phone || '') : signUpPhone;
 
-                                setTimeout(() => {
-                                  loginUser(displayName, targetEmail, phone);
-                                  if (redirectParam) onNavigate(redirectParam);
-                                }, 800);
+                                if (authMode === 'forgot') {
+                                  showToast('✓ OTP Verified! Set your new password.');
+                                  setTimeout(() => {
+                                    setIsVerifyingOtp(false);
+                                    setAuthMode('reset');
+                                  }, 600);
+                                } else {
+                                  showToast('✓ Email Verified! Completing account setup...');
+                                  setTimeout(() => {
+                                    loginUser(signUpName || data.user?.user_metadata?.name || 'New Member', targetEmail, signUpPhone || '');
+                                    if (redirectParam) onNavigate(redirectParam);
+                                  }, 800);
+                                }
                               } else {
                                 setAuthError('Invalid or expired OTP code.');
                               }
@@ -480,19 +490,30 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                           onClick={async () => {
                             setIsResendingEmail(true);
                             setAuthError(null);
-                            const targetEmail = (authMode === 'signin' ? signInEmail : signUpEmail).trim().toLowerCase();
+                            const targetEmail = (authMode === 'forgot' ? forgotEmail : signUpEmail).trim().toLowerCase();
                             try {
-                              const { error } = await supabase.auth.signInWithOtp({
-                                email: targetEmail,
-                                options: { shouldCreateUser: authMode === 'signup' }
-                              });
-
-                              if (error) {
-                                console.error('[Supabase signInWithOtp Resend Error]:', error);
-                                setAuthError(error.message || 'Failed to resend verification OTP.');
+                              if (authMode === 'forgot') {
+                                const { error } = await supabase.auth.resetPasswordForEmail(targetEmail);
+                                if (error) {
+                                  console.error('[Supabase resetPasswordForEmail Resend Error]:', error);
+                                  setAuthError(error.message || 'Failed to resend recovery OTP.');
+                                } else {
+                                  setResendEmailTimer(60);
+                                  showToast('✉️ 6-digit Recovery OTP code sent to ' + targetEmail);
+                                }
                               } else {
-                                setResendEmailTimer(60);
-                                showToast('✉️ 6-digit Verification OTP code sent to ' + targetEmail);
+                                const { error } = await supabase.auth.resend({
+                                  type: 'signup',
+                                  email: targetEmail
+                                });
+
+                                if (error) {
+                                  console.error('[Supabase resend Error]:', error);
+                                  setAuthError(error.message || 'Failed to resend verification OTP.');
+                                } else {
+                                  setResendEmailTimer(60);
+                                  showToast('✉️ 6-digit Verification OTP code sent to ' + targetEmail);
+                                }
                               }
                             } catch (e: any) {
                               setAuthError(e?.message || 'Email OTP resend failed.');
@@ -515,18 +536,19 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   )}
                 </div>
 
-                {/* COMPLETE LOGIN / SETUP BUTTON */}
+                {/* COMPLETE ACTION BUTTON */}
                 <button
                   type="button"
                   disabled={!isEmailVerified}
                   onClick={() => {
-                    const targetEmail = (authMode === 'signin' ? signInEmail : signUpEmail).trim().toLowerCase();
-                    const displayName = authMode === 'signin' ? targetEmail.split('@')[0] : (signUpName || 'New Member');
-                    const phone = authMode === 'signin' ? '' : signUpPhone;
-                    loginUser(displayName, targetEmail, phone);
-                    showToast('🎉 Verified! Welcome to PGmart.');
-                    if (redirectParam) {
-                      onNavigate(redirectParam);
+                    if (authMode === 'forgot') {
+                      setIsVerifyingOtp(false);
+                      setAuthMode('reset');
+                    } else {
+                      const targetEmail = signUpEmail.trim().toLowerCase();
+                      loginUser(signUpName || 'New Member', targetEmail, signUpPhone || '');
+                      showToast('🎉 Account Verified! Welcome to PGmart.');
+                      if (redirectParam) onNavigate(redirectParam);
                     }
                   }}
                   className={`w-full font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md ${
@@ -535,41 +557,56 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                       : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                   }`}
                 >
-                  {isEmailVerified ? (authMode === 'signin' ? 'Proceed to Account' : 'Complete Setup & Login to PGmart') : 'Verify Email to Continue'}
+                  {isEmailVerified
+                    ? (authMode === 'forgot' ? 'Set New Password' : 'Complete Setup & Login to PGmart')
+                    : 'Verify Email to Continue'}
                 </button>
               </div>
             ) : authMode === 'signin' ? (
-              /* PASSWORDLESS EMAIL OTP SIGN IN FORM */
+              /* PART B — PASSWORD-BASED SIGN IN FORM */
               <form
                 autoComplete="off"
                 onSubmit={async (e) => {
                   e.preventDefault();
                   const targetEmail = signInEmail.trim().toLowerCase();
                   if (!targetEmail || !targetEmail.includes('@')) {
-                    setAuthError('Please enter a valid registered email address.');
+                    setAuthError('Please enter a valid email address.');
                     return;
                   }
-                  setIsVerifyingOtp(true);
+                  if (!signInPassword) {
+                    setAuthError('Please enter your account password.');
+                    return;
+                  }
                   setAuthError(null);
 
                   try {
-                    const { error } = await supabase.auth.signInWithOtp({
+                    const { data, error } = await supabase.auth.signInWithPassword({
                       email: targetEmail,
-                      options: { shouldCreateUser: false }
+                      password: signInPassword
                     });
 
                     if (error) {
-                      console.error('[Supabase signInWithOtp Error]:', error);
-                      setAuthError('No account found with this email. Please sign up instead.');
-                      setIsVerifyingOtp(false);
-                    } else {
-                      setResendEmailTimer(60);
-                      showToast(`✉️ 6-digit Login OTP sent to ${targetEmail}! Check Inbox/Spam.`);
+                      console.error('[Supabase signInWithPassword Error]:', error);
+                      if (error.message.includes('Invalid login credentials')) {
+                        setAuthError('Invalid email or password. Please check your credentials.');
+                      } else if (error.message.includes('Email not confirmed')) {
+                        setAuthError('Email not confirmed yet. Please verify your email first.');
+                      } else {
+                        setAuthError(error.message || 'Sign in failed. Please check your credentials.');
+                      }
+                      return;
+                    }
+
+                    if (data?.user) {
+                      showToast('Welcome back! Signed in successfully.');
+                      const name = data.user.user_metadata?.name || targetEmail.split('@')[0];
+                      const phone = data.user.phone || data.user.user_metadata?.phone || '';
+                      loginUser(name, targetEmail, phone);
+                      if (redirectParam) onNavigate(redirectParam);
                     }
                   } catch (err: any) {
-                    console.error('[Signin Submit Error]:', err);
-                    setAuthError(err?.message || 'Failed to request login code.');
-                    setIsVerifyingOtp(false);
+                    console.error('[Signin Error]:', err);
+                    setAuthError(err?.message || 'Login failed.');
                   }
                 }}
                 className="space-y-4 text-xs"
@@ -587,41 +624,257 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
                   />
                 </div>
 
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">Password *</label>
+                  <input
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                    value={signInPassword}
+                    onChange={(e) => setSignInPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center text-[11px]">
+                  <label className="flex items-center gap-1.5 font-medium text-stone-600 cursor-pointer">
+                    <input type="checkbox" defaultChecked className="accent-[#C0654B]" />
+                    <span>Remember me</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('forgot');
+                      setForgotEmail(signInEmail);
+                      setAuthError(null);
+                    }}
+                    className="text-[#C0654B] font-bold hover:underline cursor-pointer"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+
                 <button
                   type="submit"
                   className="w-full bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md cursor-pointer"
                 >
-                  Send OTP Code to Sign In
+                  Sign In to Account
                 </button>
               </form>
-            ) : (
-              /* CREATE NEW ACCOUNT FORM */
+            ) : authMode === 'forgot' ? (
+              /* PART C — FORGOT PASSWORD FORM (EXPLICIT REGISTRATION CHECK BEFORE OTP) */
               <form
                 autoComplete="off"
                 onSubmit={async (e) => {
                   e.preventDefault();
-                  if (signUpPassword && signUpPassword !== signUpConfirmPassword) {
+                  const targetEmail = forgotEmail.trim().toLowerCase();
+                  if (!targetEmail || !targetEmail.includes('@')) {
+                    setAuthError('Please enter a valid registered email address.');
+                    return;
+                  }
+                  setIsCheckingRegistration(true);
+                  setAuthError(null);
+
+                  try {
+                    // 1. Check if email exists in database before sending any Supabase reset email
+                    const res = await fetch(`/api/auth/check-email?email=${encodeURIComponent(targetEmail)}`);
+                    const checkData = await res.json();
+
+                    if (!checkData.registered) {
+                      setAuthError('You are not registered. Please register your details.');
+                      setIsCheckingRegistration(false);
+                      return;
+                    }
+
+                    // 2. Matching account found, call resetPasswordForEmail
+                    const { error } = await supabase.auth.resetPasswordForEmail(targetEmail);
+                    if (error) {
+                      console.error('[Supabase resetPasswordForEmail Error]:', error);
+                      setAuthError(error.message || 'Failed to send password reset code.');
+                      setIsCheckingRegistration(false);
+                    } else {
+                      setIsCheckingRegistration(false);
+                      setIsVerifyingOtp(true);
+                      setEnteredEmailOtp('');
+                      setIsEmailVerified(false);
+                      setResendEmailTimer(60);
+                      showToast(`✉️ Password Reset OTP code sent to ${targetEmail}! Check Inbox/Spam.`);
+                    }
+                  } catch (err: any) {
+                    console.error('[Forgot Password Error]:', err);
+                    setAuthError(err?.message || 'Failed to request password reset.');
+                    setIsCheckingRegistration(false);
+                  }
+                }}
+                className="space-y-4 text-xs text-left"
+              >
+                <div className="bg-stone-50 border border-stone-200 p-3.5 rounded-xl text-stone-700 font-medium">
+                  <p className="font-bold flex items-center gap-1.5 text-xs text-stone-900 mb-1">
+                    <Lock className="w-4 h-4 text-[#C0654B]" />
+                    <span>Reset Your Password</span>
+                  </p>
+                  <p className="text-[11px] text-stone-600">
+                    Enter your registered email address below. We will send a 6-digit OTP code to verify your account.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">Registered Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    autoComplete="off"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="Enter your registered email"
+                    className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isCheckingRegistration}
+                  className="w-full bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md cursor-pointer disabled:bg-stone-300"
+                >
+                  {isCheckingRegistration ? 'Checking Registration...' : 'Send Password Reset OTP'}
+                </button>
+
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('signin'); setAuthError(null); }}
+                    className="text-stone-500 hover:text-stone-900 text-xs font-bold hover:underline cursor-pointer"
+                  >
+                    ← Back to Sign In
+                  </button>
+                </div>
+              </form>
+            ) : authMode === 'reset' ? (
+              /* SET NEW PASSWORD FORM AFTER RECOVERY OTP VERIFICATION */
+              <form
+                autoComplete="off"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!newPassword || newPassword.length < 6) {
+                    setAuthError('New password must be at least 6 characters.');
+                    return;
+                  }
+                  if (newPassword !== confirmNewPassword) {
                     setAuthError('Passwords do not match.');
+                    return;
+                  }
+                  setAuthError(null);
+
+                  try {
+                    const { error } = await supabase.auth.updateUser({ password: newPassword });
+                    if (error) {
+                      console.error('[Supabase updateUser Error]:', error);
+                      setAuthError(error.message || 'Failed to update password.');
+                    } else {
+                      showToast('🎉 Password updated successfully! Please sign in with your new password.');
+                      setAuthMode('signin');
+                      setSignInEmail(forgotEmail);
+                      setSignInPassword('');
+                      setNewPassword('');
+                      setConfirmNewPassword('');
+                    }
+                  } catch (err: any) {
+                    console.error('[Update Password Error]:', err);
+                    setAuthError(err?.message || 'Failed to update password.');
+                  }
+                }}
+                className="space-y-4 text-xs text-left"
+              >
+                <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-emerald-900 font-medium">
+                  <p className="font-bold flex items-center gap-1.5 text-xs text-emerald-900 mb-1">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Identity Verified</span>
+                  </p>
+                  <p className="text-[11px] text-emerald-800">
+                    Please enter and confirm your new account password.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">New Password *</label>
+                  <input
+                    type="password"
+                    required
+                    autoComplete="new-password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min 6 chars)"
+                    className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">Confirm New Password *</label>
+                  <input
+                    type="password"
+                    required
+                    autoComplete="new-password"
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="w-full border border-stone-300 rounded-xl p-3 focus:outline-none focus:border-[#C0654B] text-stone-900 font-medium"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-xs transition-colors shadow-md cursor-pointer"
+                >
+                  Save New Password & Sign In
+                </button>
+              </form>
+            ) : (
+              /* PART A — CREATE NEW ACCOUNT FORM (FULL DETAILS BEFORE OTP) */
+              <form
+                autoComplete="off"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!signUpName.trim()) {
+                    setAuthError('Please enter your full name.');
+                    return;
+                  }
+                  if (!signUpEmail || !signUpEmail.includes('@')) {
+                    setAuthError('Please enter a valid email address.');
                     return;
                   }
                   if (signUpPhone.length < 10) {
                     setAuthError('Please enter a valid 10-digit mobile number.');
                     return;
                   }
+                  if (!signUpPassword || signUpPassword.length < 6) {
+                    setAuthError('Password must be at least 6 characters long.');
+                    return;
+                  }
+                  if (signUpPassword !== signUpConfirmPassword) {
+                    setAuthError('Passwords do not match.');
+                    return;
+                  }
+
                   setIsVerifyingOtp(true);
                   setAuthError(null);
-
                   const targetEmail = signUpEmail.trim().toLowerCase();
 
                   try {
-                    const { error } = await supabase.auth.signInWithOtp({
+                    const { error } = await supabase.auth.signUp({
                       email: targetEmail,
-                      options: { shouldCreateUser: true }
+                      password: signUpPassword,
+                      options: {
+                        data: {
+                          name: signUpName.trim(),
+                          phone: signUpPhone.trim()
+                        }
+                      }
                     });
 
                     if (error) {
-                      console.error('[Supabase signInWithOtp Error]:', error);
-                      setAuthError(error.message || 'Failed to send verification OTP.');
+                      console.error('[Supabase signUp Error]:', error);
+                      setAuthError(error.message || 'Failed to create account.');
                       setIsVerifyingOtp(false);
                     } else {
                       setResendEmailTimer(60);

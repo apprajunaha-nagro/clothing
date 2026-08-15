@@ -554,6 +554,27 @@ app.delete('/api/reviews/:id', async (req, res) => {
 
 // ---------------- API ROUTES: USER ACCOUNTS ----------------
 
+// GET /api/auth/check-email?email=...
+app.get('/api/auth/check-email', async (req, res) => {
+  try {
+    const rawEmail = req.query.email;
+    if (!rawEmail || typeof rawEmail !== 'string') {
+      return res.status(400).json({ registered: false, error: 'Email parameter required' });
+    }
+    const email = rawEmail.trim().toLowerCase();
+    const existing = await prisma.user.findFirst({
+      where: { email }
+    });
+    if (existing) {
+      return res.json({ registered: true, email: existing.email });
+    }
+    return res.json({ registered: false });
+  } catch (e: any) {
+    console.error('[GET /api/auth/check-email Error]:', e);
+    return res.status(500).json({ registered: false, error: 'Server check error' });
+  }
+});
+
 // GET /api/users
 app.get('/api/users', async (req, res) => {
   try {
