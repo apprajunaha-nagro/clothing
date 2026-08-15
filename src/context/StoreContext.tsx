@@ -860,14 +860,31 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         body: JSON.stringify(orderData)
       });
 
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '');
-        console.error('[createOrder error]: API returned status', res.status, errText);
-        showToast('Failed to save order to database. Please try again.');
+      const contentType = res.headers.get('content-type') || '';
+      let data: any = null;
+
+      if (contentType.includes('application/json')) {
+        try {
+          data = await res.json();
+        } catch {
+          data = null;
+        }
+      } else {
+        const text = await res.text().catch(() => '');
+        try {
+          data = JSON.parse(text);
+        } catch {
+          console.error('[createOrder error]: API returned non-JSON response status', res.status);
+        }
+      }
+
+      if (!res.ok || !data) {
+        const errMsg = data?.error || 'Failed to save order to database. Please try again.';
+        console.error('[createOrder error]:', res.status, errMsg);
+        showToast(errMsg);
         return null;
       }
 
-      const data = await res.json();
       if (data.success && data.order) {
         const createdOrder: Order = data.order;
         setOrders(prev => [createdOrder, ...prev]);

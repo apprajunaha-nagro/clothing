@@ -2177,9 +2177,25 @@ app.get('/api/orders', async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
   try {
+    const { customerName, customerEmail, customerPhone, subtotal, total } = req.body || {};
+
+    if (!customerName || typeof customerName !== 'string' || !customerName.trim()) {
+      return res.status(400).json({ success: false, error: 'Customer name is required.' });
+    }
+    if (!customerEmail || typeof customerEmail !== 'string' || !customerEmail.includes('@')) {
+      return res.status(400).json({ success: false, error: 'Valid customer email is required.' });
+    }
+
+    const parsedSubtotal = Number(subtotal);
+    const parsedTotal = Number(total);
+
+    if (isNaN(parsedSubtotal) || isNaN(parsedTotal) || parsedTotal < 0) {
+      return res.status(400).json({ success: false, error: 'Invalid or non-numeric order total.' });
+    }
+
     const shippingAddressStr = typeof req.body.shippingAddress === 'string'
       ? req.body.shippingAddress
-      : JSON.stringify(req.body.shippingAddress);
+      : JSON.stringify(req.body.shippingAddress || {});
 
     const itemsStr = typeof req.body.items === 'string'
       ? req.body.items
@@ -2190,26 +2206,27 @@ app.post('/api/orders', async (req, res) => {
         id: `ord-${Date.now()}`,
         orderNumber: `TC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
         customerId: req.body.customerId || 'guest',
-        customerName: req.body.customerName,
-        customerEmail: req.body.customerEmail,
-        customerPhone: req.body.customerPhone,
+        customerName: customerName.trim(),
+        customerEmail: customerEmail.trim().toLowerCase(),
+        customerPhone: (customerPhone || '').trim(),
         shippingAddress: shippingAddressStr,
         items: itemsStr,
-        subtotal: Number(req.body.subtotal),
+        subtotal: parsedSubtotal,
         discount: Number(req.body.discount || 0),
         shippingFee: Number(req.body.shippingFee || 0),
         tax: Number(req.body.tax || 0),
-        total: Number(req.body.total),
+        total: parsedTotal,
         status: 'pending',
         paymentStatus: req.body.paymentMethod === 'cod' ? 'pending' : 'paid',
-        paymentMethod: req.body.paymentMethod,
+        paymentMethod: req.body.paymentMethod || 'cod',
         couponCode: req.body.couponCode || null,
       },
     });
 
     return res.json({ success: true, order: formatOrderResponse(newOrder) });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('[POST /api/orders Error]:', err);
+    return res.status(400).json({ success: false, error: err.message || 'Failed to create order in database.' });
   }
 });
 
@@ -2973,6 +2990,21 @@ app.delete('/api/admin/coupons/:id', (req, res) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ---------------- GLOBAL ERROR HANDLING MIDDLEWARE ----------------
+// Catches unhandled exceptions across all /api/* routes and guarantees JSON response (no HTML)
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (req.path.startsWith('/api') || req.xhr || req.headers.accept?.includes('json')) {
+    console.error(`[Express Global Error Handler] on ${req.method} ${req.path}:`, err);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    const statusCode = err.status || err.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: err.message || 'Internal server error'
+    });
+  }
+  next(err);
 });
 
 // ---------------- SERVER STARTUP ----------------

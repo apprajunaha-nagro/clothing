@@ -162,21 +162,45 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
       }
     }
 
-    const orderItems = cart.map((item) => ({
-      id: `oi-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
-      productId: item.product.id,
-      variantId: item.variant.id,
-      productName: item.product.name,
-      productImage: getItemDisplayImage(item.product, item.selectedColor, item.variant),
-      size: item.selectedSize,
-      color: item.selectedColor,
-      price:
-        item.variant.discountPrice ||
-        item.variant.price ||
-        item.product.discountPrice ||
-        item.product.basePrice,
-      quantity: item.quantity
-    }));
+    // Validate every cart item before building payload
+    const invalidItems = cart.filter((item) => {
+      if (!item || !item.product) return true;
+      const price = Number(
+        item.variant?.discountPrice ??
+        item.variant?.price ??
+        item.product?.discountPrice ??
+        item.product?.basePrice
+      );
+      return isNaN(price) || price <= 0 || !item.quantity || isNaN(item.quantity);
+    });
+
+    if (invalidItems.length > 0) {
+      const invalidNames = invalidItems.map(i => i?.product?.name || 'Unknown item').join(', ');
+      alert(`One or more items in your cart are invalid (${invalidNames}). Please remove and re-add them to your bag before checking out.`);
+      setLoading(false);
+      return;
+    }
+
+    const orderItems = cart.map((item) => {
+      const price = Number(
+        item.variant?.discountPrice ??
+        item.variant?.price ??
+        item.product?.discountPrice ??
+        item.product?.basePrice ??
+        0
+      );
+      return {
+        id: `oi-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
+        productId: item.product.id,
+        variantId: item.variant?.id || `var-fallback-${Date.now()}`,
+        productName: item.product.name,
+        productImage: getItemDisplayImage(item.product, item.selectedColor, item.variant),
+        size: item.selectedSize || 'Standard',
+        color: item.selectedColor || 'Default',
+        price,
+        quantity: item.quantity || 1
+      };
+    });
 
     const baseOrderData: Partial<Order> = {
       customerId: user?.id || 'guest',
