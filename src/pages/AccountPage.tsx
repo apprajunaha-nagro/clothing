@@ -98,8 +98,9 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
         return;
       }
       setIsLoadingOrders(true);
+      const userEmailClean = user.email.trim().toLowerCase();
       try {
-        const res = await fetch(`/api/orders?email=${encodeURIComponent(user.email.trim().toLowerCase())}`);
+        const res = await fetch(`/api/orders?email=${encodeURIComponent(userEmailClean)}`);
         if (res.ok) {
           const data = await res.json();
           if (data.success && Array.isArray(data.orders)) {
@@ -108,7 +109,37 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
           }
         }
       } catch (e) {
-        console.warn('Failed to load user orders:', e);
+        console.warn('Backend API order fetch note, trying direct Supabase query:', e);
+      }
+
+      // Direct Supabase JS fallback
+      try {
+        const { data: sbOrders, error: sbErr } = await supabase
+          .from('Order')
+          .select('*')
+          .ilike('customerEmail', userEmailClean)
+          .order('createdAt', { ascending: false });
+
+        if (!sbErr && Array.isArray(sbOrders)) {
+          const parsed = sbOrders.map(raw => {
+            let shippingAddress = raw.shippingAddress;
+            if (typeof shippingAddress === 'string') {
+              try { shippingAddress = JSON.parse(shippingAddress); } catch {}
+            }
+            let items = raw.items;
+            if (typeof items === 'string') {
+              try { items = JSON.parse(items); } catch {}
+            }
+            return {
+              ...raw,
+              shippingAddress: typeof shippingAddress === 'object' && shippingAddress !== null ? shippingAddress : {},
+              items: Array.isArray(items) ? items : []
+            };
+          });
+          setDbUserOrders(parsed);
+        }
+      } catch (sbEx) {
+        console.warn('Direct Supabase order fetch error:', sbEx);
       } finally {
         setIsLoadingOrders(false);
       }
