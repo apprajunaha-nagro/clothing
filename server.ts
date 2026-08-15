@@ -557,6 +557,7 @@ app.delete('/api/reviews/:id', async (req, res) => {
 // GET & POST /api/auth/check-email?email=...
 const handleCheckEmail = async (req: express.Request, res: express.Response) => {
   try {
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     const rawEmail = req.query.email || req.body?.email;
     if (!rawEmail || typeof rawEmail !== 'string') {
       return res.status(400).json({ registered: false, error: 'Email parameter required' });

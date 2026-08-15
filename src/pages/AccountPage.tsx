@@ -396,9 +396,25 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
             )}
 
             {authError && (
-              <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-xl flex items-center gap-2 text-xs font-semibold">
-                <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                <span>{authError}</span>
+              <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span>{authError}</span>
+                </div>
+                {(authError.includes('already exists') || authError.includes('sign in instead')) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSignInEmail(signUpEmail);
+                      setAuthMode('signin');
+                      setAuthError(null);
+                      setIsVerifyingOtp(false);
+                    }}
+                    className="bg-[#C0654B] hover:bg-[#8B4A38] text-white px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 cursor-pointer shadow-xs transition-colors"
+                  >
+                    Sign In Now →
+                  </button>
+                )}
               </div>
             )}
 
@@ -918,16 +934,34 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
 
                     if (error) {
                       console.error('[Supabase signUp Error]:', error);
-                      setAuthError(error.message || 'Failed to create account.');
                       setIsVerifyingOtp(false);
+                      const msg = (error.message || '').toLowerCase();
+                      const status = (error as any).status || (error as any).code;
+
+                      if (
+                        msg.includes('already registered') ||
+                        msg.includes('already exists') ||
+                        msg.includes('user_already_exists') ||
+                        status === 'user_already_exists' ||
+                        status === 400 && msg.includes('registered')
+                      ) {
+                        setAuthError('An account with this email already exists. Please sign in instead.');
+                      } else {
+                        setAuthError(error.message || 'Failed to create account. Please check your details.');
+                      }
                     } else {
                       setResendEmailTimer(60);
                       showToast(`✉️ 6-digit Verification OTP code sent to ${targetEmail}! Check Inbox/Spam.`);
                     }
                   } catch (err: any) {
                     console.error('[Signup Submit Error]:', err);
-                    setAuthError(err?.message || 'Failed to request verification code.');
                     setIsVerifyingOtp(false);
+                    const msg = (err?.message || '').toLowerCase();
+                    if (msg.includes('already registered') || msg.includes('already exists')) {
+                      setAuthError('An account with this email already exists. Please sign in instead.');
+                    } else {
+                      setAuthError(err?.message || 'Failed to request verification code.');
+                    }
                   }
                 }}
                 className="space-y-4 text-xs"
