@@ -554,10 +554,10 @@ app.delete('/api/reviews/:id', async (req, res) => {
 
 // ---------------- API ROUTES: USER ACCOUNTS ----------------
 
-// GET /api/auth/check-email?email=...
-app.get('/api/auth/check-email', async (req, res) => {
+// GET & POST /api/auth/check-email?email=...
+const handleCheckEmail = async (req: express.Request, res: express.Response) => {
   try {
-    const rawEmail = req.query.email;
+    const rawEmail = req.query.email || req.body?.email;
     if (!rawEmail || typeof rawEmail !== 'string') {
       return res.status(400).json({ registered: false, error: 'Email parameter required' });
     }
@@ -573,7 +573,12 @@ app.get('/api/auth/check-email', async (req, res) => {
     console.error('[GET /api/auth/check-email Error]:', e);
     return res.status(500).json({ registered: false, error: 'Server check error' });
   }
-});
+};
+
+app.get('/api/auth/check-email', handleCheckEmail);
+app.get('/api/check-email', handleCheckEmail);
+app.get('/api/users/check-email', handleCheckEmail);
+app.post('/api/auth/check-email', handleCheckEmail);
 
 // GET /api/users
 app.get('/api/users', async (req, res) => {

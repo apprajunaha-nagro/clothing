@@ -708,10 +708,24 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
 
                   try {
                     // 1. Check if email exists in database before sending any Supabase reset email
-                    const res = await fetch(`/api/auth/check-email?email=${encodeURIComponent(targetEmail)}`);
-                    const checkData = await res.json();
+                    let isRegistered = false;
+                    try {
+                      const res = await fetch(`/api/auth/check-email?email=${encodeURIComponent(targetEmail)}`);
+                      const contentType = res.headers.get('content-type') || '';
+                      if (res.ok && contentType.includes('application/json')) {
+                        const checkData = await res.json();
+                        isRegistered = Boolean(checkData?.registered);
+                      } else {
+                        // Fallback: check if email exists in order history or context
+                        console.warn('[Check Email] API returned non-JSON status:', res.status);
+                        const hasOrder = orders.some(o => o.customerEmail?.toLowerCase() === targetEmail);
+                        if (hasOrder) isRegistered = true;
+                      }
+                    } catch (fetchErr) {
+                      console.warn('[Check Email Fetch Error]:', fetchErr);
+                    }
 
-                    if (!checkData.registered) {
+                    if (!isRegistered) {
                       setAuthError('You are not registered. Please register your details.');
                       setIsCheckingRegistration(false);
                       return;
