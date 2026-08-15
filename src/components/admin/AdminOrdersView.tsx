@@ -5,6 +5,7 @@ import {
   MapPin, Plus, Trash2, ArrowUpRight, MessageSquare, ShieldCheck, Mail
 } from 'lucide-react';
 import { Order, OrderItem, OrderStatus, Product, ProductVariant, Address } from '../../types';
+import { supabase } from '../../lib/supabaseClient';
 
 // Status Color mapping helper for unified color coding across tabs, selects & badges
 const getStatusColorStyle = (status: OrderStatus) => {
@@ -65,26 +66,70 @@ const getStatusColorStyle = (status: OrderStatus) => {
 export const AdminOrdersView: React.FC = () => {
   const { orders, createOrder, updateOrderStatus, updateReturnStatus, products, setProducts, showToast, settings } = useStore();
 
-  // Fetch all orders from backend database for Admin View
+  // Fetch all orders from backend database & direct Supabase for Admin View
   const [allDbOrders, setAllDbOrders] = useState<Order[]>([]);
 
   useEffect(() => {
+    let isSubscribed = true;
+
     async function fetchAllDatabaseOrders() {
       try {
-        const res = await fetch('/api/orders');
-        if (res.ok) {
-          const data = await res.json();
-          const list: Order[] = Array.isArray(data) ? data : (data.orders || []);
-          if (Array.isArray(list)) {
-            setAllDbOrders(list);
-            return;
+        let fetchedList: Order[] = [];
+
+        // 1. Try Express API
+        try {
+          const res = await fetch('/api/orders');
+          if (res.ok) {
+            const data = await res.json();
+            const list: Order[] = Array.isArray(data) ? data : (data.orders || []);
+            if (Array.isArray(list) && list.length > 0) {
+              fetchedList = list;
+            }
           }
+        } catch (apiErr) {
+          console.warn('Admin API fetch note:', apiErr);
+        }
+
+        // 2. Direct Supabase JS Client fallback / sync
+        if (fetchedList.length === 0) {
+          const { data: sbOrders, error: sbErr } = await supabase
+            .from('Order')
+            .select('*')
+            .order('createdAt', { ascending: false });
+
+          if (!sbErr && Array.isArray(sbOrders)) {
+            fetchedList = sbOrders.map(raw => {
+              let shippingAddress = raw.shippingAddress;
+              if (typeof shippingAddress === 'string') {
+                try { shippingAddress = JSON.parse(shippingAddress); } catch {}
+              }
+              let items = raw.items;
+              if (typeof items === 'string') {
+                try { items = JSON.parse(items); } catch {}
+              }
+              return {
+                ...raw,
+                shippingAddress: typeof shippingAddress === 'object' && shippingAddress !== null ? shippingAddress : {},
+                items: Array.isArray(items) ? items : []
+              };
+            });
+          }
+        }
+
+        if (isSubscribed && fetchedList.length > 0) {
+          setAllDbOrders(fetchedList);
         }
       } catch (e) {
         console.warn('Failed to fetch admin database orders:', e);
       }
     }
+
     fetchAllDatabaseOrders();
+    const timer = setInterval(fetchAllDatabaseOrders, 3000);
+    return () => {
+      isSubscribed = false;
+      clearInterval(timer);
+    };
   }, [orders.length]);
 
   const ordersListToDisplay = React.useMemo(() => {
