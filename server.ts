@@ -62,9 +62,31 @@ app.use('/src/assets', express.static(path.join(process.cwd(), 'src', 'assets'))
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-// Redirect /favicon.ico to /favicon.png to avoid 404
+// Explicit direct favicon endpoints to guarantee instant browser tab icon display
 app.get('/favicon.ico', (_req, res) => {
-  res.redirect('/favicon.png');
+  const icoPath = path.join(process.cwd(), 'public', 'favicon.ico');
+  if (fs.existsSync(icoPath)) {
+    res.setHeader('Content-Type', 'image/x-icon');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.sendFile(icoPath);
+  }
+  const pngPath = path.join(process.cwd(), 'public', 'favicon.png');
+  res.setHeader('Content-Type', 'image/png');
+  return res.sendFile(pngPath);
+});
+
+app.get('/favicon.png', (_req, res) => {
+  const pngPath = path.join(process.cwd(), 'public', 'favicon.png');
+  res.setHeader('Content-Type', 'image/png');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  return res.sendFile(pngPath);
+});
+
+app.get('/favicon.svg', (_req, res) => {
+  const svgPath = path.join(process.cwd(), 'public', 'favicon.svg');
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  return res.sendFile(svgPath);
 });
 
 // ---------------- API ROUTE: IMAGE UPLOAD ----------------

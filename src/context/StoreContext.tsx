@@ -403,6 +403,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     root.style.setProperty('--color-primary-dark', settings.primaryDarkColor || '#8B4A38');
     root.style.setProperty('--color-bg-muted', settings.bgMutedColor || '#F3E9E4');
     root.style.setProperty('--color-secondary-dark', settings.secondaryDarkColor || '#2B2620');
+
+    // Dynamic browser favicon synchronization
+    const favUrl = settings.faviconUrl || '/favicon.png';
+    const iconLinks = document.querySelectorAll("link[rel*='icon']");
+    if (iconLinks.length > 0) {
+      iconLinks.forEach(el => {
+        const linkEl = el as HTMLLinkElement;
+        if (!linkEl.type || linkEl.type.includes('png') || linkEl.type.includes('icon')) {
+          linkEl.href = favUrl;
+        }
+      });
+    }
   }, [settings]);
 
   // Sync Cart to localStorage

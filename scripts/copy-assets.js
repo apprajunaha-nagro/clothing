@@ -31,8 +31,23 @@ try {
       const publicDir = path.join(process.cwd(), 'public');
       const distDir = path.join(process.cwd(), 'dist');
 
+      // Standard ICO header + directory entry + PNG data
+      const icoHeader = Buffer.alloc(22);
+      icoHeader.writeUInt16LE(0, 0); // reserved
+      icoHeader.writeUInt16LE(1, 2); // icon type
+      icoHeader.writeUInt16LE(1, 4); // 1 image
+      icoHeader.writeUInt8(0, 6); // width
+      icoHeader.writeUInt8(0, 7); // height
+      icoHeader.writeUInt8(0, 8); // color count
+      icoHeader.writeUInt8(0, 9); // reserved
+      icoHeader.writeUInt16LE(1, 10); // color planes
+      icoHeader.writeUInt16LE(32, 12); // bpp
+      icoHeader.writeUInt32LE(logoBuffer.length, 14); // image size
+      icoHeader.writeUInt32LE(22, 18); // offset
+      const icoBuffer = Buffer.concat([icoHeader, logoBuffer]);
+
       fs.writeFileSync(path.join(publicDir, 'favicon.png'), logoBuffer);
-      fs.writeFileSync(path.join(publicDir, 'favicon.ico'), logoBuffer);
+      fs.writeFileSync(path.join(publicDir, 'favicon.ico'), icoBuffer);
       fs.writeFileSync(path.join(publicDir, 'pgmart_logo_new.png'), logoBuffer);
 
       const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
@@ -49,7 +64,7 @@ try {
 
       if (fs.existsSync(distDir)) {
         fs.writeFileSync(path.join(distDir, 'favicon.png'), logoBuffer);
-        fs.writeFileSync(path.join(distDir, 'favicon.ico'), logoBuffer);
+        fs.writeFileSync(path.join(distDir, 'favicon.ico'), icoBuffer);
         fs.writeFileSync(path.join(distDir, 'favicon.svg'), svgContent, 'utf-8');
         fs.writeFileSync(path.join(distDir, 'pgmart_logo_new.png'), logoBuffer);
       }
