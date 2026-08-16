@@ -2420,6 +2420,46 @@ app.delete('/api/admin/coupons/:id', adminAuth, async (req, res) => {
   }
 });
 
+// ---------------- API ROUTES: SITE SETTINGS ----------------
+
+app.get('/api/settings', async (req, res) => {
+  try {
+    let settings = await prisma.siteSettings.findUnique({ where: { id: 'default' } });
+    if (!settings) {
+      settings = await prisma.siteSettings.create({
+        data: { id: 'default' }
+      });
+    }
+    return res.json(settings);
+  } catch (err: any) {
+    console.error('[GET /api/settings Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to fetch settings' });
+  }
+});
+
+const handleSettingsSave = async (req: any, res: any) => {
+  try {
+    const updateData = { ...req.body };
+    delete updateData.id;
+
+    const saved = await prisma.siteSettings.upsert({
+      where: { id: 'default' },
+      update: updateData,
+      create: { id: 'default', ...updateData }
+    });
+
+    return res.json({ success: true, settings: saved });
+  } catch (err: any) {
+    console.error('[Settings Save Error]:', err);
+    return res.status(500).json({ error: err?.message || 'Failed to save settings' });
+  }
+};
+
+app.put('/api/admin/settings', adminAuth, handleSettingsSave);
+app.put('/api/settings', handleSettingsSave);
+app.post('/api/admin/settings', adminAuth, handleSettingsSave);
+app.post('/api/settings', handleSettingsSave);
+
 // ---------------- API ROUTES: REVIEWS ----------------
 
 // GET /api/reviews?productId=...

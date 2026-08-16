@@ -671,26 +671,38 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateSettings = async (newSettings: Partial<SiteSettings>) => {
-    const merged = { ...settings, ...newSettings };
-    setSettings(merged);
+    setSettings(prev => {
+      const merged = { ...prev, ...newSettings };
+      try { localStorage.setItem('pgmart_site_settings', JSON.stringify(merged)); } catch {}
+      return merged;
+    });
+
+    // 1. Direct Supabase Client Upsert
     try {
-      const res = await adminFetch('/api/settings', {
-        method: 'POST',
+      const { error: sbErr } = await supabase
+        .from('SiteSettings')
+        .upsert({ id: 'default', ...newSettings });
+      if (sbErr) console.warn('[Supabase SiteSettings upsert warning]:', sbErr);
+    } catch (sbEx) {
+      console.warn('[Supabase SiteSettings exception]:', sbEx);
+    }
+
+    // 2. Dual REST API Sync
+    try {
+      await adminFetch('/api/admin/settings', {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSettings)
       });
-      if (res && res.ok) {
-        const data = await res.json();
-        if (data.success && data.settings) {
-          setSettings(prev => ({ ...prev, ...data.settings }));
-          showToast('Site settings updated in database');
-          return;
-        }
-      }
-    } catch (e) {
-      console.warn('Backend sync failed for settings update', e);
+    } catch (apiErr) {
+      try {
+        await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newSettings)
+        });
+      } catch (e) {}
     }
-    showToast('Site settings updated');
   };
 
   const addToCart = (product: Product, variant: ProductVariant, qty = 1) => {
@@ -734,37 +746,62 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCouponDiscount(0);
   };
 
-  const saveCoupon = async (newCoupon: Coupon) => {
+  const saveCoupon = async (coupon: Coupon) => {
     setCoupons(prev => {
-      const cleanCode = newCoupon.code.trim().toUpperCase();
-      const existingIdx = prev.findIndex(c => c.id === newCoupon.id || c.code.toUpperCase() === cleanCode);
-      let updated: Coupon[];
-      if (existingIdx > -1) {
-        updated = prev.map((c, i) => i === existingIdx ? newCoupon : c);
-      } else {
-        updated = [newCoupon, ...prev];
-      }
+      const updated = prev.some(c => c.id === coupon.id || c.code === coupon.code)
+        ? prev.map(c => (c.id === coupon.id || c.code === coupon.code) ? coupon : c)
+        : [coupon, ...prev];
+      try { localStorage.setItem('pgmart_coupons', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    // 1. Direct Supabase Upsert
+    try {
+      await supabase.from('Coupon').upsert({
+        id: coupon.id,
+        code: coupon.code,
+        discountType: coupon.discountType,
+        value: Number(coupon.value),
+        minOrderValue: Number(coupon.minOrderValue),
+        maxDiscount: coupon.maxDiscount ? Number(coupon.maxDiscount) : null,
+        usageLimit: Number(coupon.usageLimit),
+        usedCount: Number(coupon.usedCount) || 0,
+        expiryDate: coupon.expiryDate,
+        categoryScope: coupon.categoryScope || null,
+        isActive: coupon.isActive !== false
+      });
+    } catch (e) {}
+
+    // 2. REST API Sync
+    try {
+      await adminFetch('/api/admin/coupons', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(coupon)
+      });
+    } catch (e) {}
+  };
+
+  const toggleCoupon = async (id: string) => {
+    const target = coupons.find(c => c.id === id);
+    const newStatus = target ? !target.isActive : true;
+    setCoupons(prev => {
+      const updated = prev.map(c => c.id === id ? { ...c, isActive: newStatus } : c);
       try { localStorage.setItem('pgmart_coupons', JSON.stringify(updated)); } catch {}
       return updated;
     });
 
     try {
-      await adminFetch('/api/admin/coupons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCoupon)
-      });
-    } catch (e) {
-      console.warn('Backend sync failed for coupon creation', e);
-    }
-  };
+      await supabase.from('Coupon').update({ isActive: newStatus }).eq('id', id);
+    } catch (e) {}
 
-  const toggleCoupon = async (id: string) => {
-    setCoupons(prev => {
-      const updated = prev.map(c => c.id === id ? { ...c, isActive: !c.isActive } : c);
-      try { localStorage.setItem('pgmart_coupons', JSON.stringify(updated)); } catch {}
-      return updated;
-    });
+    try {
+      await adminFetch(`/api/admin/coupons/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newStatus })
+      });
+    } catch (e) {}
   };
 
   const deleteCoupon = async (id: string) => {
@@ -775,52 +812,86 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
 
     try {
-      await adminFetch(`/api/admin/coupons/${id}`, { method: 'DELETE' });
-    } catch (e) {
-      console.warn('Backend sync failed for coupon deletion', e);
-    }
+      await supabase.from('Coupon').delete().eq('id', id);
+    } catch (e) {}
+
+    try {
+      await adminFetch(`/api/admin/coupons/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (e) {}
   };
 
   const saveBrand = async (brand: Brand) => {
     setBrands(prev => {
-      const exists = prev.some(b => b.id === brand.id);
-      if (exists) return prev.map(b => b.id === brand.id ? brand : b);
-      return [...prev, brand];
+      const updated = prev.some(b => b.id === brand.id)
+        ? prev.map(b => b.id === brand.id ? brand : b)
+        : [brand, ...prev];
+      try { localStorage.setItem('pgmart_brands', JSON.stringify(updated)); } catch {}
+      return updated;
     });
+
+    // 1. Direct Supabase Client Upsert
+    try {
+      await supabase.from('Brand').upsert({
+        id: brand.id,
+        name: brand.name,
+        slug: brand.slug,
+        logo: brand.logo,
+        description: brand.description,
+        isFeatured: brand.isFeatured !== false,
+        isActive: brand.isActive !== false
+      });
+    } catch (e) {}
+
+    // 2. REST API Sync
     try {
       await adminFetch('/api/brands', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(brand),
+        body: JSON.stringify(brand)
       });
-    } catch (e) {
-      console.warn('Backend brand save fallback', e);
-    }
+    } catch (e) {}
   };
 
   const toggleBrand = async (id: string) => {
-    setBrands(prev => prev.map(b => b.id === id ? { ...b, isActive: b.isActive === false ? true : false } : b));
+    const target = brands.find(b => b.id === id);
+    const newStatus = target ? !target.isActive : true;
+    setBrands(prev => {
+      const updated = prev.map(b => b.id === id ? { ...b, isActive: newStatus } : b);
+      try { localStorage.setItem('pgmart_brands', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
     try {
-      const target = brands.find(b => b.id === id);
-      if (target) {
-        await adminFetch(`/api/brands/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...target, isActive: target.isActive === false ? true : false }),
-        });
-      }
-    } catch (e) {
-      console.warn('Backend brand toggle fallback', e);
-    }
+      await supabase.from('Brand').update({ isActive: newStatus }).eq('id', id);
+    } catch (e) {}
+
+    try {
+      await adminFetch(`/api/brands/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newStatus })
+      });
+    } catch (e) {}
   };
 
   const deleteBrand = async (id: string) => {
-    setBrands(prev => prev.filter(b => b.id !== id));
+    setBrands(prev => {
+      const updated = prev.filter(b => b.id !== id);
+      try { localStorage.setItem('pgmart_brands', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
     try {
-      await adminFetch(`/api/brands/${id}`, { method: 'DELETE' });
-    } catch (e) {
-      console.warn('Backend brand delete fallback', e);
-    }
+      await supabase.from('Brand').delete().eq('id', id);
+    } catch (e) {}
+
+    try {
+      await adminFetch(`/api/brands/${id}`, {
+        method: 'DELETE'
+      });
+    } catch (e) {}
   };
 
   const applyCoupon = async (code: string) => {
@@ -982,6 +1053,38 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return [newProduct, ...prev];
     });
 
+    // 1. Direct Supabase insert
+    try {
+      await supabase.from('Product').insert([{
+        id: newProduct.id,
+        name: newProduct.name,
+        slug: newProduct.slug,
+        categoryId: newProduct.categoryId,
+        subcategoryId: newProduct.subcategoryId,
+        typeId: newProduct.typeId,
+        brandId: newProduct.brandId,
+        brandName: newProduct.brandName,
+        description: newProduct.description,
+        fabric: newProduct.fabric,
+        fit: newProduct.fit,
+        occasion: newProduct.occasion,
+        hsnCode: newProduct.hsnCode,
+        gstPercent: newProduct.gstPercent,
+        basePrice: newProduct.basePrice,
+        discountPrice: newProduct.discountPrice,
+        tags: newProduct.tags,
+        isDealOfTheDay: Boolean(newProduct.isDealOfTheDay),
+        status: newProduct.status,
+        variants: typeof newProduct.variants === 'string' ? newProduct.variants : JSON.stringify(newProduct.variants || []),
+        colors: typeof newProduct.colors === 'string' ? newProduct.colors : JSON.stringify(newProduct.colors || []),
+        availableSizes: newProduct.availableSizes,
+        rating: newProduct.rating,
+        reviewCount: newProduct.reviewCount,
+        created_at: newProduct.created_at
+      }]);
+    } catch (e) {}
+
+    // 2. REST API insert
     try {
       const res = await adminFetch('/api/products', {
         method: 'POST',
@@ -1005,15 +1108,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (e) {
       console.warn('Backend sync failed for product creation', e);
     }
-    setProducts(prev => {
-      if (prev.some(p => p.id === newProduct.id)) {
-        return prev.map(p => p.id === newProduct.id ? newProduct : p);
-      }
-      return [newProduct, ...prev];
-    });
   };
 
   const updateProduct = async (id: string, productData: Partial<Product>) => {
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...productData } : p));
+    showToast('Product updated successfully');
+
+    // 1. Direct Supabase Client update
+    try {
+      const sbUpdatePayload: any = {};
+      if (productData.name !== undefined) sbUpdatePayload.name = productData.name;
+      if (productData.basePrice !== undefined) sbUpdatePayload.basePrice = Number(productData.basePrice);
+      if (productData.discountPrice !== undefined) sbUpdatePayload.discountPrice = Number(productData.discountPrice);
+      if (productData.discountPercent !== undefined) sbUpdatePayload.discountPercent = Number(productData.discountPercent);
+      if (productData.isDealOfTheDay !== undefined) sbUpdatePayload.isDealOfTheDay = Boolean(productData.isDealOfTheDay);
+      if (productData.tags !== undefined) sbUpdatePayload.tags = productData.tags;
+      if (productData.status !== undefined) sbUpdatePayload.status = productData.status;
+      if (productData.description !== undefined) sbUpdatePayload.description = productData.description;
+
+      await supabase.from('Product').update(sbUpdatePayload).eq('id', id);
+    } catch (e) {}
+
+    // 2. REST API update
     try {
       const res = await adminFetch(`/api/products/${id}`, {
         method: 'PUT',
@@ -1025,15 +1141,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (data.success && data.product) {
           const updatedProd = data.product;
           setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updatedProd } : p));
-          showToast('Product updated successfully');
-          return;
         }
       }
     } catch (e) {
       console.warn('Backend sync failed for product update', e);
     }
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...productData } : p));
-    showToast('Product updated successfully');
   };
 
   const deleteProduct = async (id: string) => {

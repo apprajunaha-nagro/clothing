@@ -54,6 +54,20 @@ model SiteSettings {
   brandsBadge           String  @default("OFFICIAL BRANDS")
   brandsSpeed           Int     @default(35)
   brandsMaxItems        Int     @default(20)
+  newArrivalsEnabled    Boolean @default(true)
+  newArrivalsTitle      String  @default("New Arrivals")
+  newArrivalsSubtitle   String  @default("Explore the latest ethnic wear, designer sarees, & festive drops")
+  newArrivalsBadge      String  @default("JUST ARRIVED")
+  newArrivalsMaxItems   Int     @default(10)
+  promoPopupEnabled     Boolean @default(true)
+  exitPopupEnabled      Boolean @default(false)
+  popupTitle            String  @default("Festive Grand Bonanza! 🎉")
+  popupOffer            String  @default("Get Flat 20% off on your first traditional ethnic wear order.")
+  metaPixelId           String  @default("")
+  gtmId                 String  @default("")
+  googleAdsId           String  @default("")
+  campaignSubject       String  @default("Celebrate in Style: Festive Silk Sarees are back in Stock!")
+  campaignBody          String  @default("Hello {{customer_name}}, prepare for the upcoming celebrations with PGmart handcrafted sarees. Free shipping over ₹999!")
 }
 
 model Brand {

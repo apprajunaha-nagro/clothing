@@ -9,6 +9,7 @@ import { QuickViewModal } from './components/QuickViewModal';
 import { SizeChartModal } from './components/SizeChartModal';
 import { ChatbotWidget } from './components/ChatbotWidget';
 import { TawkToWidget } from './components/TawkToWidget';
+import { PromoPopupModal } from './components/PromoPopupModal';
 import { Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { PageLoadingSkeleton } from './components/skeletons/PageLoadingSkeleton';
@@ -184,6 +185,7 @@ function AppContent() {
       <SearchModal onNavigate={navigateTo} />
       <QuickViewModal onNavigate={navigateTo} />
       <SizeChartModal />
+      {!isAdminRoute && <PromoPopupModal onNavigate={navigateTo} />}
 
       {/* FLOATING CUSTOMER SUPPORT CHATBOT WIDGET */}
       {!isAdminRoute && <ChatbotWidget onNavigate={navigateTo} />}

@@ -317,6 +317,15 @@ export interface SiteSettings {
   brandsBadge?: string;
   brandsSpeed?: number;
   brandsMaxItems?: number;
+  promoPopupEnabled?: boolean;
+  exitPopupEnabled?: boolean;
+  popupTitle?: string;
+  popupOffer?: string;
+  metaPixelId?: string;
+  gtmId?: string;
+  googleAdsId?: string;
+  campaignSubject?: string;
+  campaignBody?: string;
 }
 
 export interface PolicySection {

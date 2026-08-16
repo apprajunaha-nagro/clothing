@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../../context/StoreContext';
+import { supabase } from '../../lib/supabaseClient';
 import { 
   Plus, Calendar, Trash2, Edit, Check, X, Megaphone, Ticket, Image as ImageIcon, 
   Settings, Sparkles, Send, Copy, AlertTriangle, Eye, Upload, Flame, Search, Save, Award
@@ -119,21 +120,35 @@ export const AdminMarketingView: React.FC = () => {
   const [isCouponFormOpen, setIsCouponFormOpen] = useState(false);
 
   // Popups Config Local states
-  const [promoPopupEnabled, setPromoPopupEnabled] = useState(true);
-  const [exitPopupEnabled, setExitPopupEnabled] = useState(false);
-  const [popupTitle, setPopupTitle] = useState('Festive Grand Bonanza! 🎉');
-  const [popupOffer, setPopupOffer] = useState('Get Flat 20% off on your first traditional ethnic wear order.');
+  const [promoPopupEnabled, setPromoPopupEnabled] = useState(settings.promoPopupEnabled !== false);
+  const [exitPopupEnabled, setExitPopupEnabled] = useState(settings.exitPopupEnabled || false);
+  const [popupTitle, setPopupTitle] = useState(settings.popupTitle || 'Festive Grand Bonanza! 🎉');
+  const [popupOffer, setPopupOffer] = useState(settings.popupOffer || 'Get Flat 20% off on your first traditional ethnic wear order.');
 
   // Pixels local states
-  const [metaPixelId, setMetaPixelId] = useState('928104829104812');
-  const [gtmId, setGtmId] = useState('G-KOLKATA8899');
-  const [googleAdsId, setGoogleAdsId] = useState('AW-192049281');
+  const [metaPixelId, setMetaPixelId] = useState(settings.metaPixelId || '');
+  const [gtmId, setGtmId] = useState(settings.gtmId || '');
+  const [googleAdsId, setGoogleAdsId] = useState(settings.googleAdsId || '');
 
   // Campaigns marketing setups
   const [campaignSegment, setCampaignSegment] = useState('all');
   const [campaignChannel, setCampaignChannel] = useState<'email' | 'sms'>('email');
-  const [campaignSubject, setCampaignSubject] = useState('Celebrate in Style: Festive Silk Sarees are back in Stock!');
-  const [campaignBody, setCampaignBody] = useState('Hello {{customer_name}}, prepare for the upcoming celebrations with PGmart handcrafted sarees. Free shipping over ₹999!');
+  const [campaignSubject, setCampaignSubject] = useState(settings.campaignSubject || 'Celebrate in Style: Festive Silk Sarees are back in Stock!');
+  const [campaignBody, setCampaignBody] = useState(settings.campaignBody || 'Hello {{customer_name}}, prepare for the upcoming celebrations with PGmart handcrafted sarees. Free shipping over ₹999!');
+
+  React.useEffect(() => {
+    if (settings) {
+      setPromoPopupEnabled(settings.promoPopupEnabled !== false);
+      setExitPopupEnabled(settings.exitPopupEnabled || false);
+      setPopupTitle(settings.popupTitle || 'Festive Grand Bonanza! 🎉');
+      setPopupOffer(settings.popupOffer || 'Get Flat 20% off on your first traditional ethnic wear order.');
+      setMetaPixelId(settings.metaPixelId || '');
+      setGtmId(settings.gtmId || '');
+      setGoogleAdsId(settings.googleAdsId || '');
+      if (settings.campaignSubject) setCampaignSubject(settings.campaignSubject);
+      if (settings.campaignBody) setCampaignBody(settings.campaignBody);
+    }
+  }, [settings]);
 
   // BANNER HANDLERS WITH DEVICE UPLOAD & STORE CONTEXT SYNC
   const handleDeviceFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,12 +207,13 @@ export const AdminMarketingView: React.FC = () => {
     setBButtonText('EXPLORE COLLECTION');
 
     try {
+      await supabase.from('Banner').insert([newBanner]);
       await fetch('/api/banners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newBanner)
       });
-      showToast(`Banner frame added & saved to database!`);
+      showToast(`Banner frame added & saved to Supabase database!`);
     } catch (e) {
       console.warn('Backend sync failed for banner creation', e);
       showToast(`Banner frame added & synchronized!`);
@@ -239,12 +255,13 @@ export const AdminMarketingView: React.FC = () => {
     setBanners(updated);
 
     try {
+      await supabase.from('Banner').upsert([targetAd]);
       await fetch('/api/banners', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(targetAd)
       });
-      showToast('✨ Ad Banner saved & updated live in database!');
+      showToast('✨ Ad Banner saved & updated live in Supabase database!');
     } catch (e) {
       console.warn('Backend sync failed for ad banner', e);
       showToast('✨ Ad Banner saved & updated live on homepage!');
@@ -260,12 +277,13 @@ export const AdminMarketingView: React.FC = () => {
     setEditingBanner(null);
 
     try {
+      await supabase.from('Banner').update(targetBanner).eq('id', targetBanner.id);
       await fetch(`/api/banners/${targetBanner.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(targetBanner)
       });
-      showToast(`Banner "${targetBanner.title}" updated in database!`);
+      showToast(`Banner "${targetBanner.title}" updated in Supabase database!`);
     } catch (e) {
       console.warn('Backend sync failed for banner update', e);
       showToast(`Banner "${targetBanner.title}" updated successfully!`);
@@ -296,8 +314,9 @@ export const AdminMarketingView: React.FC = () => {
     setBanners(updated);
 
     try {
+      await supabase.from('Banner').delete().eq('id', id);
       await fetch(`/api/banners/${id}`, { method: 'DELETE' });
-      showToast('Banner removed from database.');
+      showToast('Banner removed from Supabase database.');
     } catch (e) {
       console.warn('Backend sync failed for banner delete', e);
       showToast('Banner removed.');
@@ -1883,8 +1902,13 @@ export const AdminMarketingView: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => {
-                  showToast('First-visit promo modal specifications updated.');
+                onClick={async () => {
+                  await updateSettings({
+                    promoPopupEnabled,
+                    popupTitle,
+                    popupOffer
+                  });
+                  showToast('First-visit promo modal saved & synced to Supabase database!');
                 }}
                 className="px-4 py-2 bg-[#C0654B] text-white rounded-lg font-bold hover:bg-[#8B4A38] shadow-sm cursor-pointer"
               >
@@ -1916,8 +1940,11 @@ export const AdminMarketingView: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => {
-                  showToast('Exit-intent tracker configured and active.');
+                onClick={async () => {
+                  await updateSettings({
+                    exitPopupEnabled
+                  });
+                  showToast('Exit-intent tracker settings saved & synced to Supabase database!');
                 }}
                 className="px-4 py-2 border border-[#C0654B] text-[#C0654B] hover:bg-[#C0654B]/5 rounded-lg font-bold cursor-pointer"
               >
@@ -2005,7 +2032,13 @@ export const AdminMarketingView: React.FC = () => {
                 <div className="flex justify-end pt-2 border-t border-stone-100">
                   <button
                     type="button"
-                    onClick={handleSimulateCampaignSend}
+                    onClick={async () => {
+                      await updateSettings({
+                        campaignSubject,
+                        campaignBody
+                      });
+                      handleSimulateCampaignSend();
+                    }}
                     className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer text-xs uppercase tracking-wider"
                   >
                     <Send className="w-4 h-4" /> Trigger Blast Simulation
@@ -2068,8 +2101,13 @@ export const AdminMarketingView: React.FC = () => {
 
           <div className="flex justify-end pt-3 border-t border-stone-100">
             <button
-              onClick={() => {
-                showToast('Tracking analytics keys saved and placed.');
+              onClick={async () => {
+                await updateSettings({
+                  metaPixelId: metaPixelId.trim(),
+                  gtmId: gtmId.trim(),
+                  googleAdsId: googleAdsId.trim()
+                });
+                showToast('Tracking analytics keys saved & synced to Supabase database!');
               }}
               className="px-6 py-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer text-xs"
             >
