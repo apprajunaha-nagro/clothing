@@ -1213,30 +1213,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const createProduct = async (productData: Partial<Product>) => {
     const newProduct: Product = {
       id: productData.id || `p-${Date.now()}`,
-      name: productData.name || 'New Product',
-      slug: productData.slug || (productData.name || 'new-product').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      brandName: productData.brandName || settings.storeName,
+      name: productData.name || 'New Stylish Apparel',
+      slug: productData.slug || (productData.name ? productData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : `item-${Date.now()}`),
       categoryId: productData.categoryId || 'women',
       subcategoryId: productData.subcategoryId || 'women-ethnic',
-      typeId: productData.typeId || 'type-sarees',
-      basePrice: productData.basePrice || 1999,
-      discountPrice: productData.discountPrice,
-      fabric: productData.fabric || 'Cotton Blend',
+      typeId: productData.typeId || 'saree',
+      brandId: productData.brandId || 'b1',
+      brandName: productData.brandName || 'PGmart Essentials',
+      description: productData.description || 'Premium quality fabric crafted with high precision and luxury finish.',
+      fabric: productData.fabric || 'Cotton Silk Blend',
       fit: productData.fit || 'Regular Fit',
-      occasion: productData.occasion || 'Everyday',
-      availableSizes: productData.availableSizes || ['S', 'M', 'L', 'XL'],
-      colors: productData.colors || [
-        {
-          name: 'Primary',
-          hex: settings.primaryColor || '#C0654B',
-          images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80']
-        }
-      ],
+      occasion: productData.occasion || 'Festive / Casual',
+      basePrice: Number(productData.basePrice) || 1999,
+      discountPrice: productData.discountPrice ? Number(productData.discountPrice) : undefined,
+      discountPercent: productData.discountPercent ? Number(productData.discountPercent) : undefined,
       tags: productData.tags || ['new_arrival'],
-      rating: productData.rating || 4.5,
-      reviewCount: productData.reviewCount || 1,
-      description: productData.description || 'Premium quality apparel designed for maximum comfort and style.',
+      isDealOfTheDay: Boolean(productData.isDealOfTheDay),
       status: productData.status || 'published',
+      availableSizes: productData.availableSizes || ['S', 'M', 'L', 'XL'],
+      colors: productData.colors || [{ name: 'Default', hex: '#C0654B', images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80'] }],
+      rating: productData.rating || 5,
+      reviewCount: productData.reviewCount || 0,
       variants: productData.variants || [],
       hsnCode: productData.hsnCode || '5407',
       gstPercent: productData.gstPercent || 5,
@@ -1250,9 +1247,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return [newProduct, ...prev];
     });
 
-    // 1. Direct Supabase insert
+    // 1. Direct Supabase upsert
     try {
-      await supabase.from('Product').insert([{
+      await supabase.from('Product').upsert({
         id: newProduct.id,
         name: newProduct.name,
         slug: newProduct.slug,
@@ -1268,18 +1265,23 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         hsnCode: newProduct.hsnCode,
         gstPercent: newProduct.gstPercent,
         basePrice: newProduct.basePrice,
-        discountPrice: newProduct.discountPrice,
-        tags: newProduct.tags,
+        discountPrice: newProduct.discountPrice || null,
+        discountPercent: newProduct.discountPercent || null,
+        tags: typeof newProduct.tags === 'string' ? newProduct.tags : JSON.stringify(newProduct.tags || []),
         isDealOfTheDay: Boolean(newProduct.isDealOfTheDay),
         status: newProduct.status,
         variants: typeof newProduct.variants === 'string' ? newProduct.variants : JSON.stringify(newProduct.variants || []),
         colors: typeof newProduct.colors === 'string' ? newProduct.colors : JSON.stringify(newProduct.colors || []),
-        availableSizes: newProduct.availableSizes,
+        availableSizes: typeof newProduct.availableSizes === 'string' ? newProduct.availableSizes : JSON.stringify(newProduct.availableSizes || []),
+        kidsSizes: typeof newProduct.kidsSizes === 'string' ? newProduct.kidsSizes : JSON.stringify(newProduct.kidsSizes || []),
         rating: newProduct.rating,
         reviewCount: newProduct.reviewCount,
-        created_at: newProduct.created_at
-      }]);
-    } catch (e) {}
+        created_at: newProduct.created_at,
+        updated_at: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn('[Supabase createProduct Error]:', e);
+    }
 
     // 2. REST API insert
     try {
@@ -1312,17 +1314,36 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // 1. Direct Supabase Client update
     try {
-      const sbUpdatePayload: any = {};
+      const sbUpdatePayload: any = {
+        updated_at: new Date().toISOString()
+      };
       if (productData.name !== undefined) sbUpdatePayload.name = productData.name;
+      if (productData.slug !== undefined) sbUpdatePayload.slug = productData.slug;
       if (productData.basePrice !== undefined) sbUpdatePayload.basePrice = Number(productData.basePrice);
-      if (productData.discountPrice !== undefined) sbUpdatePayload.discountPrice = Number(productData.discountPrice);
-      if (productData.discountPercent !== undefined) sbUpdatePayload.discountPercent = Number(productData.discountPercent);
+      if (productData.discountPrice !== undefined) sbUpdatePayload.discountPrice = productData.discountPrice !== null ? Number(productData.discountPrice) : null;
+      if (productData.discountPercent !== undefined) sbUpdatePayload.discountPercent = productData.discountPercent !== null ? Number(productData.discountPercent) : null;
       if (productData.isDealOfTheDay !== undefined) sbUpdatePayload.isDealOfTheDay = Boolean(productData.isDealOfTheDay);
       if (productData.tags !== undefined) {
-        sbUpdatePayload.tags = Array.isArray(productData.tags) ? JSON.stringify(productData.tags) : productData.tags;
+        sbUpdatePayload.tags = typeof productData.tags === 'string' ? productData.tags : JSON.stringify(productData.tags);
+      }
+      if (productData.variants !== undefined) {
+        sbUpdatePayload.variants = typeof productData.variants === 'string' ? productData.variants : JSON.stringify(productData.variants);
+      }
+      if (productData.colors !== undefined) {
+        sbUpdatePayload.colors = typeof productData.colors === 'string' ? productData.colors : JSON.stringify(productData.colors);
+      }
+      if (productData.availableSizes !== undefined) {
+        sbUpdatePayload.availableSizes = typeof productData.availableSizes === 'string' ? productData.availableSizes : JSON.stringify(productData.availableSizes);
+      }
+      if (productData.kidsSizes !== undefined) {
+        sbUpdatePayload.kidsSizes = typeof productData.kidsSizes === 'string' ? productData.kidsSizes : JSON.stringify(productData.kidsSizes);
       }
       if (productData.status !== undefined) sbUpdatePayload.status = productData.status;
       if (productData.description !== undefined) sbUpdatePayload.description = productData.description;
+      if (productData.fabric !== undefined) sbUpdatePayload.fabric = productData.fabric;
+      if (productData.fit !== undefined) sbUpdatePayload.fit = productData.fit;
+      if (productData.occasion !== undefined) sbUpdatePayload.occasion = productData.occasion;
+      if (productData.brandName !== undefined) sbUpdatePayload.brandName = productData.brandName;
       if (productData.categoryId !== undefined) sbUpdatePayload.categoryId = productData.categoryId;
       if (productData.subcategoryId !== undefined) sbUpdatePayload.subcategoryId = productData.subcategoryId;
       if (productData.typeId !== undefined) sbUpdatePayload.typeId = productData.typeId;
