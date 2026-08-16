@@ -2444,22 +2444,27 @@ app.get('/api/reviews', async (req, res) => {
 // POST /api/reviews (Customer or Admin create review)
 app.post('/api/reviews', async (req, res) => {
   try {
-    const { productId, customerName, rating, title, comment, photos, isVerifiedPurchase, status } = req.body || {};
+    const { id, productId, customerName, rating, title, comment, photos, isVerifiedPurchase, status } = req.body || {};
     if (!customerName || !comment) {
       return res.status(400).json({ error: 'Customer name and review comment are required' });
     }
 
-    const created = await prisma.review.create({
-      data: {
-        productId: productId || 'w-1',
-        customerName: String(customerName).trim(),
-        rating: Number(rating) || 5,
-        title: String(title || `${rating || 5} Star Experience`).trim(),
-        comment: String(comment).trim(),
-        photos: typeof photos === 'string' ? photos : JSON.stringify(photos || []),
-        isVerifiedPurchase: isVerifiedPurchase !== false,
-        status: status || 'approved'
-      }
+    const reviewId = id || `rev-${Date.now()}`;
+    const reviewData = {
+      productId: productId || 'w-1',
+      customerName: String(customerName).trim(),
+      rating: Number(rating) || 5,
+      title: String(title || `${rating || 5} Star Experience`).trim(),
+      comment: String(comment).trim(),
+      photos: typeof photos === 'string' ? photos : JSON.stringify(photos || []),
+      isVerifiedPurchase: isVerifiedPurchase !== false,
+      status: status || 'pending'
+    };
+
+    const created = await prisma.review.upsert({
+      where: { id: reviewId },
+      update: reviewData,
+      create: { id: reviewId, ...reviewData }
     });
 
     return res.json({ success: true, review: created });

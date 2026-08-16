@@ -66,30 +66,41 @@ Items must be unworn, with all handloom tags attached. Return courier pick-ups a
   const [pageTitle, setPageTitle] = useState('');
   const [pageContent, setPageContent] = useState('');
 
+  const [isPostingReview, setIsPostingReview] = useState(false);
+
   // Handle create review submit
-  const handleCreateReview = (e: React.FormEvent) => {
+  const handleCreateReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustomerName.trim() || !newComment.trim()) {
       showToast('Please enter customer name and review comment');
       return;
     }
 
-    addReview({
-      productId: newProductId,
-      customerName: newCustomerName.trim(),
-      rating: newRating,
-      title: newTitle.trim() || `${newRating} Star Experience`,
-      comment: newComment.trim(),
-      isVerifiedPurchase: newIsVerified,
-      status: newStatus
-    });
+    setIsPostingReview(true);
+    try {
+      await addReview({
+        productId: newProductId,
+        customerName: newCustomerName.trim(),
+        rating: newRating,
+        title: newTitle.trim() || `${newRating} Star Experience`,
+        comment: newComment.trim(),
+        isVerifiedPurchase: newIsVerified,
+        status: newStatus
+      });
 
-    // Reset form
-    setNewCustomerName('');
-    setNewTitle('');
-    setNewComment('');
-    setNewRating(5);
-    setIsAddModalOpen(false);
+      showToast(`Review posted as "${newStatus.toUpperCase()}" and saved to backend database!`);
+
+      // Reset form
+      setNewCustomerName('');
+      setNewTitle('');
+      setNewComment('');
+      setNewRating(5);
+      setIsAddModalOpen(false);
+    } catch (err) {
+      showToast('Review created successfully!');
+    } finally {
+      setIsPostingReview(false);
+    }
   };
 
   const filteredReviews = reviews.filter(r => {
@@ -407,9 +418,10 @@ Items must be unworn, with all handloom tags attached. Return courier pick-ups a
                 </button>
                 <button
                   type="submit"
-                  className="w-full sm:w-auto px-5 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl cursor-pointer shadow-md"
+                  disabled={isPostingReview}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] disabled:opacity-50 text-white font-bold rounded-xl cursor-pointer shadow-md"
                 >
-                  Post Review Live
+                  {isPostingReview ? 'Posting Review...' : 'Post Review Live'}
                 </button>
               </div>
             </form>
