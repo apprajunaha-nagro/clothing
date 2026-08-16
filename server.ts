@@ -1598,11 +1598,17 @@ app.put('/api/products/:id', adminAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const data: any = { ...req.body };
+    delete data.id;
 
-    if (data.tags && typeof data.tags !== 'string') data.tags = JSON.stringify(data.tags);
-    if (data.variants && typeof data.variants !== 'string') data.variants = JSON.stringify(data.variants);
-    if (data.colors && typeof data.colors !== 'string') data.colors = JSON.stringify(data.colors);
-    if (data.availableSizes && typeof data.availableSizes !== 'string') data.availableSizes = JSON.stringify(data.availableSizes);
+    if (data.tags !== undefined && typeof data.tags !== 'string') data.tags = JSON.stringify(data.tags);
+    if (data.variants !== undefined && typeof data.variants !== 'string') data.variants = JSON.stringify(data.variants);
+    if (data.colors !== undefined && typeof data.colors !== 'string') data.colors = JSON.stringify(data.colors);
+    if (data.availableSizes !== undefined && typeof data.availableSizes !== 'string') data.availableSizes = JSON.stringify(data.availableSizes);
+    if (data.kidsSizes !== undefined && typeof data.kidsSizes !== 'string') data.kidsSizes = JSON.stringify(data.kidsSizes);
+    if (data.basePrice !== undefined) data.basePrice = Number(data.basePrice);
+    if (data.discountPrice !== undefined) data.discountPrice = data.discountPrice !== null ? Number(data.discountPrice) : null;
+    if (data.discountPercent !== undefined) data.discountPercent = data.discountPercent !== null ? Number(data.discountPercent) : null;
+    if (data.isDealOfTheDay !== undefined) data.isDealOfTheDay = Boolean(data.isDealOfTheDay);
 
     const updated = await prisma.product.update({
       where: { id },
@@ -1610,7 +1616,8 @@ app.put('/api/products/:id', adminAuth, async (req, res) => {
     });
     res.json({ success: true, product: formatProduct(updated) });
   } catch (err: any) {
-    res.status(404).json({ error: 'Product not found' });
+    console.error(`[PUT /api/products/${req.params.id} Error]:`, err);
+    res.status(500).json({ error: err.message || 'Product update failed' });
   }
 });
 

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useStore } from '../../context/StoreContext';
+import { supabase } from '../../lib/supabaseClient';
 import { Search, ChevronRight, ChevronDown, Plus, Edit2, Trash2, ToggleLeft, ToggleRight, X, ArrowRight, HelpCircle, Upload, Image as ImageIcon } from 'lucide-react';
 import { Category, Subcategory, CategoryType, Product } from '../../types';
 
@@ -129,6 +130,25 @@ export const AdminCatalogView: React.FC = () => {
       });
       setCategories(updatedCategories);
 
+      // 1. Direct Supabase sync
+      try {
+        await supabase.from('Subcategory').upsert({
+          id: subId,
+          categoryId: editTarget.item.categoryId,
+          name,
+          slug,
+          description,
+          image,
+          banner_image: banner,
+          meta_title: metaTitle,
+          meta_description: metaDesc,
+          status
+        });
+      } catch (sbErr) {
+        console.warn('Supabase subcategory update error:', sbErr);
+      }
+
+      // 2. REST API fallback
       try {
         await fetch(`/api/admin/subcategories/${subId}`, {
           method: 'PUT',
@@ -166,6 +186,26 @@ export const AdminCatalogView: React.FC = () => {
       });
       setCategories(updatedCategories);
 
+      // 1. Direct Supabase sync
+      try {
+        await supabase.from('Subcategory').upsert({
+          id: newSubId,
+          categoryId: parentCatId,
+          name,
+          slug,
+          status,
+          description,
+          image: image || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80',
+          banner_image: banner,
+          meta_title: metaTitle,
+          meta_description: metaDesc,
+          sort_order: 1
+        });
+      } catch (sbErr) {
+        console.warn('Supabase subcategory create error:', sbErr);
+      }
+
+      // 2. REST API fallback
       try {
         await fetch('/api/admin/subcategories', {
           method: 'POST',
@@ -209,6 +249,25 @@ export const AdminCatalogView: React.FC = () => {
       });
       setCategories(updatedCategories);
 
+      // 1. Direct Supabase sync
+      try {
+        await supabase.from('CategoryType').upsert({
+          id: typeId,
+          subcategoryId: editTarget.item.subcategoryId,
+          name,
+          slug,
+          description,
+          image,
+          banner_image: banner,
+          meta_title: metaTitle,
+          meta_description: metaDesc,
+          status
+        });
+      } catch (sbErr) {
+        console.warn('Supabase type update error:', sbErr);
+      }
+
+      // 2. REST API fallback
       try {
         await fetch(`/api/admin/types/${typeId}`, {
           method: 'PUT',
@@ -251,6 +310,26 @@ export const AdminCatalogView: React.FC = () => {
       });
       setCategories(updatedCategories);
 
+      // 1. Direct Supabase sync
+      try {
+        await supabase.from('CategoryType').upsert({
+          id: newTypeId,
+          subcategoryId: parentSubId,
+          name,
+          slug,
+          status,
+          description,
+          image,
+          banner_image: banner,
+          meta_title: metaTitle,
+          meta_description: metaDesc,
+          sort_order: 1
+        });
+      } catch (sbErr) {
+        console.warn('Supabase type create error:', sbErr);
+      }
+
+      // 2. REST API fallback
       try {
         await fetch('/api/admin/types', {
           method: 'POST',
@@ -288,6 +367,21 @@ export const AdminCatalogView: React.FC = () => {
       });
       setCategories(updatedCategories);
 
+      // 1. Direct Supabase sync
+      try {
+        await supabase.from('Category').upsert({
+          id: catId,
+          name,
+          slug,
+          image: image || 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80',
+          banner: banner || null,
+          status
+        });
+      } catch (sbErr) {
+        console.warn('Supabase category update error:', sbErr);
+      }
+
+      // 2. REST API fallback
       try {
         await fetch(`/api/categories/${catId}`, {
           method: 'PUT',
@@ -371,6 +465,13 @@ export const AdminCatalogView: React.FC = () => {
         )
       };
     }));
+
+    try {
+      await supabase.from('Subcategory').update({ status: nextStatus }).eq('id', subId);
+    } catch (sbErr) {
+      console.warn('Supabase subcategory toggle error:', sbErr);
+    }
+
     try {
       await fetch(`/api/admin/subcategories/${subId}/status`, {
         method: 'PATCH',
@@ -400,6 +501,13 @@ export const AdminCatalogView: React.FC = () => {
         })
       };
     }));
+
+    try {
+      await supabase.from('CategoryType').update({ status: nextStatus }).eq('id', typeId);
+    } catch (sbErr) {
+      console.warn('Supabase type toggle error:', sbErr);
+    }
+
     try {
       await fetch(`/api/admin/types/${typeId}/status`, {
         method: 'PATCH',
@@ -463,6 +571,13 @@ export const AdminCatalogView: React.FC = () => {
         subcategories: cat.subcategories.filter(s => s.id !== subId)
       };
     }));
+
+    try {
+      await supabase.from('Subcategory').delete().eq('id', subId);
+    } catch (sbErr) {
+      console.warn('Supabase subcategory delete error:', sbErr);
+    }
+
     try {
       await fetch(`/api/admin/subcategories/${subId}`, { method: 'DELETE' });
     } catch (err) {
@@ -485,6 +600,13 @@ export const AdminCatalogView: React.FC = () => {
         })
       };
     }));
+
+    try {
+      await supabase.from('CategoryType').delete().eq('id', typeId);
+    } catch (sbErr) {
+      console.warn('Supabase type delete error:', sbErr);
+    }
+
     try {
       await fetch(`/api/admin/types/${typeId}`, { method: 'DELETE' });
     } catch (err) {

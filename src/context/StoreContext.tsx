@@ -595,6 +595,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         { data: sbCoupons, error: errCoup },
         { data: sbProducts, error: errProd },
         { data: sbCategories, error: errCat },
+        { data: sbSubcategories, error: errSub },
+        { data: sbCategoryTypes, error: errType },
         { data: sbReviews, error: errRev }
       ] = await Promise.all([
         supabase.from('SiteSettings').select('*').eq('id', 'default').maybeSingle(),
@@ -602,7 +604,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         supabase.from('Brand').select('*').order('name', { ascending: true }),
         supabase.from('Coupon').select('*').order('createdAt', { ascending: false }),
         supabase.from('Product').select('*'),
-        supabase.from('Category').select('*'),
+        supabase.from('Category').select('*').order('sortOrder', { ascending: true }),
+        supabase.from('Subcategory').select('*').order('sort_order', { ascending: true }),
+        supabase.from('CategoryType').select('*').order('sort_order', { ascending: true }),
         supabase.from('Review').select('*').order('createdAt', { ascending: false })
       ]);
 
@@ -629,8 +633,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         try { localStorage.setItem('pgmart_coupons', JSON.stringify(sbCoupons)); } catch {}
       }
 
+      // ASSEMBLE 3-TIER CATEGORIES (Category -> Subcategory -> CategoryType)
       if (!errCat && sbCategories && Array.isArray(sbCategories) && sbCategories.length > 0) {
-        setCategories(sbCategories);
+        const subMap = new Map<string, any>();
+        (sbSubcategories || []).forEach((sub: any) => {
+          subMap.set(sub.id, { ...sub, types: [] });
+        });
+
+        (sbCategoryTypes || []).forEach((type: any) => {
+          const parent = subMap.get(type.subcategoryId);
+          if (parent) {
+            parent.types.push(type);
+          }
+        });
+
+        const assembledCategories = sbCategories.map((cat: any) => {
+          const matchingSubs = Array.from(subMap.values()).filter((s: any) => s.categoryId === cat.id);
+          return {
+            ...cat,
+            subcategories: matchingSubs
+          };
+        });
+
+        setCategories(assembledCategories);
       }
 
       if (!errRev && sbReviews && Array.isArray(sbReviews) && sbReviews.length > 0) {
@@ -740,6 +765,15 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setProducts(normalized);
           }
         });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Category' }, () => {
+        reloadCatalog();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Subcategory' }, () => {
+        reloadCatalog();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'CategoryType' }, () => {
+        reloadCatalog();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'Review' }, () => {
         supabase.from('Review').select('*').order('createdAt', { ascending: false }).then(({ data }) => {
@@ -1275,7 +1309,6 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateProduct = async (id: string, productData: Partial<Product>) => {
     setProducts(prev => prev.map(p => p.id === id ? { ...p, ...productData } : p));
-    showToast('Product updated successfully');
 
     // 1. Direct Supabase Client update
     try {
@@ -1285,12 +1318,19 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (productData.discountPrice !== undefined) sbUpdatePayload.discountPrice = Number(productData.discountPrice);
       if (productData.discountPercent !== undefined) sbUpdatePayload.discountPercent = Number(productData.discountPercent);
       if (productData.isDealOfTheDay !== undefined) sbUpdatePayload.isDealOfTheDay = Boolean(productData.isDealOfTheDay);
-      if (productData.tags !== undefined) sbUpdatePayload.tags = productData.tags;
+      if (productData.tags !== undefined) {
+        sbUpdatePayload.tags = Array.isArray(productData.tags) ? JSON.stringify(productData.tags) : productData.tags;
+      }
       if (productData.status !== undefined) sbUpdatePayload.status = productData.status;
       if (productData.description !== undefined) sbUpdatePayload.description = productData.description;
+      if (productData.categoryId !== undefined) sbUpdatePayload.categoryId = productData.categoryId;
+      if (productData.subcategoryId !== undefined) sbUpdatePayload.subcategoryId = productData.subcategoryId;
+      if (productData.typeId !== undefined) sbUpdatePayload.typeId = productData.typeId;
 
       await supabase.from('Product').update(sbUpdatePayload).eq('id', id);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[Supabase updateProduct Error]:', e);
+    }
 
     // 2. REST API update
     try {

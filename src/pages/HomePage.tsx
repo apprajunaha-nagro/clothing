@@ -105,18 +105,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
     return activeList.slice(0, limit);
   }, [brands, settings.brandsMaxItems]);
 
-  // Specific Product Rails (Guaranteed Minimum 20 Products Each)
+  // Specific Product Rails (Deals of the Day & New Arrivals from Admin Customization)
   const dealsOfTheDay = React.useMemo(() => {
     const tagged = products.filter(p => p.isDealOfTheDay || (Array.isArray(p.tags) && p.tags.includes('deal_of_the_day')));
-    if (tagged.length >= 20) return tagged.slice(0, 30);
+    if (tagged.length > 0) {
+      const taggedIds = new Set(tagged.map(p => p.id));
+      const minDisc = settings.dealsMinDiscount ?? 10;
+      const fallback = products
+        .filter(p => !taggedIds.has(p.id) && (p.discountPercent ? p.discountPercent >= minDisc : true))
+        .sort((a, b) => (b.discountPercent || 0) - (a.discountPercent || 0));
+      return [...tagged, ...fallback].slice(0, 30);
+    }
     
-    const taggedIds = new Set(tagged.map(p => p.id));
     const minDisc = settings.dealsMinDiscount ?? 10;
-    const fallback = products
-      .filter(p => !taggedIds.has(p.id) && (p.discountPercent ? p.discountPercent >= minDisc : true))
-      .sort((a, b) => (b.discountPercent || 0) - (a.discountPercent || 0));
-    
-    return [...tagged, ...fallback].slice(0, 30);
+    return products
+      .filter(p => (p.discountPercent ? p.discountPercent >= minDisc : true))
+      .sort((a, b) => (b.discountPercent || 0) - (a.discountPercent || 0))
+      .slice(0, 30);
   }, [products, settings.dealsMinDiscount]);
 
   const trendingSarees = React.useMemo(() => {
@@ -129,16 +134,16 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   }, [products]);
 
   const newArrivals = React.useMemo(() => {
-    const targetCount = Math.max(20, settings.newArrivalsMaxItems || 20);
+    const maxItems = settings.newArrivalsMaxItems || 10;
     const tagged = products.filter(p => Array.isArray(p.tags) && p.tags.includes('new_arrival'));
-    if (tagged.length >= targetCount) return tagged.slice(0, targetCount);
+    if (tagged.length >= maxItems) return tagged.slice(0, maxItems);
 
     const taggedIds = new Set(tagged.map(p => p.id));
     const sortedNewest = [...products]
       .filter(p => !taggedIds.has(p.id))
       .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
-    return [...tagged, ...sortedNewest].slice(0, targetCount);
+    return [...tagged, ...sortedNewest].slice(0, maxItems);
   }, [products, settings.newArrivalsMaxItems]);
 
   const activeAdBanners = React.useMemo(() => {
