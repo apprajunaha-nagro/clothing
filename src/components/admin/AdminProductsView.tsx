@@ -325,20 +325,21 @@ export const AdminProductsView: React.FC = () => {
 
   // CLONE / DUPLICATE
   const handleDuplicateProduct = (prod: Product) => {
+    const uniqueSuffix = Date.now().toString().slice(-4);
     const cloned: Product = {
       ...prod,
-      id: `p-${Date.now()}`,
-      name: `${prod.name} (Copy)`,
-      slug: `${prod.slug}-copy-${Date.now().toString().slice(-4)}`,
+      id: `p-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      name: prod.name, // Clean product title, without "(Copy)"
+      slug: `${prod.slug}-${uniqueSuffix}`,
       created_at: new Date().toISOString(),
       variants: prod.variants.map(v => ({
         ...v,
         id: `v-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        sku: `${v.sku}-COPY`
+        sku: `${v.sku}-${uniqueSuffix}`
       }))
     };
     createProduct(cloned);
-    showToast(`Duplicated "${prod.name}" successfully.`);
+    showToast(`Product "${prod.name}" duplicated & published successfully!`);
   };
 
   // SOFT DELETE WORKFLOW
@@ -718,7 +719,7 @@ export const AdminProductsView: React.FC = () => {
           const worksheet = workbook.Sheets[firstSheetName];
           const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
           setCsvText(csvOutput);
-          showToast(`📊 Excel Sheet "${file.name}" (${firstSheetName}) parsed! Click "Parse & Import Data" to process.`);
+          showToast(`📊 Excel Sheet "${file.name}" loaded! Click "Parse & Import Data" to publish.`);
         } catch (err) {
           alert('Failed to parse Excel workbook. Please check file format.');
         }
@@ -729,85 +730,137 @@ export const AdminProductsView: React.FC = () => {
         const content = event.target?.result as string;
         if (content) {
           setCsvText(content);
-          showToast(`Loaded file "${file.name}". Click "Parse & Import Data" to process.`);
+          showToast(`Loaded CSV file "${file.name}". Click "Parse & Import Data" to publish.`);
         }
       };
       reader.readAsText(file);
     }
   };
 
-  // PARSE & IMPORT CSV DATA INTO CATALOG & DATABASE
+  // PARSE & IMPORT EXCEL/CSV DATA INTO CATALOG & DATABASE
   const handleImportCSVText = async () => {
     if (!csvText.trim()) {
-      showToast('Please paste CSV text or select a CSV file first.');
+      showToast('Please paste CSV text or upload an Excel / CSV file first.');
       return;
     }
     try {
       const rawLines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
       if (rawLines.length === 0) return;
 
+      // Extract header line
+      let headerCols: string[] = [];
       let startIndex = 0;
-      const firstLineLower = rawLines[0].toLowerCase();
-      if (firstLineLower.includes('name') || firstLineLower.includes('category') || firstLineLower.includes('price')) {
+      const firstLine = rawLines[0];
+      const parsedFirst = (firstLine.match(/(?:[^\s",]+|"[^"]*")+/g) || firstLine.split(',')).map(c => c.trim().replace(/^"|"$/g, '').toLowerCase());
+
+      if (parsedFirst.some(c => c.includes('name') || c.includes('title') || c.includes('price') || c.includes('cat') || c.includes('sku'))) {
+        headerCols = parsedFirst;
         startIndex = 1;
       }
+
+      const getColIndex = (names: string[]): number => {
+        return headerCols.findIndex(h => names.some(n => h.includes(n)));
+      };
+
+      const nameIdx = getColIndex(['name', 'title', 'product']);
+      const catIdx = getColIndex(['category', 'cat']);
+      const subIdx = getColIndex(['subcategory', 'sub']);
+      const typeIdx = getColIndex(['type', 'style']);
+      const basePriceIdx = getColIndex(['base', 'price', 'mrp']);
+      const discPriceIdx = getColIndex(['discount', 'sale', 'offer']);
+      const skuIdx = getColIndex(['sku', 'code']);
+      const stockIdx = getColIndex(['stock', 'qty', 'quantity']);
+      const fabricIdx = getColIndex(['fabric', 'material']);
+      const fitIdx = getColIndex(['fit']);
+      const occasionIdx = getColIndex(['occasion']);
+      const imgIdx = getColIndex(['image', 'photo', 'url', 'img']);
+      const tagsIdx = getColIndex(['tags', 'tag']);
 
       let importedCount = 0;
 
       for (let i = startIndex; i < rawLines.length; i++) {
         const line = rawLines[i];
-        const cols = line.match(/(?:[^\s",]+|"[^"]*")+/g) || line.split(',');
-        if (cols.length >= 3) {
-          const cleanCols = cols.map(c => c.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
-          const [name, categoryId, subcategoryId, typeId, basePrice, discountPrice, sku, stock, fabric, occasion] = cleanCols;
+        const rawCols = line.match(/(?:[^\s",]+|"[^"]*")+/g) || line.split(',');
+        if (rawCols.length >= 2) {
+          const cols = rawCols.map(c => c.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
 
-          if (name && basePrice) {
-            const bPrice = Number(basePrice) || 1999;
-            const dPrice = discountPrice ? Number(discountPrice) : undefined;
-            const pStock = stock ? Number(stock) : 30;
+          const name = (nameIdx >= 0 && cols[nameIdx]) ? cols[nameIdx] : (cols[0] || '');
+          if (!name) continue;
 
-            const prodData: Partial<Product> = {
-              name: name.trim(),
-              slug: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-              categoryId: categoryId || 'women',
-              subcategoryId: subcategoryId || 'women-ethnic',
-              typeId: typeId || 'saree',
-              basePrice: bPrice,
+          const categoryId = (catIdx >= 0 && cols[catIdx]) ? cols[catIdx] : (cols[1] || 'women');
+          const subcategoryId = (subIdx >= 0 && cols[subIdx]) ? cols[subIdx] : (cols[2] || 'w-ethnic');
+          const typeId = (typeIdx >= 0 && cols[typeIdx]) ? cols[typeIdx] : (cols[3] || 'wt-saree');
+
+          const rawBasePrice = (basePriceIdx >= 0 && cols[basePriceIdx]) ? cols[basePriceIdx] : (cols[4] || '1999');
+          const bPrice = Number(rawBasePrice.replace(/[^0-9.]/g, '')) || 1999;
+
+          const rawDiscPrice = (discPriceIdx >= 0 && cols[discPriceIdx]) ? cols[discPriceIdx] : (cols[5] || '');
+          const dPrice = rawDiscPrice ? Number(rawDiscPrice.replace(/[^0-9.]/g, '')) : undefined;
+
+          const skuVal = (skuIdx >= 0 && cols[skuIdx]) ? cols[skuIdx] : (cols[6] || `SKU-IMP-${Date.now().toString().slice(-4)}-${i}`);
+          const rawStock = (stockIdx >= 0 && cols[stockIdx]) ? cols[stockIdx] : (cols[7] || '25');
+          const pStock = Number(rawStock.replace(/[^0-9]/g, '')) || 25;
+
+          const fabric = (fabricIdx >= 0 && cols[fabricIdx]) ? cols[fabricIdx] : (cols[8] || 'Cotton Blend');
+          const fit = (fitIdx >= 0 && cols[fitIdx]) ? cols[fitIdx] : 'Regular Fit';
+          const occasion = (occasionIdx >= 0 && cols[occasionIdx]) ? cols[occasionIdx] : (cols[9] || 'Festive');
+          const imgUrl = (imgIdx >= 0 && cols[imgIdx]) ? cols[imgIdx] : 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80';
+
+          const tagsVal: ProductTag[] = (tagsIdx >= 0 && cols[tagsIdx])
+            ? (cols[tagsIdx].split(/[,;]/).map(t => t.trim().toLowerCase().replace(/\s+/g, '_') as ProductTag).filter(Boolean))
+            : ['new_arrival'];
+
+          const discountPercent = (dPrice && bPrice > dPrice) ? Math.round(((bPrice - dPrice) / bPrice) * 100) : undefined;
+          const prodId = `p-imp-${Date.now()}-${i}`;
+
+          const prodData: Partial<Product> = {
+            id: prodId,
+            name: name.trim(),
+            slug: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `item-${Date.now()}-${i}`,
+            categoryId,
+            subcategoryId,
+            typeId,
+            basePrice: bPrice,
+            discountPrice: dPrice,
+            discountPercent,
+            fabric,
+            fit,
+            occasion,
+            status: 'published',
+            tags: tagsVal.length > 0 ? tagsVal : ['new_arrival'],
+            variants: [{
+              id: `v-${prodId}-1`,
+              productId: prodId,
+              size: 'Free Size',
+              color: 'Default',
+              colorHex: settings.primaryColor || '#C0654B',
+              sku: skuVal,
+              price: bPrice,
               discountPrice: dPrice,
-              fabric: fabric || 'Cotton Blend',
-              occasion: occasion || 'Festive',
-              status: 'published',
-              variants: [{
-                id: `v-imp-${Date.now()}-${i}`,
-                productId: `p-imp-${Date.now()}-${i}`,
-                size: 'Free Size',
-                color: 'Default',
-                colorHex: settings.primaryColor || '#C0654B',
-                sku: sku || `SKU-IMP-${Date.now().toString().slice(-4)}-${i}`,
-                price: bPrice,
-                discountPrice: dPrice,
-                stock: pStock,
-                images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80']
-              }],
-              colors: [{ name: 'Default', hex: settings.primaryColor || '#C0654B', images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80'] }],
-              availableSizes: ['Free Size']
-            };
+              stock: pStock,
+              images: [imgUrl]
+            }],
+            colors: [{ name: 'Default', hex: settings.primaryColor || '#C0654B', images: [imgUrl] }],
+            availableSizes: ['Free Size'],
+            rating: 5,
+            reviewCount: 1,
+            created_at: new Date().toISOString()
+          };
 
-            await createProduct(prodData);
-            importedCount++;
-          }
+          await createProduct(prodData);
+          importedCount++;
         }
       }
 
       if (importedCount > 0) {
-        showToast(`🎉 Bulk imported & saved ${importedCount} products into database!`);
+        showToast(`🎉 Bulk imported & saved ${importedCount} products into database & storefront!`);
         setCsvText('');
         setShowCsvImport(false);
       } else {
-        alert('Could not parse any valid product rows. Please check format.');
+        alert('Could not parse any valid product rows. Please check table formatting.');
       }
     } catch (err: any) {
-      alert('Error parsing CSV file. Please verify CSV formatting.');
+      alert('Error parsing Excel / CSV file. Please verify formatting.');
     }
   };
 
