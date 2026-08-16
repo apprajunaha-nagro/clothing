@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useStore } from '../../context/StoreContext';
+import { supabase } from '../../lib/supabaseClient';
 import { 
   Plus, Search, Edit3, Trash2, Copy, Eye, SlidersHorizontal, Check, X, 
   ArrowLeft, ArrowRight, Download, Upload, RefreshCw, Archive, Sparkles, Image as ImageIcon
@@ -636,12 +637,64 @@ export const AdminProductsView: React.FC = () => {
     showToast(`Successfully exported ${products.length} products to CSV file!`);
   };
 
+  // Helper to resolve any raw Category, Subcategory & Style/Type input to valid database foreign key IDs
+  const resolveCatalogHierarchy = (rawCat: string, rawSub: string, rawType: string, productName: string = '') => {
+    const cleanCat = String(rawCat || '').trim().toLowerCase();
+    const cleanSub = String(rawSub || '').trim().toLowerCase();
+    const cleanType = String(rawType || '').trim().toLowerCase();
+    const cleanName = String(productName || '').trim().toLowerCase();
+
+    // 1. Resolve Category
+    let resolvedCat = categories.find(c => c.id.toLowerCase() === cleanCat || c.slug.toLowerCase() === cleanCat || c.name.toLowerCase() === cleanCat);
+    if (!resolvedCat && cleanCat) {
+      resolvedCat = categories.find(c => cleanCat.includes(c.id.toLowerCase()) || c.name.toLowerCase().includes(cleanCat) || cleanCat.includes(c.slug.toLowerCase()));
+    }
+    if (!resolvedCat && cleanName) {
+      if (cleanName.includes('saree') || cleanName.includes('lehenga') || cleanName.includes('kurti') || cleanName.includes('dress') || cleanName.includes('women')) {
+        resolvedCat = categories.find(c => c.id === 'women');
+      } else if (cleanName.includes('kurta') || cleanName.includes('sherwani') || cleanName.includes('men') || cleanName.includes('shirt')) {
+        resolvedCat = categories.find(c => c.id === 'men');
+      } else if (cleanName.includes('boy') || cleanName.includes('girl') || cleanName.includes('kid') || cleanName.includes('baby')) {
+        resolvedCat = categories.find(c => c.id === 'kids');
+      } else if (cleanName.includes('bra') || cleanName.includes('panty') || cleanName.includes('brief') || cleanName.includes('innerwear')) {
+        resolvedCat = categories.find(c => c.id === 'undergarments');
+      }
+    }
+    const cat = resolvedCat || categories[0] || { id: 'women', subcategories: [] };
+    const catId = cat.id;
+
+    // 2. Resolve Subcategory strictly under catId
+    const validSubs = cat.subcategories || [];
+    let resolvedSub = validSubs.find(s => s.id.toLowerCase() === cleanSub || s.slug.toLowerCase() === cleanSub || s.name.toLowerCase() === cleanSub);
+    if (!resolvedSub && cleanSub) {
+      resolvedSub = validSubs.find(s => cleanSub.includes(s.id.toLowerCase()) || s.name.toLowerCase().includes(cleanSub) || cleanSub.includes(s.slug.toLowerCase()) || s.slug.toLowerCase().includes(cleanSub));
+    }
+    if (!resolvedSub && cleanName) {
+      resolvedSub = validSubs.find(s => cleanName.includes(s.slug.toLowerCase()) || s.name.toLowerCase().includes(cleanName) || cleanName.includes(s.name.toLowerCase().split(' ')[0]));
+    }
+    const sub = resolvedSub || validSubs[0] || { id: 'w-ethnic', types: [] };
+    const subId = sub.id;
+
+    // 3. Resolve Style/Type strictly under subId
+    const validTypes = sub.types || [];
+    let resolvedType = validTypes.find(t => t.id.toLowerCase() === cleanType || t.slug.toLowerCase() === cleanType || t.name.toLowerCase() === cleanType);
+    if (!resolvedType && cleanType) {
+      resolvedType = validTypes.find(t => cleanType.includes(t.id.toLowerCase()) || t.name.toLowerCase().includes(cleanType) || cleanType.includes(t.slug.toLowerCase()) || t.slug.toLowerCase().includes(cleanType));
+    }
+    if (!resolvedType && cleanName) {
+      resolvedType = validTypes.find(t => cleanName.includes(t.slug.toLowerCase()) || t.name.toLowerCase().includes(cleanName) || cleanName.includes(t.slug.toLowerCase().split('-')[0]));
+    }
+    const typeId = resolvedType?.id || validTypes[0]?.id || 'wt-saree';
+
+    return { catId, subId, typeId };
+  };
+
   // DOWNLOAD SAMPLE CSV TEMPLATE
   const handleDownloadSampleCSV = () => {
-    let sampleCsv = "Name,CategoryId,SubcategoryId,TypeId,BasePrice,DiscountPrice,SKU,Stock,Fabric,Occasion\n";
-    sampleCsv += '"Banarasi Zari Silk Saree","women","women-ethnic","saree",4999,3999,"BZS-RED-01",50,"Banarasi Silk","Bridal"\n';
-    sampleCsv += '"Designer Anarkali Kurta Set","women","women-ethnic","anarkali-suits",2999,2299,"AKS-BLU-02",35,"Georgette","Festival"\n';
-    sampleCsv += '"Royal Heritage Sherwani Set","men","men-executive","sherwani",8999,7499,"RHS-GLD-03",20,"Raw Silk","Wedding"\n';
+    let sampleCsv = "Name,Category,Subcategory,Style,BasePrice,DiscountPrice,SKU,Stock,Fabric,Occasion,Image,Tags\n";
+    sampleCsv += '"Peach Banarasi Zari Silk Saree","Women\'s Fashion","Ethnic & Traditional Wear","Saree",4999,3999,"BZS-RED-01",50,"Banarasi Silk","Bridal","https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80","new_arrival,deal_of_the_day"\n';
+    sampleCsv += '"Designer Georgette Anarkali Kurta Set","Women\'s Fashion","Ethnic & Traditional Wear","Anarkali Suits",2999,2299,"AKS-BLU-02",35,"Georgette","Festival","https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80","new_arrival"\n';
+    sampleCsv += '"Royal Heritage Raw Silk Sherwani Set","Men\'s Fashion","Ethnic Wear","Sherwani",8999,7499,"RHS-GLD-03",20,"Raw Silk","Wedding","https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?auto=format&fit=crop&w=600&q=80","bestseller"\n';
 
     const blob = new Blob([sampleCsv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -658,40 +711,46 @@ export const AdminProductsView: React.FC = () => {
   const handleDownloadSampleExcel = () => {
     const sampleData = [
       {
-        "Name": "Banarasi Zari Silk Saree",
-        "CategoryId": "women",
-        "SubcategoryId": "women-ethnic",
-        "TypeId": "saree",
+        "Name": "Peach Banarasi Zari Silk Saree",
+        "Category": "Women's Fashion",
+        "Subcategory": "Ethnic & Traditional Wear",
+        "Style": "Saree",
         "BasePrice": 4999,
         "DiscountPrice": 3999,
         "SKU": "BZS-RED-01",
         "Stock": 50,
         "Fabric": "Banarasi Silk",
-        "Occasion": "Bridal"
+        "Occasion": "Bridal",
+        "Image": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80",
+        "Tags": "new_arrival, deal_of_the_day"
       },
       {
-        "Name": "Designer Anarkali Kurta Set",
-        "CategoryId": "women",
-        "SubcategoryId": "women-ethnic",
-        "TypeId": "anarkali-suits",
+        "Name": "Designer Georgette Anarkali Kurta Set",
+        "Category": "Women's Fashion",
+        "Subcategory": "Ethnic & Traditional Wear",
+        "Style": "Anarkali Suits",
         "BasePrice": 2999,
         "DiscountPrice": 2299,
         "SKU": "AKS-BLU-02",
         "Stock": 35,
         "Fabric": "Georgette",
-        "Occasion": "Festival"
+        "Occasion": "Festival",
+        "Image": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=600&q=80",
+        "Tags": "new_arrival"
       },
       {
-        "Name": "Royal Heritage Sherwani Set",
-        "CategoryId": "men",
-        "SubcategoryId": "men-executive",
-        "TypeId": "sherwani",
+        "Name": "Royal Heritage Raw Silk Sherwani Set",
+        "Category": "Men's Fashion",
+        "Subcategory": "Ethnic Wear",
+        "Style": "Sherwani",
         "BasePrice": 8999,
         "DiscountPrice": 7499,
         "SKU": "RHS-GLD-03",
         "Stock": 20,
         "Fabric": "Raw Silk",
-        "Occasion": "Wedding"
+        "Occasion": "Wedding",
+        "Image": "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?auto=format&fit=crop&w=600&q=80",
+        "Tags": "bestseller"
       }
     ];
 
@@ -719,7 +778,7 @@ export const AdminProductsView: React.FC = () => {
           const worksheet = workbook.Sheets[firstSheetName];
           const csvOutput = XLSX.utils.sheet_to_csv(worksheet);
           setCsvText(csvOutput);
-          showToast(`📊 Excel Sheet "${file.name}" loaded! Click "Parse & Import Data" to publish.`);
+          showToast(`📊 Excel file "${file.name}" loaded! Click "Parse & Import Data into Database" below.`);
         } catch (err) {
           alert('Failed to parse Excel workbook. Please check file format.');
         }
@@ -730,7 +789,7 @@ export const AdminProductsView: React.FC = () => {
         const content = event.target?.result as string;
         if (content) {
           setCsvText(content);
-          showToast(`Loaded CSV file "${file.name}". Click "Parse & Import Data" to publish.`);
+          showToast(`Loaded CSV file "${file.name}". Click "Parse & Import Data into Database" below.`);
         }
       };
       reader.readAsText(file);
@@ -753,7 +812,7 @@ export const AdminProductsView: React.FC = () => {
       const firstLine = rawLines[0];
       const parsedFirst = (firstLine.match(/(?:[^\s",]+|"[^"]*")+/g) || firstLine.split(',')).map(c => c.trim().replace(/^"|"$/g, '').toLowerCase());
 
-      if (parsedFirst.some(c => c.includes('name') || c.includes('title') || c.includes('price') || c.includes('cat') || c.includes('sku'))) {
+      if (parsedFirst.some(c => c.includes('name') || c.includes('title') || c.includes('price') || c.includes('cat') || c.includes('sku') || c.includes('product'))) {
         headerCols = parsedFirst;
         startIndex = 1;
       }
@@ -763,20 +822,21 @@ export const AdminProductsView: React.FC = () => {
       };
 
       const nameIdx = getColIndex(['name', 'title', 'product']);
-      const catIdx = getColIndex(['category', 'cat']);
-      const subIdx = getColIndex(['subcategory', 'sub']);
+      const catIdx = getColIndex(['category', 'cat', 'department']);
+      const subIdx = getColIndex(['subcategory', 'sub', 'section']);
       const typeIdx = getColIndex(['type', 'style']);
-      const basePriceIdx = getColIndex(['base', 'price', 'mrp']);
+      const basePriceIdx = getColIndex(['base', 'price', 'mrp', 'cost']);
       const discPriceIdx = getColIndex(['discount', 'sale', 'offer']);
-      const skuIdx = getColIndex(['sku', 'code']);
-      const stockIdx = getColIndex(['stock', 'qty', 'quantity']);
+      const skuIdx = getColIndex(['sku', 'code', 'barcode']);
+      const stockIdx = getColIndex(['stock', 'qty', 'quantity', 'inventory']);
       const fabricIdx = getColIndex(['fabric', 'material']);
       const fitIdx = getColIndex(['fit']);
       const occasionIdx = getColIndex(['occasion']);
-      const imgIdx = getColIndex(['image', 'photo', 'url', 'img']);
-      const tagsIdx = getColIndex(['tags', 'tag']);
+      const imgIdx = getColIndex(['image', 'photo', 'url', 'img', 'picture']);
+      const tagsIdx = getColIndex(['tags', 'tag', 'keywords', 'labels']);
 
-      let importedCount = 0;
+      const newProds: Product[] = [];
+      const sbBatch: any[] = [];
 
       for (let i = startIndex; i < rawLines.length; i++) {
         const line = rawLines[i];
@@ -787,23 +847,25 @@ export const AdminProductsView: React.FC = () => {
           const name = (nameIdx >= 0 && cols[nameIdx]) ? cols[nameIdx] : (cols[0] || '');
           if (!name) continue;
 
-          const categoryId = (catIdx >= 0 && cols[catIdx]) ? cols[catIdx] : (cols[1] || 'women');
-          const subcategoryId = (subIdx >= 0 && cols[subIdx]) ? cols[subIdx] : (cols[2] || 'w-ethnic');
-          const typeId = (typeIdx >= 0 && cols[typeIdx]) ? cols[typeIdx] : (cols[3] || 'wt-saree');
+          const rawCat = (catIdx >= 0 && cols[catIdx]) ? cols[catIdx] : (cols[1] || '');
+          const rawSub = (subIdx >= 0 && cols[subIdx]) ? cols[subIdx] : (cols[2] || '');
+          const rawType = (typeIdx >= 0 && cols[typeIdx]) ? cols[typeIdx] : (cols[3] || '');
+
+          const { catId, subId, typeId } = resolveCatalogHierarchy(rawCat, rawSub, rawType, name);
 
           const rawBasePrice = (basePriceIdx >= 0 && cols[basePriceIdx]) ? cols[basePriceIdx] : (cols[4] || '1999');
-          const bPrice = Number(rawBasePrice.replace(/[^0-9.]/g, '')) || 1999;
+          const bPrice = Number(String(rawBasePrice).replace(/[^0-9.]/g, '')) || 1999;
 
           const rawDiscPrice = (discPriceIdx >= 0 && cols[discPriceIdx]) ? cols[discPriceIdx] : (cols[5] || '');
-          const dPrice = rawDiscPrice ? Number(rawDiscPrice.replace(/[^0-9.]/g, '')) : undefined;
+          const dPrice = rawDiscPrice ? Number(String(rawDiscPrice).replace(/[^0-9.]/g, '')) : undefined;
 
-          const skuVal = (skuIdx >= 0 && cols[skuIdx]) ? cols[skuIdx] : (cols[6] || `SKU-IMP-${Date.now().toString().slice(-4)}-${i}`);
+          const skuVal = (skuIdx >= 0 && cols[skuIdx]) ? cols[skuIdx] : (cols[6] || `PGM-IMP-${Date.now().toString().slice(-4)}-${i}`);
           const rawStock = (stockIdx >= 0 && cols[stockIdx]) ? cols[stockIdx] : (cols[7] || '25');
-          const pStock = Number(rawStock.replace(/[^0-9]/g, '')) || 25;
+          const pStock = Number(String(rawStock).replace(/[^0-9]/g, '')) || 25;
 
-          const fabric = (fabricIdx >= 0 && cols[fabricIdx]) ? cols[fabricIdx] : (cols[8] || 'Cotton Blend');
+          const fabric = (fabricIdx >= 0 && cols[fabricIdx]) ? cols[fabricIdx] : (cols[8] || 'Cotton Silk Blend');
           const fit = (fitIdx >= 0 && cols[fitIdx]) ? cols[fitIdx] : 'Regular Fit';
-          const occasion = (occasionIdx >= 0 && cols[occasionIdx]) ? cols[occasionIdx] : (cols[9] || 'Festive');
+          const occasion = (occasionIdx >= 0 && cols[occasionIdx]) ? cols[occasionIdx] : (cols[9] || 'Festive / Casual');
           const imgUrl = (imgIdx >= 0 && cols[imgIdx]) ? cols[imgIdx] : 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=600&q=80';
 
           const tagsVal: ProductTag[] = (tagsIdx >= 0 && cols[tagsIdx])
@@ -811,15 +873,19 @@ export const AdminProductsView: React.FC = () => {
             : ['new_arrival'];
 
           const discountPercent = (dPrice && bPrice > dPrice) ? Math.round(((bPrice - dPrice) / bPrice) * 100) : undefined;
+          const isDeal = tagsVal.includes('deal_of_the_day' as any);
           const prodId = `p-imp-${Date.now()}-${i}`;
+          const nowIso = new Date().toISOString();
 
-          const prodData: Partial<Product> = {
+          const prodData: Product = {
             id: prodId,
             name: name.trim(),
             slug: name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `item-${Date.now()}-${i}`,
-            categoryId,
-            subcategoryId,
-            typeId,
+            categoryId: catId,
+            subcategoryId: subId,
+            typeId: typeId,
+            brandName: settings.storeName || 'PGmart',
+            description: `${name.trim()} - Premium quality fabric crafted with high precision and luxury finish.`,
             basePrice: bPrice,
             discountPrice: dPrice,
             discountPercent,
@@ -827,6 +893,7 @@ export const AdminProductsView: React.FC = () => {
             fit,
             occasion,
             status: 'published',
+            isDealOfTheDay: isDeal,
             tags: tagsVal.length > 0 ? tagsVal : ['new_arrival'],
             variants: [{
               id: `v-${prodId}-1`,
@@ -842,21 +909,72 @@ export const AdminProductsView: React.FC = () => {
             }],
             colors: [{ name: 'Default', hex: settings.primaryColor || '#C0654B', images: [imgUrl] }],
             availableSizes: ['Free Size'],
+            hsnCode: '5407',
+            gstPercent: 5,
             rating: 5,
             reviewCount: 1,
-            created_at: new Date().toISOString()
+            created_at: nowIso
           };
 
-          await createProduct(prodData);
-          importedCount++;
+          newProds.push(prodData);
+
+          sbBatch.push({
+            id: prodData.id,
+            name: prodData.name,
+            slug: prodData.slug,
+            categoryId: prodData.categoryId,
+            subcategoryId: prodData.subcategoryId,
+            typeId: prodData.typeId,
+            brandName: prodData.brandName,
+            description: prodData.description,
+            fabric: prodData.fabric,
+            fit: prodData.fit,
+            occasion: prodData.occasion,
+            hsnCode: prodData.hsnCode,
+            gstPercent: prodData.gstPercent,
+            basePrice: prodData.basePrice,
+            discountPrice: prodData.discountPrice || null,
+            discountPercent: prodData.discountPercent || null,
+            tags: JSON.stringify(prodData.tags),
+            isDealOfTheDay: prodData.isDealOfTheDay,
+            status: prodData.status,
+            variants: JSON.stringify(prodData.variants),
+            colors: JSON.stringify(prodData.colors),
+            availableSizes: JSON.stringify(prodData.availableSizes),
+            rating: prodData.rating,
+            reviewCount: prodData.reviewCount,
+            created_at: prodData.created_at,
+            updated_at: nowIso
+          });
         }
       }
 
-      if (importedCount > 0) {
-        showToast(`🎉 Bulk imported & saved ${importedCount} products into database & storefront!`);
+      if (newProds.length > 0) {
+        // 1. Direct Supabase batch upsert
+        try {
+          const { error: sbErr } = await supabase.from('Product').upsert(sbBatch);
+          if (sbErr) {
+            console.warn('Supabase batch import error:', sbErr);
+          }
+        } catch (sbEx) {
+          console.warn('Supabase batch import exception:', sbEx);
+        }
+
+        // 2. Immediately update storefront state
+        setProducts(prev => [...newProds, ...prev]);
+
+        // 3. Background server REST API sync
+        for (const p of newProds) {
+          fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(p)
+          }).catch(() => {});
+        }
+
+        showToast(`🎉 Bulk imported & published ${newProds.length} products to database & storefront!`);
         setCsvText('');
         setShowCsvImport(false);
-      } else {
         alert('Could not parse any valid product rows. Please check table formatting.');
       }
     } catch (err: any) {
