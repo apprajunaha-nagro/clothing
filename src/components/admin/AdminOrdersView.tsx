@@ -195,7 +195,7 @@ export const AdminOrdersView: React.FC = () => {
     };
   }, [orders.length]);
 
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc'); // Default 'asc' so earliest order shows on top!
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // Default 'desc' so newest/latest order shows on top!
 
   const ordersListToDisplay = React.useMemo(() => {
     const orderMap = new Map<string, Order>();
@@ -490,8 +490,8 @@ export const AdminOrdersView: React.FC = () => {
           onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
           className="p-2 border border-amber-300 bg-amber-50/80 rounded-xl font-bold text-amber-900 shadow-xs cursor-pointer"
         >
-          <option value="asc">⏰ Earliest First (Oldest on Top)</option>
           <option value="desc">🆕 Latest First (Newest on Top)</option>
+          <option value="asc">⏰ Earliest First (Oldest on Top)</option>
         </select>
       </div>
 
