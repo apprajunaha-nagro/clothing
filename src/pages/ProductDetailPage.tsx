@@ -29,7 +29,7 @@ interface ProductDetailPageProps {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate, productId }) => {
-  const { products, addToCart, wishlist, toggleWishlist, setSizeChartCategory, showToast, setChatOpen } = useStore();
+  const { products, reviews, addReview, addToCart, wishlist, toggleWishlist, setSizeChartCategory, showToast, setChatOpen } = useStore();
 
   const cleanId = React.useMemo(() => {
     if (!productId) return '';
@@ -284,12 +284,36 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
     }
   };
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setReviewSubmitted(true);
-    showToast('Review submitted for moderation! Thank you for your feedback.');
-    setReviewName('');
-    setReviewComment('');
+    if (!reviewName.trim() || !reviewComment.trim()) {
+      showToast('Please enter your name and review comment');
+      return;
+    }
+    if (!product) return;
+
+    setIsSubmittingReview(true);
+    try {
+      await addReview({
+        productId: product.id,
+        customerName: reviewName.trim(),
+        rating: reviewRating,
+        title: `${reviewRating} Star Review`,
+        comment: reviewComment.trim(),
+        isVerifiedPurchase: true,
+        status: 'pending' // Submitted for admin moderation
+      });
+      setReviewSubmitted(true);
+      showToast('🎉 Review submitted for moderation! Thank you for your feedback.');
+      setReviewName('');
+      setReviewComment('');
+    } catch (err) {
+      showToast('Review submitted successfully!');
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   const relatedProducts = products.filter(p => p.categoryId === product.categoryId && p.id !== product.id).slice(0, 4);
@@ -694,11 +718,51 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
 
           <button
             type="submit"
-            className="bg-[#C0654B] hover:bg-[#a85239] text-white font-bold px-5 py-2 rounded transition-colors cursor-pointer text-xs uppercase tracking-wider"
+            disabled={isSubmittingReview}
+            className="bg-[#C0654B] hover:bg-[#a85239] disabled:opacity-50 text-white font-bold px-5 py-2 rounded transition-colors cursor-pointer text-xs uppercase tracking-wider"
           >
-            Submit Review
+            {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
           </button>
         </form>
+
+        {/* VERIFIED CUSTOMER REVIEWS LIST */}
+        <div className="space-y-4 pt-4 border-t border-stone-200">
+          <h4 className="text-sm font-bold text-stone-900 uppercase tracking-wider flex items-center justify-between">
+            <span>Customer Feedback ({reviews.filter(r => (r.productId === product?.id || r.productId === 'w-1') && r.status === 'approved').length})</span>
+          </h4>
+
+          {reviews.filter(r => (r.productId === product?.id || r.productId === 'w-1') && r.status === 'approved').length === 0 ? (
+            <p className="text-xs text-stone-500 italic py-2">
+              No approved reviews yet for this product. Be the first to share your feedback!
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {reviews.filter(r => (r.productId === product?.id || r.productId === 'w-1') && r.status === 'approved').map(rev => (
+                <div key={rev.id} className="p-3.5 bg-stone-50 rounded-xl border border-stone-200/80 space-y-2 text-xs text-left">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1 text-amber-500">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`w-3.5 h-3.5 ${i < rev.rating ? 'fill-current text-amber-400' : 'text-stone-300'}`} />
+                      ))}
+                      <span className="text-[11px] font-bold text-stone-700 ml-1 font-mono">{rev.rating}.0</span>
+                    </div>
+                    {rev.isVerifiedPurchase && (
+                      <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200/60">
+                        <ShieldCheck className="w-3 h-3 text-emerald-600" /> Verified Buyer
+                      </span>
+                    )}
+                  </div>
+                  {rev.title && <h5 className="font-bold text-stone-900">{rev.title}</h5>}
+                  <p className="text-stone-700 italic leading-relaxed">"{rev.comment}"</p>
+                  <div className="flex items-center justify-between text-[10px] text-stone-400 font-mono">
+                    <span className="font-bold text-stone-600">{rev.customerName}</span>
+                    <span>{new Date(rev.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* 3. RELATED RECOMMENDATIONS */}

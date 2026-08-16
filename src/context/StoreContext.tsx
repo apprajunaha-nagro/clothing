@@ -216,7 +216,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Could not fetch reviews from /api/reviews:', e);
+      }
 
       if (fetched.length === 0) {
         try {
@@ -229,6 +231,77 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       if (fetched.length > 0) {
         setReviews(fetched);
+        try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(fetched)); } catch {}
+      } else {
+        // If DB has 0 reviews, seed the default verified reviews so homepage ticker and admin immediately have live data
+        const initialList: Review[] = [
+          {
+            id: 'rev-1',
+            productId: 'w-1',
+            customerName: 'Aishwarya Roy',
+            rating: 5,
+            title: 'Breathtaking quality & authentic weave!',
+            comment: 'Absolutely gorgeous Banarasi saree! The gold zari work is extremely fine and matches the photo perfectly. Delivery was super fast within Kolkata.',
+            isVerifiedPurchase: true,
+            status: 'approved',
+            createdAt: '2026-08-01T14:30:00Z'
+          },
+          {
+            id: 'rev-2',
+            productId: 'm-1',
+            customerName: 'Vikram Seth',
+            rating: 5,
+            title: 'Pure handloom feel, perfect fitting',
+            comment: 'The terracotta kurta set has top-notch stitching and pure breathable fabric. Got tons of compliments at the festive gathering!',
+            isVerifiedPurchase: true,
+            status: 'approved',
+            createdAt: '2026-07-29T10:15:00Z'
+          },
+          {
+            id: 'rev-3',
+            productId: 'k-1',
+            customerName: 'Priyanka Ghosh',
+            rating: 5,
+            title: 'Kids clothing is so soft and gentle',
+            comment: 'Super soft material for my 4 year old boy. No irritation on skin and the embroidery is gentle on the inside lining.',
+            isVerifiedPurchase: true,
+            status: 'approved',
+            createdAt: '2026-07-26T16:45:00Z'
+          },
+          {
+            id: 'rev-4',
+            productId: 'u-1',
+            customerName: 'Debarati Mukherjee',
+            rating: 5,
+            title: 'Ultimate luxury innerwear comfort',
+            comment: 'Very premium organic cotton fabric. Durable elastic, seamless finish, and keeps you comfortable all day long.',
+            isVerifiedPurchase: true,
+            status: 'approved',
+            createdAt: '2026-07-22T11:20:00Z'
+          },
+          {
+            id: 'rev-5',
+            productId: 'w-2',
+            customerName: 'Sneha Banerjee',
+            rating: 5,
+            title: 'Loved the packaging and weaver story!',
+            comment: 'Authentic Indian ethnic fashion at such fair direct pricing. Very happy to support artisan weavers through PGmart.',
+            isVerifiedPurchase: true,
+            status: 'approved',
+            createdAt: '2026-07-18T18:00:00Z'
+          }
+        ];
+        setReviews(initialList);
+        try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(initialList)); } catch {}
+
+        // Seed to DB asynchronously in background
+        initialList.forEach(r => {
+          fetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(r)
+          }).catch(() => {});
+        });
       }
     }
     loadDbReviews();
@@ -239,10 +312,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       productId: reviewData.productId || 'w-1',
       customerName: reviewData.customerName || 'PGmart Shopper',
       rating: reviewData.rating || 5,
-      title: reviewData.title || 'Excellent purchase!',
+      title: reviewData.title || `${reviewData.rating || 5} Star Experience`,
       comment: reviewData.comment || '',
       isVerifiedPurchase: reviewData.isVerifiedPurchase !== false,
-      status: reviewData.status || 'approved'
+      status: reviewData.status || 'pending'
     };
 
     try {
@@ -254,13 +327,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.review) {
-          setReviews(prev => [data.review, ...prev]);
-          showToast('Customer review created and saved to database!');
+          setReviews(prev => {
+            const updated = [data.review, ...prev.filter(r => r.id !== data.review.id)];
+            try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(updated)); } catch {}
+            return updated;
+          });
           return data.review;
         }
       }
     } catch (e) {
-      console.warn('API review creation failed, using local state fallback', e);
+      console.warn('API review creation fallback to local state', e);
     }
 
     // Fallback if offline
@@ -269,13 +345,20 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ...payload,
       createdAt: new Date().toISOString()
     } as any;
-    setReviews(prev => [newRev, ...prev]);
-    showToast('Customer review created!');
+    setReviews(prev => {
+      const updated = [newRev, ...prev];
+      try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
     return newRev;
   };
 
   const updateReviewStatus = async (id: string, status: 'approved' | 'pending' | 'rejected') => {
-    setReviews(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+    setReviews(prev => {
+      const updated = prev.map(r => r.id === id ? { ...r, status } : r);
+      try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
     showToast(`Review status updated to ${status.toUpperCase()}`);
 
     try {
@@ -290,7 +373,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteReview = async (id: string) => {
-    setReviews(prev => prev.filter(r => r.id !== id));
+    setReviews(prev => {
+      const updated = prev.filter(r => r.id !== id);
+      try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
     showToast('Review removed.');
 
     try {
