@@ -8,7 +8,7 @@ import { Product, ProductVariant, ColorVariant, ProductTag, Category, KidsSizeVa
 import * as XLSX from 'xlsx';
 
 export const AdminProductsView: React.FC = () => {
-  const { products, setProducts, categories, settings, showToast, createProduct, updateProduct } = useStore();
+  const { products, setProducts, categories, settings, showToast, createProduct, updateProduct, deleteProduct } = useStore();
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -281,36 +281,45 @@ export const AdminProductsView: React.FC = () => {
 
   // INLINE QUICK EDITS
   const handleInlinePriceChange = (id: string, basePrice: number, discPrice?: number) => {
+    const discountPrice = discPrice || undefined;
+    const discountPercent = (discountPrice && basePrice > discountPrice) ? Math.round(((basePrice - discountPrice) / basePrice) * 100) : undefined;
     setProducts(prev => prev.map(p => {
       if (p.id !== id) return p;
       return {
         ...p,
         basePrice,
-        discountPrice: discPrice || undefined,
+        discountPrice,
+        discountPercent,
         variants: p.variants.map(v => ({
           ...v,
           price: basePrice,
-          discountPrice: discPrice || undefined
+          discountPrice
         }))
       };
     }));
+    updateProduct(id, { basePrice, discountPrice, discountPercent });
     showToast('Base price and variants synced successfully.');
   };
 
   const handleInlineStockChange = (id: string, newStock: number) => {
+    const target = products.find(p => p.id === id);
+    if (!target) return;
+    const updatedVariants = target.variants.map(v => ({ ...v, stock: Math.max(0, newStock) }));
     setProducts(prev => prev.map(p => {
       if (p.id !== id) return p;
       return {
         ...p,
-        variants: p.variants.map(v => ({ ...v, stock: Math.max(0, newStock) }))
+        variants: updatedVariants
       };
     }));
+    updateProduct(id, { variants: updatedVariants });
     showToast('Direct stock levels adjusted.');
   };
 
   const handleInlineStatusToggle = (id: string, current: Product['status']) => {
     const nextStatus: Product['status'] = current === 'published' ? 'draft' : 'published';
     setProducts(prev => prev.map(p => p.id === id ? { ...p, status: nextStatus } : p));
+    updateProduct(id, { status: nextStatus });
     showToast(`Product set to ${nextStatus}.`);
   };
 
@@ -328,7 +337,7 @@ export const AdminProductsView: React.FC = () => {
         sku: `${v.sku}-COPY`
       }))
     };
-    setProducts(prev => [cloned, ...prev]);
+    createProduct(cloned);
     showToast(`Duplicated "${prod.name}" successfully.`);
   };
 
@@ -336,38 +345,50 @@ export const AdminProductsView: React.FC = () => {
   const handleSoftDeleteProduct = (prod: Product) => {
     // 1. Add to recentlyDeleted
     setRecentlyDeleted(prev => [prod, ...prev]);
-    // 2. Remove from active product state
+    // 2. Remove from active product state and delete from db
     setProducts(prev => prev.filter(p => p.id !== prod.id));
-    showToast(`"${prod.name}" moved to Recently Deleted Bin (30-day restore safety net active)`);
+    deleteProduct(prod.id);
+    showToast(`"${prod.name}" moved to Recently Deleted Bin.`);
   };
 
   const handleRestoreProduct = (prod: Product) => {
     setProducts(prev => [prod, ...prev]);
     setRecentlyDeleted(prev => prev.filter(p => p.id !== prod.id));
+    createProduct(prod);
     showToast(`"${prod.name}" has been fully restored to active storefront!`);
   };
 
   const handlePermanentDelete = (prodId: string) => {
     if (confirm("Are you sure you want to permanently delete this product? Historical orders will use archived copy, but this item will be destroyed.")) {
       setRecentlyDeleted(prev => prev.filter(p => p.id !== prodId));
+      deleteProduct(prodId);
       showToast('Permanently deleted.');
     }
   };
 
   // BULK ACTIONS
-  const handleExecuteBulkAction = () => {
+  const handleExecuteBulkAction = async () => {
     if (selectedProductIds.length === 0) return;
 
     if (bulkAction === 'delete') {
       const prodsToSoftDelete = products.filter(p => selectedProductIds.includes(p.id));
       setRecentlyDeleted(prev => [...prodsToSoftDelete, ...prev]);
       setProducts(prev => prev.filter(p => !selectedProductIds.includes(p.id)));
-      showToast(`Moved ${selectedProductIds.length} products to Recently Deleted Bin.`);
+      for (const id of selectedProductIds) {
+        deleteProduct(id);
+      }
+      showToast(`Deleted ${selectedProductIds.length} products from storefront and database.`);
     } else if (bulkAction === 'activate') {
       setProducts(prev => prev.map(p => selectedProductIds.includes(p.id) ? { ...p, status: 'published' } : p));
+      for (const id of selectedProductIds) {
+        updateProduct(id, { status: 'published' });
+      }
       showToast(`Activated ${selectedProductIds.length} products.`);
     } else if (bulkAction === 'deactivate') {
       setProducts(prev => prev.map(p => selectedProductIds.includes(p.id) ? { ...p, status: 'draft' } : p));
+      for (const id of selectedProductIds) {
+        updateProduct(id, { status: 'draft' });
+      }
       showToast(`Drafted ${selectedProductIds.length} products.`);
     } else if (bulkAction === 'apply_discount') {
       setProducts(prev => prev.map(p => {
@@ -376,12 +397,20 @@ export const AdminProductsView: React.FC = () => {
         return {
           ...p,
           discountPrice,
+          discountPercent: bulkDiscountVal,
           variants: p.variants.map(v => ({
             ...v,
             discountPrice
           }))
         };
       }));
+      for (const id of selectedProductIds) {
+        const prod = products.find(p => p.id === id);
+        if (prod) {
+          const discountPrice = Math.round(prod.basePrice * (1 - bulkDiscountVal / 100));
+          updateProduct(id, { discountPrice, discountPercent: bulkDiscountVal });
+        }
+      }
       showToast(`Applied bulk ${bulkDiscountVal}% discount to selected products.`);
     }
 

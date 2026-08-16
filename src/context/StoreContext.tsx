@@ -1352,19 +1352,27 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteProduct = async (id: string) => {
+    setProducts(prev => prev.filter(p => p.id !== id));
+
+    // 1. Direct Supabase deletion
+    try {
+      await supabase.from('Product').delete().eq('id', id);
+    } catch (sbErr) {
+      console.warn('Supabase product delete warning:', sbErr);
+    }
+
+    // 2. REST API deletion
     try {
       const res = await adminFetch(`/api/products/${id}`, {
         method: 'DELETE'
       });
       if (res && res.ok) {
-        setProducts(prev => prev.filter(p => p.id !== id));
         showToast('Product deleted from database');
         return;
       }
     } catch (e) {
       console.warn('Backend sync failed for product deletion', e);
     }
-    setProducts(prev => prev.filter(p => p.id !== id));
     showToast('Product deleted');
   };
 

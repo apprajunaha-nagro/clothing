@@ -2262,7 +2262,7 @@ export function generateFullCatalogProducts(categories: Category[]): Product[] {
         else if (cat.id === 'undergarments') brandId = 'b3';
         else if (sub.id.includes('western')) brandId = 'b2';
 
-        const itemCount = 50;
+        const itemCount = 25;
         for (let i = 0; i < itemCount; i++) {
           count++;
           const prodId = `prod_${typeItem.id}_${i + 1}`;
