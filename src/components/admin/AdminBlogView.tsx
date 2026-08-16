@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
+import { useStore } from '../../context/StoreContext';
 import {
   BookOpen, Plus, Pencil, Trash2, Eye, EyeOff, Search,
   X, Check, ChevronDown, Calendar, Clock, User, Tag,
   Save, ArrowLeft, ExternalLink, Image as ImageIcon, FileText
 } from 'lucide-react';
-import { initialBlogPosts, BlogPost } from '../../data/blogPosts';
+import { BlogPost } from '../../types';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type BlogStatus = 'published' | 'draft';
@@ -13,8 +14,8 @@ interface ManagedPost extends BlogPost {
   status: BlogStatus;
 }
 
-const CATEGORIES: BlogPost['category'][] = [
-  'Styling Tips', 'Behind the Brand', 'Fabric Guide', 'Seasonal Edit'
+const CATEGORIES: string[] = [
+  'Styling Tips', 'Behind the Brand', 'Fabric Guide', 'Seasonal Edit', 'Our Story'
 ];
 
 const emptyPost = (): Omit<ManagedPost, 'id'> => ({
@@ -23,15 +24,16 @@ const emptyPost = (): Omit<ManagedPost, 'id'> => ({
   excerpt: '',
   content: [''],
   category: 'Styling Tips',
-  author: '',
-  authorRole: '',
-  authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+  author: 'Priyam Ghoshal',
+  authorRole: 'Founder & CEO, PGmart',
+  authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
   publishedDate: new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }),
-  readTime: '3 min read',
+  readTime: '4 min read',
   featuredImage: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80',
   relatedCategorySlug: 'women',
   tags: [],
   status: 'draft',
+  isPublished: false
 });
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
@@ -54,39 +56,12 @@ const StatusBadge: React.FC<{ status: BlogStatus }> = ({ status }) => (
 
 // ─── Main Component ─────────────────────────────────────────────────────────────
 export const AdminBlogView: React.FC = () => {
-  const [posts, setPosts] = useState<ManagedPost[]>(
-    initialBlogPosts.map(p => ({ ...p, status: 'published' }))
-  );
+  const { blogPosts, saveBlogPost, deleteBlogPost, toggleBlogPostStatus, showToast: globalToast } = useStore();
 
-  const getAdminHeaders = () => {
-    const token = localStorage.getItem('pgmart_admin_token') || sessionStorage.getItem('pgmart_admin_token') || 'pgmart123';
-    return {
-      'Content-Type': 'application/json',
-      'x-admin-token': token,
-      'Authorization': `Bearer ${token}`
-    };
-  };
-
-  // Load blog posts from backend DB on mount
-  useEffect(() => {
-    async function loadDbPosts() {
-      try {
-        const res = await fetch('/api/blog-posts');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setPosts(data.map((p: any) => ({
-              ...p,
-              status: p.isPublished !== false ? 'published' : 'draft'
-            })));
-          }
-        }
-      } catch (e) {
-        console.warn('DB blog posts fetch warning:', e);
-      }
-    }
-    loadDbPosts();
-  }, []);
+  const posts: ManagedPost[] = (blogPosts || []).map(p => ({
+    ...p,
+    status: p.isPublished !== false ? 'published' : 'draft'
+  }));
 
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('All');
@@ -105,6 +80,7 @@ export const AdminBlogView: React.FC = () => {
 
   const showToast = (msg: string) => {
     setToast(msg);
+    if (globalToast) globalToast(msg);
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -113,7 +89,7 @@ export const AdminBlogView: React.FC = () => {
     const matchesSearch = searchQuery === '' ||
       p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      (p.tags && p.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())));
     const matchesCat = filterCategory === 'All' || p.category === filterCategory;
     const matchesStatus = filterStatus === 'All' || p.status === filterStatus;
     return matchesSearch && matchesCat && matchesStatus;
@@ -131,7 +107,7 @@ export const AdminBlogView: React.FC = () => {
   const openEdit = (post: ManagedPost) => {
     setEditingPost(post);
     setDraft({ ...post });
-    setContentLines([...post.content]);
+    setContentLines(post.content && post.content.length > 0 ? [...post.content] : ['']);
     setTagInput('');
     setMode('edit');
   };
@@ -143,100 +119,38 @@ export const AdminBlogView: React.FC = () => {
 
   const handleSave = async () => {
     const finalSlug = draft.slug.trim() || slugify(draft.title);
+    const isPub = draft.status === 'published';
     const payload = {
       ...draft,
+      id: editingPost?.id,
       slug: finalSlug,
       content: contentLines.filter(l => l.trim() !== ''),
-      isPublished: draft.status === 'published'
+      isPublished: isPub,
+      status: draft.status
     };
 
-    try {
-      if (editingPost) {
-        const res = await fetch(`/api/blog-posts/${editingPost.id}`, {
-          method: 'PUT',
-          headers: getAdminHeaders(),
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.post) {
-            setPosts(prev => prev.map(p => p.id === editingPost.id ? { ...data.post, status: data.post.isPublished ? 'published' : 'draft' } : p));
-            showToast(`"${data.post.title}" updated successfully in database!`);
-            setMode('list');
-            return;
-          }
-        }
-      } else {
-        const res = await fetch('/api/blog-posts', {
-          method: 'POST',
-          headers: getAdminHeaders(),
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.post) {
-            setPosts(prev => [{ ...data.post, status: data.post.isPublished ? 'published' : 'draft' }, ...prev]);
-            showToast(`"${data.post.title}" created & saved to database!`);
-            setMode('list');
-            return;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn('API save failed, using local state fallback', e);
-    }
-
-    // Fallback if offline
-    const finalPost: ManagedPost = {
-      ...draft,
-      slug: finalSlug,
-      content: contentLines.filter(l => l.trim() !== ''),
-      id: editingPost?.id || `post-${Date.now()}`
-    };
-
-    if (editingPost) {
-      setPosts(prev => prev.map(p => p.id === editingPost.id ? finalPost : p));
-      showToast(`"${finalPost.title}" updated!`);
+    const saved = await saveBlogPost(payload);
+    if (saved) {
+      showToast(`"${saved.title}" saved successfully to database & live storefront!`);
     } else {
-      setPosts(prev => [finalPost, ...prev]);
-      showToast(`"${finalPost.title}" created!`);
+      showToast(`"${draft.title}" saved!`);
     }
     setMode('list');
   };
 
   const handleDelete = async (id: string) => {
     const post = posts.find(p => p.id === id);
-    setPosts(prev => prev.filter(p => p.id !== id));
+    await deleteBlogPost(id);
     setDeleteConfirmId(null);
-    showToast(`"${post?.title}" deleted.`);
-
-    try {
-      await fetch(`/api/blog-posts/${id}`, {
-        method: 'DELETE',
-        headers: getAdminHeaders()
-      });
-    } catch (e) {
-      console.warn('Backend sync for post deletion failed', e);
-    }
+    showToast(`"${post?.title || 'Post'}" deleted from database.`);
   };
 
   const toggleStatus = async (id: string) => {
     const post = posts.find(p => p.id === id);
     if (!post) return;
-    const next: BlogStatus = post.status === 'published' ? 'draft' : 'published';
-
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, status: next } : p));
-    showToast(`"${post.title}" ${next === 'published' ? 'published' : 'moved to draft'}.`);
-
-    try {
-      await fetch(`/api/blog-posts/${id}`, {
-        method: 'PUT',
-        headers: getAdminHeaders(),
-        body: JSON.stringify({ isPublished: next === 'published' })
-      });
-    } catch (e) {
-      console.warn('Backend sync for post status toggle failed', e);
-    }
+    const nextStatus = post.status === 'published' ? 'draft' : 'published';
+    await toggleBlogPostStatus(id);
+    showToast(`"${post.title}" set to ${nextStatus}.`);
   };
 
   const addTag = () => {

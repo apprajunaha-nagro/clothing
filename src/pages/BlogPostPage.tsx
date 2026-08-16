@@ -11,19 +11,20 @@ interface BlogPostPageProps {
 }
 
 export const BlogPostPage: React.FC<BlogPostPageProps> = ({ onNavigate, slug }) => {
-  const { products, showToast } = useStore();
+  const { products, showToast, blogPosts } = useStore();
   const [copied, setCopied] = useState(false);
 
-  const post = initialBlogPosts.find(p => p.slug === slug) || initialBlogPosts[0];
+  const allPosts = (blogPosts && blogPosts.length > 0) ? blogPosts : initialBlogPosts;
+  const post = allPosts.find(p => p.slug === slug || p.id === slug) || allPosts[0];
 
   // Related products from store catalog matching post category
   const relatedProducts = products
-    .filter(p => p.categoryId === post.relatedCategorySlug || p.subcategoryId.includes(post.relatedCategorySlug))
+    .filter(p => p.categoryId === post.relatedCategorySlug || (p.subcategoryId && p.subcategoryId.includes(post.relatedCategorySlug)))
     .slice(0, 4);
 
   // Related posts (excluding current post)
-  const relatedPosts = initialBlogPosts
-    .filter(p => p.id !== post.id)
+  const relatedPosts = allPosts
+    .filter(p => p.id !== post.id && p.isPublished !== false)
     .slice(0, 3);
 
   const pageUrl = window.location.href;

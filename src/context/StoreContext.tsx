@@ -10,9 +10,11 @@ import {
   FilterState,
   User,
   ProductVariant,
-  Banner
+  Banner,
+  BlogPost
 } from '../types';
 import { initialSiteSettings, initialCategories, initialBrands, initialProducts, initialBanners, initialCoupons } from '../data/seedData';
+import { initialBlogPosts } from '../data/blogPosts';
 import { adminFetch } from '../utils/apiClient';
 import { supabase } from '../lib/supabaseClient';
 
@@ -83,6 +85,12 @@ interface StoreContextType {
   chatOpen: boolean;
   setChatOpen: (open: boolean) => void;
   reloadCatalog: () => Promise<void>;
+  blogPosts: BlogPost[];
+  setBlogPosts: React.Dispatch<React.SetStateAction<BlogPost[]>>;
+  saveBlogPost: (postData: Partial<BlogPost> & { id?: string }) => Promise<BlogPost | null>;
+  deleteBlogPost: (id: string) => Promise<boolean>;
+  toggleBlogPostStatus: (id: string) => Promise<void>;
+  reloadBlogPosts: () => Promise<void>;
 }
 
 const defaultFilters: FilterState = {
@@ -101,6 +109,26 @@ const defaultFilters: FilterState = {
   searchQuery: '',
   sortBy: 'popularity'
 };
+
+function parseDbBlogPost(p: any): BlogPost {
+  let content = p.content;
+  if (typeof content === 'string') {
+    try { content = JSON.parse(content); } catch (e) { content = [content]; }
+  }
+  let tags = p.tags;
+  if (typeof tags === 'string') {
+    try { tags = JSON.parse(tags); } catch (e) { tags = []; }
+  }
+  return {
+    ...p,
+    content: Array.isArray(content) ? content : [String(content || '')],
+    tags: Array.isArray(tags) ? tags : [],
+    isPublished: p.isPublished !== false,
+    status: p.isPublished !== false ? 'published' : 'draft',
+    createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+    updatedAt: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString()
+  };
+}
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
@@ -121,6 +149,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return initialBrands;
   });
   const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(() => {
+    try {
+      const saved = localStorage.getItem('pgmart_blog_posts');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return initialBlogPosts;
+  });
   const [banners, setBanners] = useState<Banner[]>(() => {
     try {
       const saved = localStorage.getItem('terra_banners_v9');
@@ -327,6 +362,228 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     loadDbReviews();
   }, []);
+
+  // Fetch blog posts from PostgreSQL DB / Supabase on mount
+  useEffect(() => {
+    async function loadDbBlogPosts() {
+      const postMap = new Map<string, BlogPost>();
+
+      // 1. Fetch from Supabase direct table
+      try {
+        const { data: sbPosts, error: sbErr } = await supabase
+          .from('BlogPost')
+          .select('*')
+          .order('createdAt', { ascending: false });
+        if (!sbErr && Array.isArray(sbPosts) && sbPosts.length > 0) {
+          sbPosts.forEach(p => {
+            if (p && p.id) postMap.set(p.id, parseDbBlogPost(p));
+          });
+        }
+      } catch (e) {
+        console.warn('Supabase BlogPost select fallback:', e);
+      }
+
+      // 2. Fetch from Express / Prisma REST API
+      try {
+        const res = await fetch('/api/blog-posts');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            data.forEach(p => {
+              if (p && p.id) postMap.set(p.id, parseDbBlogPost(p));
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('REST API /api/blog-posts fetch fallback:', e);
+      }
+
+      if (postMap.size > 0) {
+        const list = Array.from(postMap.values());
+        setBlogPosts(list);
+        try { localStorage.setItem('pgmart_blog_posts', JSON.stringify(list)); } catch {}
+      } else {
+        setBlogPosts(initialBlogPosts);
+        try {
+          const seedPayload = initialBlogPosts.map(p => ({
+            id: p.id,
+            slug: p.slug,
+            title: p.title,
+            excerpt: p.excerpt,
+            content: JSON.stringify(p.content),
+            category: p.category,
+            author: p.author,
+            authorRole: p.authorRole,
+            authorAvatar: p.authorAvatar,
+            publishedDate: p.publishedDate,
+            readTime: p.readTime,
+            featuredImage: p.featuredImage,
+            relatedCategorySlug: p.relatedCategorySlug,
+            tags: JSON.stringify(p.tags),
+            isPublished: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }));
+          supabase.from('BlogPost').upsert(seedPayload).then(() => {}).catch(() => {});
+        } catch (e) {}
+      }
+    }
+    loadDbBlogPosts();
+
+    // Supabase Realtime channel for BlogPost
+    const blogChannel = supabase.channel('realtime:BlogPost')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'BlogPost' }, (payload) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          const updated = parseDbBlogPost(payload.new);
+          setBlogPosts(prev => {
+            const exists = prev.some(p => p.id === updated.id);
+            if (exists) {
+              return prev.map(p => p.id === updated.id ? updated : p);
+            }
+            return [updated, ...prev];
+          });
+        } else if (payload.eventType === 'DELETE') {
+          const delId = payload.old.id;
+          setBlogPosts(prev => prev.filter(p => p.id !== delId));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(blogChannel);
+    };
+  }, []);
+
+  const saveBlogPost = async (postData: Partial<BlogPost> & { id?: string }): Promise<BlogPost | null> => {
+    const postId = postData.id || `post-${Date.now()}`;
+    const slug = postData.slug || postData.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `post-${Date.now()}`;
+    const nowIso = new Date().toISOString();
+
+    const formattedPost: BlogPost = {
+      id: postId,
+      slug,
+      title: postData.title || 'Untitled Post',
+      excerpt: postData.excerpt || '',
+      content: Array.isArray(postData.content) ? postData.content : [String(postData.content || '')],
+      category: postData.category || 'Styling Tips',
+      author: postData.author || 'Priyam Ghoshal',
+      authorRole: postData.authorRole || 'Founder & CEO, PGmart',
+      authorAvatar: postData.authorAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      publishedDate: postData.publishedDate || new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }),
+      readTime: postData.readTime || '5 min read',
+      featuredImage: postData.featuredImage || 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80',
+      relatedCategorySlug: postData.relatedCategorySlug || 'women',
+      tags: Array.isArray(postData.tags) ? postData.tags : [],
+      isPublished: postData.isPublished !== false,
+      status: postData.isPublished !== false ? 'published' : 'draft',
+      metaTitle: postData.metaTitle || null as any,
+      metaDesc: postData.metaDesc || null as any,
+      createdAt: postData.createdAt || nowIso,
+      updatedAt: nowIso
+    };
+
+    // 1. Update state immediately
+    setBlogPosts(prev => {
+      const exists = prev.some(p => p.id === postId);
+      if (exists) {
+        return prev.map(p => p.id === postId ? formattedPost : p);
+      }
+      return [formattedPost, ...prev];
+    });
+
+    // 2. Direct Supabase Upsert
+    const sbPayload = {
+      id: formattedPost.id,
+      slug: formattedPost.slug,
+      title: formattedPost.title,
+      excerpt: formattedPost.excerpt,
+      content: JSON.stringify(formattedPost.content),
+      category: formattedPost.category,
+      author: formattedPost.author,
+      authorRole: formattedPost.authorRole,
+      authorAvatar: formattedPost.authorAvatar,
+      publishedDate: formattedPost.publishedDate,
+      readTime: formattedPost.readTime,
+      featuredImage: formattedPost.featuredImage,
+      relatedCategorySlug: formattedPost.relatedCategorySlug,
+      tags: JSON.stringify(formattedPost.tags),
+      isPublished: formattedPost.isPublished,
+      metaTitle: formattedPost.metaTitle || null,
+      metaDesc: formattedPost.metaDesc || null,
+      createdAt: formattedPost.createdAt,
+      updatedAt: nowIso
+    };
+
+    try {
+      const { error: sbErr } = await supabase.from('BlogPost').upsert(sbPayload);
+      if (sbErr) console.warn('[Supabase saveBlogPost error]:', sbErr);
+    } catch (e) {
+      console.warn('[Supabase saveBlogPost exception]:', e);
+    }
+
+    // 3. REST API backend sync
+    try {
+      await adminFetch(postData.id ? `/api/blog-posts/${postData.id}` : '/api/blog-posts', {
+        method: postData.id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formattedPost)
+      });
+    } catch (e) {
+      console.warn('[REST API saveBlogPost error]:', e);
+    }
+
+    return formattedPost;
+  };
+
+  const deleteBlogPost = async (id: string): Promise<boolean> => {
+    // 1. Update state immediately
+    setBlogPosts(prev => prev.filter(p => p.id !== id));
+
+    // 2. Supabase direct delete
+    try {
+      await supabase.from('BlogPost').delete().eq('id', id);
+    } catch (e) {
+      console.warn('[Supabase deleteBlogPost error]:', e);
+    }
+
+    // 3. REST API delete
+    try {
+      await adminFetch(`/api/blog-posts/${id}`, { method: 'DELETE' });
+    } catch (e) {}
+
+    return true;
+  };
+
+  const toggleBlogPostStatus = async (id: string): Promise<void> => {
+    const post = blogPosts.find(p => p.id === id);
+    if (!post) return;
+    const nextPublished = !post.isPublished;
+    const nextStatus = nextPublished ? 'published' : 'draft';
+    const nowIso = new Date().toISOString();
+
+    setBlogPosts(prev => prev.map(p => p.id === id ? { ...p, isPublished: nextPublished, status: nextStatus, updatedAt: nowIso } : p));
+
+    try {
+      await supabase.from('BlogPost').update({ isPublished: nextPublished, updatedAt: nowIso }).eq('id', id);
+    } catch (e) {}
+
+    try {
+      await adminFetch(`/api/blog-posts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPublished: nextPublished })
+      });
+    } catch (e) {}
+  };
+
+  const reloadBlogPosts = async (): Promise<void> => {
+    try {
+      const { data, error } = await supabase.from('BlogPost').select('*').order('createdAt', { ascending: false });
+      if (!error && Array.isArray(data)) {
+        setBlogPosts(data.map(parseDbBlogPost));
+      }
+    } catch (e) {}
+  };
 
   const addReview = async (reviewData: Partial<Review>) => {
     const reviewId = reviewData.id || `rev-${Date.now()}`;
@@ -1757,7 +2014,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setSizeChartCategory,
     chatOpen,
     setChatOpen,
-    reloadCatalog
+    reloadCatalog,
+    blogPosts,
+    setBlogPosts,
+    saveBlogPost,
+    deleteBlogPost,
+    toggleBlogPostStatus,
+    reloadBlogPosts
   }), [
     settings,
     categories,
@@ -1779,7 +2042,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     cartDrawerOpen,
     quickViewProduct,
     sizeChartCategory,
-    chatOpen
+    chatOpen,
+    blogPosts
   ]);
 
   return (

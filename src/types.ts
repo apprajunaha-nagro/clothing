@@ -354,3 +354,27 @@ export interface FilterState {
   searchQuery: string;
   sortBy: 'price_asc' | 'price_desc' | 'newest' | 'popularity' | 'rating';
 }
+
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string[];
+  category: string;
+  author: string;
+  authorRole: string;
+  authorAvatar: string;
+  publishedDate: string;
+  readTime: string;
+  featuredImage: string;
+  relatedCategorySlug: string;
+  tags: string[];
+  isPublished?: boolean;
+  status?: 'published' | 'draft';
+  metaTitle?: string;
+  metaDesc?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+

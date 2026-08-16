@@ -2030,6 +2030,135 @@ async function executeGetCategoryLink(args: { categoryName: string }) {
   };
 }
 
+// ---------------- API ROUTES: BLOG POSTS ----------------
+function formatBlogPost(post: any) {
+  let parsedContent = post.content;
+  if (typeof post.content === 'string') {
+    try { parsedContent = JSON.parse(post.content); } catch (e) { parsedContent = [post.content]; }
+  }
+  let parsedTags = post.tags;
+  if (typeof post.tags === 'string') {
+    try { parsedTags = JSON.parse(post.tags); } catch (e) { parsedTags = []; }
+  }
+  return {
+    ...post,
+    content: Array.isArray(parsedContent) ? parsedContent : [String(parsedContent || '')],
+    tags: Array.isArray(parsedTags) ? parsedTags : [],
+    createdAt: post.createdAt ? new Date(post.createdAt).toISOString() : new Date().toISOString(),
+    updatedAt: post.updatedAt ? new Date(post.updatedAt).toISOString() : new Date().toISOString(),
+  };
+}
+
+app.get('/api/blog-posts', async (_req, res) => {
+  try {
+    const posts = await prisma.blogPost.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(posts.map(formatBlogPost));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/blog-posts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const post = await prisma.blogPost.findFirst({
+      where: {
+        OR: [{ id }, { slug: id }]
+      }
+    });
+    if (post) {
+      res.json(formatBlogPost(post));
+    } else {
+      res.status(404).json({ error: 'Blog post not found' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/blog-posts', adminAuth, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const postId = body.id || `post-${Date.now()}`;
+    const slug = body.slug || body.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `post-${Date.now()}`;
+    
+    const postData = {
+      slug,
+      title: body.title || 'Untitled Post',
+      excerpt: body.excerpt || '',
+      content: typeof body.content === 'string' ? body.content : JSON.stringify(body.content || ['']),
+      category: body.category || 'Styling Tips',
+      author: body.author || 'Priyam Ghoshal',
+      authorRole: body.authorRole || 'Founder & CEO, PGmart',
+      authorAvatar: body.authorAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      publishedDate: body.publishedDate || new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }),
+      readTime: body.readTime || '5 min read',
+      featuredImage: body.featuredImage || 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1200&q=80',
+      relatedCategorySlug: body.relatedCategorySlug || 'women',
+      tags: typeof body.tags === 'string' ? body.tags : JSON.stringify(body.tags || []),
+      isPublished: body.isPublished !== undefined ? Boolean(body.isPublished) : true,
+      metaTitle: body.metaTitle || null,
+      metaDesc: body.metaDesc || null,
+    };
+
+    const post = await prisma.blogPost.upsert({
+      where: { id: postId },
+      update: postData,
+      create: { id: postId, ...postData },
+    });
+
+    res.json({ success: true, post: formatBlogPost(post) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/blog-posts/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const body = req.body || {};
+    const updateData: any = {};
+
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.slug !== undefined) updateData.slug = body.slug;
+    if (body.excerpt !== undefined) updateData.excerpt = body.excerpt;
+    if (body.content !== undefined) updateData.content = typeof body.content === 'string' ? body.content : JSON.stringify(body.content);
+    if (body.category !== undefined) updateData.category = body.category;
+    if (body.author !== undefined) updateData.author = body.author;
+    if (body.authorRole !== undefined) updateData.authorRole = body.authorRole;
+    if (body.authorAvatar !== undefined) updateData.authorAvatar = body.authorAvatar;
+    if (body.publishedDate !== undefined) updateData.publishedDate = body.publishedDate;
+    if (body.readTime !== undefined) updateData.readTime = body.readTime;
+    if (body.featuredImage !== undefined) updateData.featuredImage = body.featuredImage;
+    if (body.relatedCategorySlug !== undefined) updateData.relatedCategorySlug = body.relatedCategorySlug;
+    if (body.tags !== undefined) updateData.tags = typeof body.tags === 'string' ? body.tags : JSON.stringify(body.tags);
+    if (body.isPublished !== undefined) updateData.isPublished = Boolean(body.isPublished);
+    if (body.metaTitle !== undefined) updateData.metaTitle = body.metaTitle;
+    if (body.metaDesc !== undefined) updateData.metaDesc = body.metaDesc;
+
+    const updated = await prisma.blogPost.update({
+      where: { id },
+      data: updateData,
+    });
+
+    res.json({ success: true, post: formatBlogPost(updated) });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/blog-posts/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.blogPost.delete({ where: { id } });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---------------- API ROUTE: AI STYLIST CHAT ----------------
 app.post('/api/ai-stylist/chat', async (req, res) => {
   try {
