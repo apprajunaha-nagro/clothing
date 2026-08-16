@@ -105,9 +105,21 @@ const defaultFilters: FilterState = {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [settings, setSettings] = useState<SiteSettings>(initialSiteSettings);
+  const [settings, setSettings] = useState<SiteSettings>(() => {
+    try {
+      const saved = localStorage.getItem('pgmart_site_settings');
+      if (saved) return { ...initialSiteSettings, ...JSON.parse(saved) };
+    } catch {}
+    return initialSiteSettings;
+  });
   const [categories, setCategories] = useState<Category[]>(initialCategories);
-  const [brands, setBrands] = useState<Brand[]>(initialBrands);
+  const [brands, setBrands] = useState<Brand[]>(() => {
+    try {
+      const saved = localStorage.getItem('pgmart_brands');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return initialBrands;
+  });
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [banners, setBanners] = useState<Banner[]>(() => {
     try {
@@ -572,8 +584,75 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return null;
   };
 
-  // Fetch live state from backend on load
+  // Fetch live state from Supabase Cloud Database & Backend REST API on load
   const reloadCatalog = async () => {
+    // 1. PRIMARY: DIRECT SUPABASE DATABASE QUERIES
+    try {
+      const [
+        { data: sbSettings, error: errSet },
+        { data: sbBanners, error: errBan },
+        { data: sbBrands, error: errBrs },
+        { data: sbCoupons, error: errCoup },
+        { data: sbProducts, error: errProd },
+        { data: sbCategories, error: errCat },
+        { data: sbReviews, error: errRev }
+      ] = await Promise.all([
+        supabase.from('SiteSettings').select('*').eq('id', 'default').maybeSingle(),
+        supabase.from('Banner').select('*').order('sortOrder', { ascending: true }),
+        supabase.from('Brand').select('*').order('name', { ascending: true }),
+        supabase.from('Coupon').select('*').order('createdAt', { ascending: false }),
+        supabase.from('Product').select('*'),
+        supabase.from('Category').select('*'),
+        supabase.from('Review').select('*').order('createdAt', { ascending: false })
+      ]);
+
+      if (!errSet && sbSettings) {
+        setSettings(prev => {
+          const merged = { ...prev, ...sbSettings };
+          try { localStorage.setItem('pgmart_site_settings', JSON.stringify(merged)); } catch {}
+          return merged;
+        });
+      }
+
+      if (!errBan && sbBanners && Array.isArray(sbBanners) && sbBanners.length > 0) {
+        setBanners(sbBanners);
+        try { localStorage.setItem('terra_banners_v9', JSON.stringify(sbBanners)); } catch {}
+      }
+
+      if (!errBrs && sbBrands && Array.isArray(sbBrands) && sbBrands.length > 0) {
+        setBrands(sbBrands);
+        try { localStorage.setItem('pgmart_brands', JSON.stringify(sbBrands)); } catch {}
+      }
+
+      if (!errCoup && sbCoupons && Array.isArray(sbCoupons) && sbCoupons.length > 0) {
+        setCoupons(sbCoupons);
+        try { localStorage.setItem('pgmart_coupons', JSON.stringify(sbCoupons)); } catch {}
+      }
+
+      if (!errCat && sbCategories && Array.isArray(sbCategories) && sbCategories.length > 0) {
+        setCategories(sbCategories);
+      }
+
+      if (!errRev && sbReviews && Array.isArray(sbReviews) && sbReviews.length > 0) {
+        setReviews(sbReviews);
+        try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(sbReviews)); } catch {}
+      }
+
+      if (!errProd && sbProducts && Array.isArray(sbProducts) && sbProducts.length > 0) {
+        const normalizedProds = sbProducts.map((p: any) => ({
+          ...p,
+          tags: Array.isArray(p.tags) ? p.tags : (typeof p.tags === 'string' ? JSON.parse(p.tags || '[]') : []),
+          variants: Array.isArray(p.variants) ? p.variants : (typeof p.variants === 'string' ? JSON.parse(p.variants || '[]') : []),
+          colors: Array.isArray(p.colors) ? p.colors : (typeof p.colors === 'string' ? JSON.parse(p.colors || '[]') : []),
+          availableSizes: Array.isArray(p.availableSizes) ? p.availableSizes : (typeof p.availableSizes === 'string' ? JSON.parse(p.availableSizes || '[]') : ['S', 'M', 'L', 'XL'])
+        }));
+        setProducts(normalizedProds);
+      }
+    } catch (sbEx) {
+      console.warn('[Supabase Direct Sync Warning]:', sbEx);
+    }
+
+    // 2. DUAL REST BACKEND FALLBACK
     try {
       const [resSet, resCat, resProd, resOrd, resBrs, resBan] = await Promise.all([
         safeJsonFetch('/api/settings'),
@@ -585,19 +664,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       ]);
 
       if (resSet) {
-        setSettings({
-          ...resSet,
-          address: initialSiteSettings.address
-        });
+        setSettings(prev => ({
+          ...prev,
+          ...resSet
+        }));
       }
       if (resCat && Array.isArray(resCat) && resCat.length > 0) setCategories(resCat);
       if (resProd && Array.isArray(resProd) && resProd.length > 0) {
-        if (resProd.length >= initialProducts.length) {
-          setProducts(resProd);
-        } else {
-          const prodMap = new Map(resProd.map((p: any) => [p.id, p]));
-          setProducts(initialProducts.map(p => prodMap.get(p.id) || p));
-        }
+        setProducts(prev => {
+          const map = new Map(resProd.map((p: any) => [p.id, p]));
+          return prev.map(p => map.get(p.id) || p);
+        });
       }
       if (resOrd) {
         const orderList = Array.isArray(resOrd) ? resOrd : (resOrd.orders || []);
@@ -606,12 +683,98 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (resBrs && Array.isArray(resBrs) && resBrs.length > 0) setBrands(resBrs);
       if (resBan && Array.isArray(resBan) && resBan.length > 0) setBanners(resBan);
     } catch (e) {
-      console.warn('Backend sync failed, using initial seed data', e);
+      console.warn('Backend REST sync fallback failed', e);
     }
   };
 
   useEffect(() => {
     reloadCatalog();
+  }, []);
+
+  // REAL-TIME SUPABASE WEBSOCKET SUBSCRIPTION (Live updates broadcast instantly to storefront)
+  useEffect(() => {
+    const channel = supabase
+      .channel('storefront-realtime-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'SiteSettings' }, payload => {
+        if (payload.new) {
+          setSettings(prev => {
+            const merged = { ...prev, ...(payload.new as any) };
+            try { localStorage.setItem('pgmart_site_settings', JSON.stringify(merged)); } catch {}
+            return merged;
+          });
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Banner' }, () => {
+        supabase.from('Banner').select('*').order('sortOrder', { ascending: true }).then(({ data }) => {
+          if (data && data.length > 0) {
+            setBanners(data);
+            try { localStorage.setItem('terra_banners_v9', JSON.stringify(data)); } catch {}
+          }
+        });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Brand' }, () => {
+        supabase.from('Brand').select('*').order('name', { ascending: true }).then(({ data }) => {
+          if (data && data.length > 0) {
+            setBrands(data);
+            try { localStorage.setItem('pgmart_brands', JSON.stringify(data)); } catch {}
+          }
+        });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Coupon' }, () => {
+        supabase.from('Coupon').select('*').then(({ data }) => {
+          if (data && data.length > 0) {
+            setCoupons(data);
+            try { localStorage.setItem('pgmart_coupons', JSON.stringify(data)); } catch {}
+          }
+        });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Product' }, () => {
+        supabase.from('Product').select('*').then(({ data }) => {
+          if (data && data.length > 0) {
+            const normalized = data.map((p: any) => ({
+              ...p,
+              tags: Array.isArray(p.tags) ? p.tags : (typeof p.tags === 'string' ? JSON.parse(p.tags || '[]') : []),
+              variants: Array.isArray(p.variants) ? p.variants : (typeof p.variants === 'string' ? JSON.parse(p.variants || '[]') : []),
+              colors: Array.isArray(p.colors) ? p.colors : (typeof p.colors === 'string' ? JSON.parse(p.colors || '[]') : [])
+            }));
+            setProducts(normalized);
+          }
+        });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'Review' }, () => {
+        supabase.from('Review').select('*').order('createdAt', { ascending: false }).then(({ data }) => {
+          if (data && data.length > 0) {
+            setReviews(data);
+            try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(data)); } catch {}
+          }
+        });
+      })
+      .subscribe();
+
+    // Cross-tab broadcast listener (for instantaneous sync between Admin Portal tab and Customer Storefront tab)
+    const handleStorageEvent = (e: StorageEvent) => {
+      if (e.key === 'pgmart_site_settings' && e.newValue) {
+        try { setSettings(JSON.parse(e.newValue)); } catch {}
+      }
+      if (e.key === 'terra_banners_v9' && e.newValue) {
+        try { setBanners(JSON.parse(e.newValue)); } catch {}
+      }
+      if (e.key === 'pgmart_brands' && e.newValue) {
+        try { setBrands(JSON.parse(e.newValue)); } catch {}
+      }
+      if (e.key === 'pgmart_coupons' && e.newValue) {
+        try { setCoupons(JSON.parse(e.newValue)); } catch {}
+      }
+      if (e.key === 'pgmart_reviews_v2' && e.newValue) {
+        try { setReviews(JSON.parse(e.newValue)); } catch {}
+      }
+    };
+    window.addEventListener('storage', handleStorageEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('storage', handleStorageEvent);
+    };
   }, []);
 
   // Automatic localStorage persistence for orders
