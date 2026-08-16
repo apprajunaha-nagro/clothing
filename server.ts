@@ -62,9 +62,9 @@ app.use('/src/assets', express.static(path.join(process.cwd(), 'src', 'assets'))
 app.use('/uploads', express.static(uploadsDir));
 app.use(express.static(path.join(process.cwd(), 'public')));
 
-// Redirect /favicon.ico to /favicon.svg to avoid 404
+// Redirect /favicon.ico to /favicon.png to avoid 404
 app.get('/favicon.ico', (_req, res) => {
-  res.redirect('/favicon.svg');
+  res.redirect('/favicon.png');
 });
 
 // ---------------- API ROUTE: IMAGE UPLOAD ----------------

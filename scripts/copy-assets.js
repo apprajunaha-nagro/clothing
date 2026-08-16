@@ -23,8 +23,39 @@ try {
     fs.cpSync(srcAssets, publicSrcAssets, { recursive: true });
     fs.cpSync(srcAssets, publicAssets, { recursive: true });
     fs.cpSync(srcAssets, distSrcAssets, { recursive: true });
-    fs.cpSync(srcAssets, distAssets, { recursive: true });
-    console.log('Successfully synced assets to public/ and dist/ directories.');
+    // Sync pgmart logo to favicons
+    const logoPath = path.join(srcAssets, 'images', 'pgmart_logo_new.png');
+    if (fs.existsSync(logoPath)) {
+      const logoBuffer = fs.readFileSync(logoPath);
+      const base64 = logoBuffer.toString('base64');
+      const publicDir = path.join(process.cwd(), 'public');
+      const distDir = path.join(process.cwd(), 'dist');
+
+      fs.writeFileSync(path.join(publicDir, 'favicon.png'), logoBuffer);
+      fs.writeFileSync(path.join(publicDir, 'favicon.ico'), logoBuffer);
+      fs.writeFileSync(path.join(publicDir, 'pgmart_logo_new.png'), logoBuffer);
+
+      const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <clipPath id="rounded">
+      <rect width="128" height="128" rx="24" fill="#ffffff"/>
+    </clipPath>
+  </defs>
+  <rect width="128" height="128" rx="24" fill="#ffffff"/>
+  <image width="128" height="128" href="data:image/png;base64,${base64}" clip-path="url(#rounded)"/>
+</svg>
+`;
+      fs.writeFileSync(path.join(publicDir, 'favicon.svg'), svgContent, 'utf-8');
+
+      if (fs.existsSync(distDir)) {
+        fs.writeFileSync(path.join(distDir, 'favicon.png'), logoBuffer);
+        fs.writeFileSync(path.join(distDir, 'favicon.ico'), logoBuffer);
+        fs.writeFileSync(path.join(distDir, 'favicon.svg'), svgContent, 'utf-8');
+        fs.writeFileSync(path.join(distDir, 'pgmart_logo_new.png'), logoBuffer);
+      }
+    }
+
+    console.log('Successfully synced assets and favicons to public/ and dist/ directories.');
   }
 } catch (err) {
   console.error('Error copying assets to public/dist directory:', err);

@@ -27,9 +27,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
           {/* Compact Logo + Name */}
           <div className="flex items-center justify-center gap-3">
             <img
-              src="/src/assets/images/pgmart_logo_1785764319471.jpg"
+              src="/src/assets/images/pgmart_logo_new.png"
               alt="PGmart Logo"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-cover border-2 border-[#C0654B]/50 shadow-md shrink-0"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-contain bg-white p-1 border-2 border-[#C0654B]/50 shadow-md shrink-0"
             />
             <div className="text-left space-y-0.5">
               <h2 className="text-xl sm:text-2xl font-bold font-serif text-white tracking-wide leading-tight">
@@ -129,10 +129,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
         <div className="md:col-span-2 space-y-4">
           <div className="flex items-center gap-3">
             <img
-              src="/src/assets/images/pgmart_logo_1785764319471.jpg"
+              src="/src/assets/images/pgmart_logo_new.png"
               alt="PGmart Logo"
               referrerPolicy="no-referrer"
-              className="w-10 h-10 rounded-lg object-cover border border-stone-800 shadow-xs"
+              className="w-10 h-10 rounded-lg object-contain bg-white p-0.5 border border-stone-800 shadow-xs shrink-0"
             />
             <div>
               <h3

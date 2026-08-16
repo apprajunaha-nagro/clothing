@@ -76,9 +76,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
         <div className="max-w-md w-full bg-white rounded-2xl border border-stone-200 shadow-xl p-8 space-y-6 text-left animate-fade-in">
           <div className="text-center space-y-2">
-            <div className="w-14 h-14 bg-[#C0654B] text-white rounded-2xl flex items-center justify-center font-extrabold text-2xl mx-auto shadow-md">
-              P
-            </div>
+            <img
+              src="/src/assets/images/pgmart_logo_new.png"
+              alt="PGmart Logo"
+              className="w-16 h-16 rounded-2xl object-contain bg-white border border-stone-200 p-1 mx-auto shadow-md"
+            />
             <h1 className="text-2xl font-extrabold text-stone-900 tracking-tight">{settings.storeName} Admin Portal</h1>
             <p className="text-xs text-stone-500">Enter your store administrator password to access controls</p>
           </div>
@@ -180,7 +182,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       {/* MOBILE ADMIN TOP BAR */}
       <div className="md:hidden bg-[#2B2620] text-stone-200 p-3 px-4 flex items-center justify-between border-b border-stone-800 sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <span className="w-7 h-7 bg-[#C0654B] text-white rounded-lg flex items-center justify-center font-extrabold text-xs shadow-md">P</span>
+          <img
+            src="/src/assets/images/pgmart_logo_new.png"
+            alt="PGmart Logo"
+            className="w-7 h-7 rounded-lg object-contain bg-white border border-stone-700/60 p-0.5 shadow-md shrink-0"
+          />
           <div>
             <h1 className="font-serif font-black text-white text-xs leading-tight">{settings.storeName}</h1>
             <span className="text-[9px] text-[#C0654B] font-bold uppercase tracking-wider font-mono">
@@ -236,7 +242,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           {/* Sidebar logo header */}
           <div className="p-6 border-b border-stone-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="w-8 h-8 bg-[#C0654B] text-white rounded-lg flex items-center justify-center font-extrabold text-sm shadow-md">P</span>
+              <img
+                src="/src/assets/images/pgmart_logo_new.png"
+                alt="PGmart Logo"
+                className="w-8 h-8 rounded-lg object-contain bg-white border border-stone-700/60 p-0.5 shadow-md shrink-0"
+              />
               <div>
                 <h1 className="font-serif font-black text-white text-sm leading-tight">{settings.storeName}</h1>
                 <span className="text-[10px] text-stone-400 font-bold uppercase tracking-wider font-mono">Control Panel</span>

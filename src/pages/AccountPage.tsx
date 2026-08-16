@@ -396,9 +396,11 @@ export const AccountPage: React.FC<AccountPageProps> = ({ onNavigate }) => {
         <div className="max-w-md mx-auto space-y-6">
           {/* Branding Banner */}
           <div className="bg-[#2B2620] text-white p-8 rounded-3xl shadow-xl text-center space-y-3 relative overflow-hidden border border-stone-800">
-            <div className="w-14 h-14 rounded-full bg-[#C0654B] text-white font-bold text-xl flex items-center justify-center font-serif mx-auto shadow-md">
-              PG
-            </div>
+            <img
+              src="/src/assets/images/pgmart_logo_new.png"
+              alt="PGmart Logo"
+              className="w-16 h-16 rounded-2xl object-contain bg-white border border-stone-700/60 p-1 mx-auto shadow-md"
+            />
             <h1 className="text-2xl font-bold font-serif text-stone-100">
               {redirectParam === '/checkout' ? 'Sign In to Place Order' : 'Welcome to PGmart'}
             </h1>

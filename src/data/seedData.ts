@@ -74,7 +74,7 @@ export const initialSiteSettings: SiteSettings = {
   storeName: "PGmart",
   tagline: "India's Most Trusted Choice for Quality & Style",
   logoUrl: "/src/assets/images/pgmart_logo_new.png",
-  faviconUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=32&q=80",
+  faviconUrl: "/favicon.png",
   primaryColor: "#C0654B", // Rose Clay / Terracotta
   primaryDarkColor: "#8B4A38",
   bgMutedColor: "#F3E9E4", // Soft Rose Tint
