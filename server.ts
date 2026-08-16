@@ -1478,6 +1478,7 @@ app.get('/api/products', async (req, res) => {
     try {
       dbProducts = await prisma.product.findMany({
         where,
+        take: req.query.limit ? Number(req.query.limit) : undefined,
         orderBy: sort === 'newest' ? { created_at: 'desc' } : sort === 'rating' ? { rating: 'desc' } : undefined,
       });
     } catch (e) {
@@ -1516,6 +1517,11 @@ app.get('/api/products', async (req, res) => {
       result.sort((a, b) => b.rating - a.rating);
     } else if (sort === 'newest') {
       result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+
+    const limitNum = req.query.limit ? Number(req.query.limit) : 0;
+    if (limitNum > 0) {
+      result = result.slice(0, limitNum);
     }
 
     res.json(result);
@@ -1810,20 +1816,59 @@ app.get('/api/banners', async (req, res) => {
 app.post('/api/banners', adminAuth, async (req, res) => {
   try {
     const bannerCount = await prisma.banner.count();
-    const newBanner = await prisma.banner.create({
-      data: {
-        id: `b-${Date.now()}`,
-        title: req.body.title,
-        subtitle: req.body.subtitle || null,
-        image: req.body.image,
-        link: req.body.link || '/',
-        buttonText: req.body.buttonText || 'SHOP NOW',
-        position: req.body.position || 'hero',
-        sortOrder: req.body.sortOrder || bannerCount + 1,
-        isActive: true,
-      },
+    const bannerId = req.body.id || `ban-${Date.now()}`;
+    const bannerData = {
+      title: req.body.title || 'Special Promotion',
+      subtitle: req.body.subtitle || null,
+      image: req.body.image || '',
+      mobileImage: req.body.mobileImage || null,
+      link: req.body.link || '/',
+      buttonText: req.body.buttonText || 'SHOP NOW',
+      position: req.body.position || 'hero',
+      sortOrder: req.body.sortOrder !== undefined ? Number(req.body.sortOrder) : bannerCount + 1,
+      isActive: req.body.isActive !== undefined ? Boolean(req.body.isActive) : true,
+    };
+    const banner = await prisma.banner.upsert({
+      where: { id: bannerId },
+      update: bannerData,
+      create: { id: bannerId, ...bannerData },
     });
-    res.json({ success: true, banner: newBanner });
+    res.json({ success: true, banner });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/banners/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData: any = {};
+    const body = req.body || {};
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.subtitle !== undefined) updateData.subtitle = body.subtitle;
+    if (body.image !== undefined) updateData.image = body.image;
+    if (body.mobileImage !== undefined) updateData.mobileImage = body.mobileImage;
+    if (body.link !== undefined) updateData.link = body.link;
+    if (body.buttonText !== undefined) updateData.buttonText = body.buttonText;
+    if (body.position !== undefined) updateData.position = body.position;
+    if (body.sortOrder !== undefined) updateData.sortOrder = Number(body.sortOrder);
+    if (body.isActive !== undefined) updateData.isActive = Boolean(body.isActive);
+
+    const banner = await prisma.banner.update({
+      where: { id },
+      data: updateData
+    });
+    res.json({ success: true, banner });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/banners/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.banner.delete({ where: { id } });
+    res.json({ success: true, deletedId: id });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -2305,35 +2350,71 @@ let serverCoupons: any[] = [
   }
 ];
 
-app.post('/api/admin/coupons', (req, res) => {
+app.post('/api/admin/coupons', adminAuth, async (req, res) => {
   try {
     const newCoupon = req.body;
     if (!newCoupon.code) {
       return res.status(400).json({ error: 'Coupon promo code is required' });
     }
     const cleanCode = String(newCoupon.code).trim().toUpperCase();
-    
-    const existingIdx = serverCoupons.findIndex(c => c.id === newCoupon.id || c.code.toUpperCase() === cleanCode);
-    const couponObj = {
-      id: newCoupon.id || `cop-${Date.now()}`,
+    const couponId = newCoupon.id || `cop-${Date.now()}`;
+    const couponData = {
       code: cleanCode,
-      discountType: newCoupon.discountType || 'flat',
-      value: Number(newCoupon.value) || 100,
+      discountType: newCoupon.discountType || 'percentage',
+      value: Number(newCoupon.value) || 10,
       minOrderValue: Number(newCoupon.minOrderValue) || 0,
-      maxDiscount: newCoupon.maxDiscount ? Number(newCoupon.maxDiscount) : undefined,
-      usageLimit: Number(newCoupon.usageLimit) || 1000,
+      maxDiscount: newCoupon.maxDiscount ? Number(newCoupon.maxDiscount) : null,
+      usageLimit: Number(newCoupon.usageLimit) || 100,
       usedCount: Number(newCoupon.usedCount) || 0,
       expiryDate: newCoupon.expiryDate || '2026-12-31',
+      categoryScope: newCoupon.categoryScope || null,
       isActive: newCoupon.isActive !== false
     };
 
-    if (existingIdx > -1) {
-      serverCoupons[existingIdx] = couponObj;
-    } else {
-      serverCoupons.unshift(couponObj);
-    }
+    const saved = await prisma.coupon.upsert({
+      where: { code: cleanCode },
+      update: couponData,
+      create: { id: couponId, ...couponData }
+    });
 
-    res.json({ success: true, coupon: couponObj, coupons: serverCoupons });
+    const allCoupons = await prisma.coupon.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json({ success: true, coupon: saved, coupons: allCoupons });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/admin/coupons/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const body = req.body || {};
+    const updateData: any = {};
+    if (body.code !== undefined) updateData.code = String(body.code).trim().toUpperCase();
+    if (body.discountType !== undefined) updateData.discountType = body.discountType;
+    if (body.value !== undefined) updateData.value = Number(body.value);
+    if (body.minOrderValue !== undefined) updateData.minOrderValue = Number(body.minOrderValue);
+    if (body.maxDiscount !== undefined) updateData.maxDiscount = body.maxDiscount ? Number(body.maxDiscount) : null;
+    if (body.usageLimit !== undefined) updateData.usageLimit = Number(body.usageLimit);
+    if (body.usedCount !== undefined) updateData.usedCount = Number(body.usedCount);
+    if (body.expiryDate !== undefined) updateData.expiryDate = body.expiryDate;
+    if (body.categoryScope !== undefined) updateData.categoryScope = body.categoryScope;
+    if (body.isActive !== undefined) updateData.isActive = Boolean(body.isActive);
+
+    const updated = await prisma.coupon.update({
+      where: { id },
+      data: updateData
+    });
+    res.json({ success: true, coupon: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/coupons/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.coupon.delete({ where: { id } });
+    res.json({ success: true, deletedId: id });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -2410,6 +2491,93 @@ app.put('/api/reviews/:id/status', adminAuth, async (req, res) => {
 });
 
 // DELETE /api/reviews/:id (Admin delete review)
+app.delete('/api/reviews/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.review.delete({ where: { id } });
+    res.json({ success: true, deletedId: id });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to delete review' });
+  }
+});
+
+// ---------------- API ROUTES: ADMIN USER ACCOUNTS ----------------
+// GET /api/admin/users (Admin fetch all users)
+app.get(['/api/admin/users', '/api/users'], adminAuth, async (_req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json(users);
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to fetch users' });
+  }
+});
+
+// POST /api/admin/users & /api/users (Admin create/upsert customer user account)
+app.post(['/api/admin/users', '/api/users'], adminAuth, async (req, res) => {
+  try {
+    const { id, name, email, phone, status, adminNotes } = req.body || {};
+    if (!email || !name) {
+      return res.status(400).json({ error: 'Name and email are required' });
+    }
+    const cleanEmail = String(email).trim().toLowerCase();
+    const created = await prisma.user.upsert({
+      where: { email: cleanEmail },
+      update: {
+        name: String(name).trim(),
+        phone: phone ? String(phone).trim() : null,
+        status: status || 'active',
+        adminNotes: adminNotes || null
+      },
+      create: {
+        id: id || `u-${Date.now()}`,
+        name: String(name).trim(),
+        email: cleanEmail,
+        phone: phone ? String(phone).trim() : null,
+        status: status || 'active',
+        adminNotes: adminNotes || null,
+        emailVerified: true
+      }
+    });
+    return res.json({ success: true, user: created });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to create user' });
+  }
+});
+
+// PUT /api/admin/users/:id & /api/users/:id (Admin update user status or notes)
+app.put(['/api/admin/users/:id', '/api/users/:id'], adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, phone, status, adminNotes } = req.body || {};
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = String(name).trim();
+    if (phone !== undefined) updateData.phone = String(phone).trim();
+    if (status !== undefined) updateData.status = status;
+    if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: updateData
+    });
+    return res.json({ success: true, user: updated });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to update user' });
+  }
+});
+
+// DELETE /api/admin/users/:id & /api/users/:id (Admin delete user)
+app.delete(['/api/admin/users/:id', '/api/users/:id'], adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await prisma.user.delete({ where: { id } });
+    return res.json({ success: true, deletedId: id });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || 'Failed to delete user' });
+  }
+});
+
 // ---------------- API ROUTES: BLOG POSTS ----------------
 
 function formatBlogPost(post: any) {

@@ -109,29 +109,42 @@ export const AdminCatalogView: React.FC = () => {
   };
 
   // Handle Create or Update Subcategory
-  const handleSaveSubcategory = (e: React.FormEvent) => {
+  const handleSaveSubcategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     if (editTarget) {
       // Edit mode
+      const subId = editTarget.item.id;
       const updatedCategories = categories.map(cat => {
         if (cat.id !== editTarget.item.categoryId) return cat;
         return {
           ...cat,
           subcategories: cat.subcategories.map(sub => 
-            sub.id === editTarget.item.id 
+            sub.id === subId 
               ? { ...sub, name, slug, description, image, banner_image: banner, meta_title: metaTitle, meta_description: metaDesc, status }
               : sub
           )
         };
       });
       setCategories(updatedCategories);
+
+      try {
+        await fetch(`/api/admin/subcategories/${subId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, slug, description, image, banner_image: banner, meta_title: metaTitle, meta_description: metaDesc, status })
+        });
+      } catch (err) {
+        console.error('Failed to update subcategory on server:', err);
+      }
+
       showToast(`Subcategory "${name}" updated successfully.`);
     } else {
       // Add mode
+      const newSubId = `sub-${Date.now()}`;
       const newSub: Subcategory = {
-        id: `sub-${Date.now()}`,
+        id: newSubId,
         categoryId: parentCatId,
         name,
         slug,
@@ -152,6 +165,17 @@ export const AdminCatalogView: React.FC = () => {
         };
       });
       setCategories(updatedCategories);
+
+      try {
+        await fetch('/api/admin/subcategories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ categoryId: parentCatId, name, slug, description, image, banner_image: banner, meta_title: metaTitle, meta_description: metaDesc, status })
+        });
+      } catch (err) {
+        console.error('Failed to create subcategory on server:', err);
+      }
+
       showToast(`Subcategory "${name}" created.`);
     }
 
@@ -160,12 +184,13 @@ export const AdminCatalogView: React.FC = () => {
   };
 
   // Handle Create or Update Style/Type
-  const handleSaveType = (e: React.FormEvent) => {
+  const handleSaveType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     if (editTarget) {
       // Edit mode
+      const typeId = editTarget.item.id;
       const updatedCategories = categories.map(cat => {
         return {
           ...cat,
@@ -174,7 +199,7 @@ export const AdminCatalogView: React.FC = () => {
             return {
               ...sub,
               types: sub.types.map(t => 
-                t.id === editTarget.item.id 
+                t.id === typeId 
                   ? { ...t, name, slug, description, image, banner_image: banner, meta_title: metaTitle, meta_description: metaDesc, status }
                   : t
               )
@@ -183,11 +208,23 @@ export const AdminCatalogView: React.FC = () => {
         };
       });
       setCategories(updatedCategories);
+
+      try {
+        await fetch(`/api/admin/types/${typeId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, slug, description, image, banner_image: banner, meta_title: metaTitle, meta_description: metaDesc, status })
+        });
+      } catch (err) {
+        console.error('Failed to update type on server:', err);
+      }
+
       showToast(`Style Type "${name}" updated.`);
     } else {
       // Add mode
+      const newTypeId = `type-${Date.now()}`;
       const newType: CategoryType = {
-        id: `type-${Date.now()}`,
+        id: newTypeId,
         subcategoryId: parentSubId,
         name,
         slug,
@@ -213,6 +250,17 @@ export const AdminCatalogView: React.FC = () => {
         };
       });
       setCategories(updatedCategories);
+
+      try {
+        await fetch('/api/admin/types', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subcategoryId: parentSubId, name, slug, description, image, banner_image: banner, meta_title: metaTitle, meta_description: metaDesc, status })
+        });
+      } catch (err) {
+        console.error('Failed to create type on server:', err);
+      }
+
       showToast(`Style Type "${name}" added.`);
     }
 
@@ -312,7 +360,7 @@ export const AdminCatalogView: React.FC = () => {
   };
 
   // Toggle active status from Tree list directly
-  const handleToggleSubStatus = (catId: string, subId: string, current: 'active' | 'inactive') => {
+  const handleToggleSubStatus = async (catId: string, subId: string, current: 'active' | 'inactive') => {
     const nextStatus = current === 'active' ? 'inactive' : 'active';
     setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
@@ -323,10 +371,19 @@ export const AdminCatalogView: React.FC = () => {
         )
       };
     }));
+    try {
+      await fetch(`/api/admin/subcategories/${subId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+    } catch (err) {
+      console.warn('Failed to update subcategory status on server:', err);
+    }
     showToast(`Subcategory status set to ${nextStatus}.`);
   };
 
-  const handleToggleTypeStatus = (catId: string, subId: string, typeId: string, current: 'active' | 'inactive') => {
+  const handleToggleTypeStatus = async (catId: string, subId: string, typeId: string, current: 'active' | 'inactive') => {
     const nextStatus = current === 'active' ? 'inactive' : 'active';
     setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
@@ -343,6 +400,15 @@ export const AdminCatalogView: React.FC = () => {
         })
       };
     }));
+    try {
+      await fetch(`/api/admin/types/${typeId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+    } catch (err) {
+      console.warn('Failed to update type status on server:', err);
+    }
     showToast(`Style type status set to ${nextStatus}.`);
   };
 
@@ -389,7 +455,7 @@ export const AdminCatalogView: React.FC = () => {
     }
   };
 
-  const performDeleteSubcategory = (catId: string, subId: string) => {
+  const performDeleteSubcategory = async (catId: string, subId: string) => {
     setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
       return {
@@ -397,10 +463,15 @@ export const AdminCatalogView: React.FC = () => {
         subcategories: cat.subcategories.filter(s => s.id !== subId)
       };
     }));
+    try {
+      await fetch(`/api/admin/subcategories/${subId}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('Failed to delete subcategory on server:', err);
+    }
     showToast('Subcategory deleted successfully.');
   };
 
-  const performDeleteType = (catId: string, subId: string, typeId: string) => {
+  const performDeleteType = async (catId: string, subId: string, typeId: string) => {
     setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
       return {
@@ -414,6 +485,11 @@ export const AdminCatalogView: React.FC = () => {
         })
       };
     }));
+    try {
+      await fetch(`/api/admin/types/${typeId}`, { method: 'DELETE' });
+    } catch (err) {
+      console.warn('Failed to delete type on server:', err);
+    }
     showToast('Style Type deleted successfully.');
   };
 
