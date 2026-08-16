@@ -204,34 +204,42 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // Fetch reviews from PostgreSQL DB / Supabase on mount
   useEffect(() => {
     async function loadDbReviews() {
-      let fetched: Review[] = [];
+      const reviewMap = new Map<string, Review>();
+
+      // 1. Fetch from Supabase direct table
+      try {
+        const { data: sbReviews, error: sbErr } = await supabase.from('Review').select('*').order('createdAt', { ascending: false });
+        if (!sbErr && Array.isArray(sbReviews)) {
+          sbReviews.forEach(r => {
+            if (r && r.id) reviewMap.set(r.id, r);
+          });
+        }
+      } catch (e) {
+        console.warn('Supabase Review select fallback:', e);
+      }
+
+      // 2. Fetch from Express / Prisma REST API
       try {
         const res = await fetch('/api/reviews');
         if (res.ok) {
           const text = await res.text();
           if (text.startsWith('{') || text.startsWith('[')) {
             const data = JSON.parse(text);
-            if (Array.isArray(data) && data.length > 0) {
-              fetched = data;
+            if (Array.isArray(data)) {
+              data.forEach(r => {
+                if (r && r.id) reviewMap.set(r.id, r);
+              });
             }
           }
         }
       } catch (e) {
-        console.warn('Could not fetch reviews from /api/reviews:', e);
+        console.warn('REST API /api/reviews fetch fallback:', e);
       }
 
-      if (fetched.length === 0) {
-        try {
-          const { data: sbReviews, error } = await supabase.from('Review').select('*').order('createdAt', { ascending: false });
-          if (!error && Array.isArray(sbReviews) && sbReviews.length > 0) {
-            fetched = sbReviews;
-          }
-        } catch (sbErr) {}
-      }
-
-      if (fetched.length > 0) {
-        setReviews(fetched);
-        try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(fetched)); } catch {}
+      if (reviewMap.size > 0) {
+        const list = Array.from(reviewMap.values());
+        setReviews(list);
+        try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(list)); } catch {}
       } else {
         // If DB has 0 reviews, seed the default verified reviews so homepage ticker and admin immediately have live data
         const initialList: Review[] = [
@@ -294,8 +302,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setReviews(initialList);
         try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(initialList)); } catch {}
 
-        // Seed to DB asynchronously in background
+        // Seed to Supabase & Prisma asynchronously
         initialList.forEach(r => {
+          supabase.from('Review').insert([r]).then(() => {}).catch(() => {});
           fetch('/api/reviews', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -308,16 +317,35 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const addReview = async (reviewData: Partial<Review>) => {
+    const reviewId = reviewData.id || `rev-${Date.now()}`;
     const payload = {
+      id: reviewId,
       productId: reviewData.productId || 'w-1',
       customerName: reviewData.customerName || 'PGmart Shopper',
-      rating: reviewData.rating || 5,
+      rating: Number(reviewData.rating) || 5,
       title: reviewData.title || `${reviewData.rating || 5} Star Experience`,
       comment: reviewData.comment || '',
+      photos: Array.isArray(reviewData.photos) ? JSON.stringify(reviewData.photos) : (reviewData.photos || '[]'),
       isVerifiedPurchase: reviewData.isVerifiedPurchase !== false,
-      status: reviewData.status || 'pending'
+      status: reviewData.status || 'pending',
+      createdAt: new Date().toISOString()
     };
 
+    let savedReview: Review | null = null;
+
+    // 1. Direct Supabase JS Client Insert (guarantees real-time persistence to Supabase)
+    try {
+      const { data: sbData, error: sbErr } = await supabase.from('Review').insert([payload]).select();
+      if (!sbErr && sbData && sbData[0]) {
+        savedReview = sbData[0];
+      } else if (sbErr) {
+        console.warn('[Supabase direct review insert warning]:', sbErr);
+      }
+    } catch (sbEx) {
+      console.warn('[Supabase client exception]:', sbEx);
+    }
+
+    // 2. Dual REST API Sync
     try {
       const res = await fetch('/api/reviews', {
         method: 'POST',
@@ -327,30 +355,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.review) {
-          setReviews(prev => {
-            const updated = [data.review, ...prev.filter(r => r.id !== data.review.id)];
-            try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(updated)); } catch {}
-            return updated;
-          });
-          return data.review;
+          savedReview = data.review;
         }
       }
-    } catch (e) {
-      console.warn('API review creation fallback to local state', e);
+    } catch (apiErr) {
+      console.warn('[API Review sync warning]:', apiErr);
     }
 
-    // Fallback if offline
-    const newRev: Review = {
-      id: `rev-${Date.now()}`,
+    const finalReview: Review = savedReview || {
       ...payload,
-      createdAt: new Date().toISOString()
+      photos: typeof payload.photos === 'string' ? JSON.parse(payload.photos || '[]') : payload.photos
     } as any;
+
     setReviews(prev => {
-      const updated = [newRev, ...prev];
+      const updated = [finalReview, ...prev.filter(r => r.id !== finalReview.id)];
       try { localStorage.setItem('pgmart_reviews_v2', JSON.stringify(updated)); } catch {}
       return updated;
     });
-    return newRev;
+
+    return finalReview;
   };
 
   const updateReviewStatus = async (id: string, status: 'approved' | 'pending' | 'rejected') => {
@@ -361,6 +384,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     showToast(`Review status updated to ${status.toUpperCase()}`);
 
+    // 1. Direct Supabase Update
+    try {
+      const { error: sbErr } = await supabase.from('Review').update({ status }).eq('id', id);
+      if (sbErr) console.warn('[Supabase update status warning]:', sbErr);
+    } catch (e) {}
+
+    // 2. REST API Update
     try {
       await adminFetch(`/api/reviews/${id}/status`, {
         method: 'PUT',
@@ -380,6 +410,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
     showToast('Review removed.');
 
+    // 1. Direct Supabase Delete
+    try {
+      const { error: sbErr } = await supabase.from('Review').delete().eq('id', id);
+      if (sbErr) console.warn('[Supabase delete review warning]:', sbErr);
+    } catch (e) {}
+
+    // 2. REST API Delete
     try {
       await adminFetch(`/api/reviews/${id}`, {
         method: 'DELETE'
