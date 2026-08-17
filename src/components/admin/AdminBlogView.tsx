@@ -463,16 +463,7 @@ export const AdminBlogView: React.FC = () => {
                   className="w-full px-3 py-2 border border-stone-200 rounded-xl text-xs text-stone-700 focus:border-[#C0654B] outline-none"
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-stone-700">Avatar URL</label>
-                <input
-                  type="text"
-                  value={draft.authorAvatar}
-                  onChange={e => setDraft(prev => ({ ...prev, authorAvatar: e.target.value }))}
-                  placeholder="https://..."
-                  className="w-full px-3 py-2 border border-stone-200 rounded-xl text-xs font-mono text-stone-500 focus:border-[#C0654B] outline-none bg-stone-50"
-                />
-              </div>
+
             </div>
 
             {/* Tags */}
@@ -654,7 +645,9 @@ export const AdminBlogView: React.FC = () => {
                     {/* Author */}
                     <td className="p-4 hidden md:table-cell">
                       <div className="flex items-center gap-2">
-                        <img src={post.authorAvatar} alt={post.author} className="w-6 h-6 rounded-full object-cover border border-stone-200" />
+                        <div className="w-7 h-7 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center shrink-0">
+                          <User className="w-3.5 h-3.5" />
+                        </div>
                         <div>
                           <p className="font-semibold text-stone-800">{post.author}</p>
                           <p className="text-stone-400 text-[10px]">{post.publishedDate}</p>

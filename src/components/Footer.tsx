@@ -63,11 +63,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
 
                   {/* Author Banner */}
                   <div className="absolute bottom-3 inset-x-3 text-left flex items-center gap-2.5 bg-stone-950/60 backdrop-blur-md p-2 rounded-xl border border-stone-700/50">
-                    <img
-                      src={ourStoryPost.authorAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80'}
-                      alt={ourStoryPost.author}
-                      className="w-7 h-7 rounded-full object-cover border border-[#C0654B]"
-                    />
+                    <div className="w-7 h-7 rounded-full bg-[#C0654B]/20 text-[#C0654B] border border-[#C0654B] flex items-center justify-center shrink-0">
+                      <User className="w-3.5 h-3.5" />
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-white text-xs font-bold truncate">{ourStoryPost.author}</p>
                       <p className="text-[10px] text-stone-400 truncate">{ourStoryPost.authorRole}</p>

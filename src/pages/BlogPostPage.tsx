@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { initialBlogPosts, BlogPost } from '../data/blogPosts';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from '../components/ProductCard';
-import { Calendar, Clock, ArrowLeft, Share2, Check, Instagram, ArrowRight, Bookmark, Sparkles } from 'lucide-react';
+import { Calendar, Clock, ArrowLeft, Share2, Check, Instagram, ArrowRight, Bookmark, Sparkles, User } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface BlogPostPageProps {
@@ -86,11 +86,9 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ onNavigate, slug }) 
           {/* AUTHOR & SOCIAL SHARE BAR */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-stone-100">
             <div className="flex items-center gap-3">
-              <img
-                src={post.authorAvatar}
-                alt={post.author}
-                className="w-11 h-11 rounded-full object-cover border-2 border-[#C0654B]/30"
-              />
+              <div className="w-11 h-11 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center border-2 border-[#C0654B]/20 shrink-0">
+                <User className="w-5 h-5" />
+              </div>
               <div>
                 <p className="font-bold text-stone-900 text-sm">{post.author}</p>
                 <p className="text-xs text-stone-500">{post.authorRole}</p>

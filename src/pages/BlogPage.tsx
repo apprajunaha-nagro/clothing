@@ -108,12 +108,10 @@ export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate }) => {
               </div>
 
               <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <img
-                    src={featuredPost.authorAvatar}
-                    alt={featuredPost.author}
-                    className="w-8 h-8 rounded-full object-cover border border-stone-300"
-                  />
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-[#F3E9E4] text-[#C0654B] flex items-center justify-center">
+                    <User className="w-3.5 h-3.5" />
+                  </div>
                   <div>
                     <p className="font-bold text-xs text-stone-900">{featuredPost.author}</p>
                     <p className="text-[10px] text-stone-500">{featuredPost.authorRole}</p>
@@ -181,12 +179,8 @@ export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate }) => {
 
                   {/* Card Footer */}
                   <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={post.authorAvatar}
-                        alt={post.author}
-                        className="w-6 h-6 rounded-full object-cover border border-stone-200"
-                      />
+                    <div className="flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-[#C0654B]" />
                       <span className="font-semibold text-stone-700 text-[11px]">{post.author}</span>
                     </div>
 
