@@ -15,7 +15,15 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ onNavigate, slug }) 
   const [copied, setCopied] = useState(false);
 
   const allPosts = (blogPosts && blogPosts.length > 0) ? blogPosts : initialBlogPosts;
-  const post = allPosts.find(p => p.slug === slug || p.id === slug) || allPosts[0];
+
+  const normalizedSlug = (slug || '').toLowerCase().trim();
+  const post = allPosts.find(p => p.slug === slug || p.id === slug)
+    || (normalizedSlug === 'our-story' || normalizedSlug === 'our_story' || normalizedSlug === 'ourstory'
+        ? (allPosts.find(p => p.slug === 'our-story' || p.id === 'post-our-story' || p.category === 'Our Story' || p.tags?.includes('Our Story') || p.title?.toLowerCase().includes('our story'))
+           || allPosts.find(p => p.category === 'Our Story'))
+        : undefined)
+    || allPosts.find(p => p.slug?.toLowerCase() === normalizedSlug || p.id?.toLowerCase() === normalizedSlug)
+    || allPosts[0];
 
   // Related products from store catalog matching post category
   const relatedProducts = products

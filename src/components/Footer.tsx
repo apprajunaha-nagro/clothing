@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
+import { initialBlogPosts } from '../data/blogPosts';
 import { Truck, RotateCcw, ShieldCheck, CreditCard, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, ArrowRight } from 'lucide-react';
 
 interface FooterProps {
@@ -8,8 +9,18 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' }) => {
-  const { settings, isAdminLoggedIn } = useStore();
+  const { settings, isAdminLoggedIn, blogPosts } = useStore();
   const isHomePage = currentPath === '/' || currentPath === '';
+
+  // Dynamically resolve "Our Story" blog post from live store/database
+  const allPosts = (blogPosts && blogPosts.length > 0) ? blogPosts : initialBlogPosts;
+  const ourStoryPost = allPosts.find(p => p.slug === 'our-story' || p.id === 'post-our-story' || p.category === 'Our Story' || p.tags?.includes('Our Story') || p.title?.toLowerCase().includes('our story'))
+    || allPosts.find(p => p.category === 'Our Story')
+    || allPosts[0];
+
+  const ourStoryBg = ourStoryPost?.featuredImage || 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=60';
+  const ourStoryExcerpt = ourStoryPost?.excerpt || (Array.isArray(ourStoryPost?.content) && ourStoryPost.content[0]) || 'Born in Shantipur, Bengal — PGmart delivers authentic Indian craftsmanship & luxury ethnic wear at direct-from-weaver fair pricing.';
+  const ourStorySlug = ourStoryPost?.slug || 'our-story';
 
   return (
     <footer className="bg-[#2B2620] text-stone-300 border-t border-stone-800 text-left">
@@ -18,9 +29,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
       {isHomePage && (
         <div className="relative overflow-hidden bg-[#1A120C]">
         {/* Background texture overlay */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1600&q=60)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1A120C]/80 via-[#1A120C]/60 to-[#1A120C]/95 pointer-events-none" />
+        <div className="absolute inset-0 opacity-15 pointer-events-none transition-all duration-700"
+          style={{ backgroundImage: `url(${ourStoryBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1A120C]/85 via-[#1A120C]/70 to-[#1A120C]/95 pointer-events-none" />
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 text-center space-y-4">
 
@@ -33,18 +44,18 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
             />
             <div className="text-left space-y-0.5">
               <h2 className="text-xl sm:text-2xl font-bold font-serif text-white tracking-wide leading-tight">
-                PGmart ( Pratap Garments )
+                {settings.storeName ? `${settings.storeName} ( Pratap Garments )` : 'PGmart ( Pratap Garments )'}
               </h2>
               <p className="text-[#C0654B] font-bold text-[10px] sm:text-xs uppercase tracking-wider">
-                {settings.tagline}
+                {settings.tagline || ourStoryPost?.title || 'Heritage Handloom & Modern Fashion'}
               </p>
             </div>
           </div>
 
           {/* Story Excerpt */}
           <div className="max-w-xl mx-auto space-y-2">
-            <p className="text-stone-300 text-xs sm:text-sm leading-snug font-light">
-              Born in Shantipur, Bengal — PGmart delivers authentic Indian craftsmanship & luxury ethnic wear at direct-from-weaver fair pricing.
+            <p className="text-stone-300 text-xs sm:text-sm leading-snug font-light line-clamp-3">
+              {ourStoryExcerpt}
             </p>
           </div>
 
@@ -66,7 +77,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
           {/* CTA Button */}
           <div>
             <button
-              onClick={() => onNavigate('/blog/our-story')}
+              onClick={() => onNavigate(`/blog/${ourStorySlug}`)}
               className="inline-flex items-center gap-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-xs px-5 py-2 rounded-full transition-all shadow-md hover:shadow-[#C0654B]/30 group cursor-pointer"
             >
               <span>Read Our Story</span>
