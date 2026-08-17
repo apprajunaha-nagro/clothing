@@ -259,8 +259,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
       }
 
       const options = {
-        key: rzpData.keyId,
-        amount: rzpData.amount,
+        key: rzpData.keyId || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || settings.razorpayKeyId || 'rzp_test_TQkv6JASi8SQUP',
+        amount: rzpData.amount || Math.round(total * 100),
         currency: rzpData.currency || 'INR',
         name: settings.storeName || 'PGmart',
         description: 'Clothing Purchase Payment',
