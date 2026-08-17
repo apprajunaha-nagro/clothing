@@ -238,34 +238,42 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
 
     // For Online Payments (UPI / Cards): Launch Razorpay Checkout Modal
     const isScriptLoaded = await loadRazorpayScript();
-    if (!isScriptLoaded) {
-      alert('Payment SDK failed to load. Please check your network connection.');
+    if (!isScriptLoaded && !(window as any).Razorpay) {
+      alert('Payment SDK failed to load. Please check your internet connection and reload the page.');
       setLoading(false);
       return;
     }
 
     try {
-      const res = await fetch('/api/razorpay/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: total, receipt: `rcpt_${Date.now()}` })
-      });
+      let rzpKeyId = (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || settings.razorpayKeyId || 'rzp_test_TQkv6JASi8SQUP';
+      let rzpOrderId: string | undefined = undefined;
 
-      const rzpData = await res.json();
-      if (!rzpData.success) {
-        alert(rzpData.error || 'Failed to initiate online payment.');
-        setLoading(false);
-        return;
+      // Try server-side order generation first
+      try {
+        const res = await fetch('/api/razorpay/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: total, receipt: `rcpt_${Date.now()}` })
+        });
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const rzpData = await res.json();
+          if (rzpData && rzpData.success) {
+            if (rzpData.keyId) rzpKeyId = rzpData.keyId;
+            if (rzpData.orderId) rzpOrderId = rzpData.orderId;
+          }
+        }
+      } catch (apiErr) {
+        console.warn('[Razorpay API warning, launching client checkout]:', apiErr);
       }
 
-      const options = {
-        key: rzpData.keyId || (import.meta as any).env?.VITE_RAZORPAY_KEY_ID || settings.razorpayKeyId || 'rzp_test_TQkv6JASi8SQUP',
-        amount: rzpData.amount || Math.round(total * 100),
-        currency: rzpData.currency || 'INR',
+      const options: any = {
+        key: rzpKeyId,
+        amount: Math.round(total * 100),
+        currency: 'INR',
         name: settings.storeName || 'PGmart',
         description: 'Clothing Purchase Payment',
         image: window.location.origin + '/pgmart-logo.png',
-        order_id: rzpData.orderId,
         prefill: {
           name: fullName || user?.name || '',
           email: email || user?.email || '',
@@ -289,7 +297,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
             ...baseOrderData,
             paymentStatus: 'paid',
             paymentMethod: 'razorpay',
-            razorpayOrderId: response.razorpay_order_id || null,
+            razorpayOrderId: response.razorpay_order_id || rzpOrderId || null,
             razorpayPaymentId: response.razorpay_payment_id || null,
             razorpaySignature: response.razorpay_signature || null,
             trackingNumber: response.razorpay_payment_id || `pay_${Date.now()}`
@@ -308,17 +316,27 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
         }
       };
 
-      const razorpayInstance = new (window as any).Razorpay(options);
+      if (rzpOrderId) {
+        options.order_id = rzpOrderId;
+      }
+
+      const RazorpayClass = (window as any).Razorpay;
+      if (!RazorpayClass) {
+        throw new Error('Razorpay SDK is not available in browser window');
+      }
+
+      const razorpayInstance = new RazorpayClass(options);
+      razorpayInstance.on('payment.failed', function (resp: any) {
+        console.error('Razorpay payment failed:', resp);
+        alert(`Payment failed: ${resp?.error?.description || 'Transaction was not completed'}`);
+        setLoading(false);
+      });
+
       razorpayInstance.open();
     } catch (err: any) {
       console.error('Razorpay process error:', err);
-      alert('Online gateway timeout. Creating confirmed order directly.');
-      const newOrder = await createOrder({ ...baseOrderData, paymentStatus: 'paid' });
+      alert(`Razorpay Checkout Error: ${err.message || 'Please check your connection and retry'}`);
       setLoading(false);
-      if (newOrder) {
-        onOrderPlaced(newOrder);
-        onNavigate(`/order-confirmation/${newOrder.id}`);
-      }
     }
   };
 
