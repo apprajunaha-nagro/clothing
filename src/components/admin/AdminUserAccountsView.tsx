@@ -7,6 +7,7 @@ import {
   AlertTriangle, Filter, ChevronRight, Package, ArrowUpRight, Award, RefreshCw
 } from 'lucide-react';
 import { Order, UserAccount, UserActivity } from '../../types';
+import { supabase } from '../../lib/supabaseClient';
 
 export const AdminUserAccountsView: React.FC = () => {
   const { orders, user: currentUser, showToast, updateOrderStatus } = useStore();
@@ -47,33 +48,52 @@ export const AdminUserAccountsView: React.FC = () => {
 
   const fetchDbUsers = async () => {
     setIsLoadingUsers(true);
+    let loadedUsers: any[] | null = null;
+
+    // 1. Try REST API endpoint
     try {
       const token = localStorage.getItem('pgmart_admin_token') || sessionStorage.getItem('pgmart_admin_token') || 'pgmart123';
       const res = await fetch('/api/admin/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
-        if (Array.isArray(data)) {
-          setDbUsers(data);
-          return;
+        if (Array.isArray(data) && data.length > 0) {
+          loadedUsers = data;
         }
       }
-      // Fallback endpoint if /api/admin/users returns non-200
-      const fallbackRes = await fetch('/api/users');
-      if (fallbackRes.ok) {
-        const fallbackData = await fallbackRes.json();
-        if (Array.isArray(fallbackData)) {
-          setDbUsers(fallbackData);
+    } catch (e) {}
+
+    // 2. Direct Supabase Client Query Fallback
+    if (!loadedUsers) {
+      try {
+        const { data: sbUsers, error: sbErr } = await supabase
+          .from('User')
+          .select('*')
+          .order('createdAt', { ascending: false });
+
+        if (!sbErr && Array.isArray(sbUsers) && sbUsers.length > 0) {
+          loadedUsers = sbUsers.map(u => {
+            let addrs = [];
+            if (u.addresses) {
+              try { addrs = typeof u.addresses === 'string' ? JSON.parse(u.addresses) : u.addresses; } catch {}
+            }
+            return {
+              ...u,
+              addresses: Array.isArray(addrs) ? addrs : []
+            };
+          });
         }
+      } catch (sbEx) {
+        console.warn('Supabase users fallback error:', sbEx);
       }
-    } catch (e) {
-      console.warn('Failed to fetch admin users from DB:', e);
-    } finally {
-      setIsLoadingUsers(false);
     }
+
+    if (loadedUsers) {
+      setDbUsers(loadedUsers);
+    }
+    setIsLoadingUsers(false);
   };
 
   React.useEffect(() => {

@@ -1707,7 +1707,7 @@ app.get('/api/orders', async (req, res) => {
 });
 
 
-app.put('/api/orders/:id/status', adminAuth, async (req, res) => {
+const handleOrderStatusUpdate = async (req: any, res: any) => {
   try {
     const { id } = req.params;
     const { status, trackingNumber, courierPartner } = req.body;
@@ -1732,7 +1732,13 @@ app.put('/api/orders/:id/status', adminAuth, async (req, res) => {
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
-});
+};
+
+app.put('/api/orders/:id/status', adminAuth, handleOrderStatusUpdate);
+app.post('/api/orders/:id/status', adminAuth, handleOrderStatusUpdate);
+app.patch('/api/orders/:id/status', adminAuth, handleOrderStatusUpdate);
+app.post('/api/orders/:id', adminAuth, handleOrderStatusUpdate);
+app.put('/api/orders/:id', adminAuth, handleOrderStatusUpdate);
 
 // Coupons
 app.get('/api/coupons', async (req, res) => {

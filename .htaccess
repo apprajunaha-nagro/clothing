@@ -1,22 +1,41 @@
 # ----------------------------------------------------------------------
-# Phusion Passenger / Apache Node.js Routing Configuration for Hostinger
+# PGmart E-Commerce - Hostinger Apache & Phusion Passenger Configuration
 # ----------------------------------------------------------------------
 
-PassengerEnabled on
-PassengerAppEngine node
-PassengerAppType node
-PassengerStartupFile app.js
+# 1. Enable Phusion Passenger for Node.js Application
+<IfModule mod_passenger.c>
+  PassengerEnabled on
+  PassengerAppEngine node
+  PassengerAppType node
+  PassengerStartupFile app.js
+</IfModule>
 
+# 2. Allow all REST methods (Prevents 501 Not Implemented on PUT/PATCH/DELETE)
+<Limit GET POST PUT DELETE OPTIONS PATCH HEAD>
+  Allow from all
+</Limit>
+
+<IfModule mod_headers.c>
+  Header always set Access-Control-Allow-Origin "*"
+  Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+  Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, x-admin-token"
+</IfModule>
+
+# 3. URL Rewriting & SPA Routing
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # 1. Allow existing static files (dist/, public/, uploads, JS, CSS) directly
+  # Allow existing static files, scripts, images, and bundles directly
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # 2. Pass all remaining requests to Phusion Passenger Node.js app.js
+  # Route /api/ requests to Node.js Passenger application
+  RewriteCond %{REQUEST_URI} ^/api/
   RewriteRule ^(.*)$ app.js/$1 [QSA,L]
+
+  # Fallback for Single Page Application (SPA) routes to index.html
+  RewriteRule ^ index.html [L]
 </IfModule>
 

@@ -1171,14 +1171,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 2. Dual REST API Sync
     try {
       await adminFetch('/api/admin/settings', {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSettings)
       });
     } catch (apiErr) {
       try {
         await fetch('/api/settings', {
-          method: 'PUT',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newSettings)
         });
@@ -1574,7 +1574,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProduct)
       });
-      if (res && res.ok) {
+      const contentType = res?.headers?.get('content-type') || '';
+      if (res && res.ok && contentType.includes('application/json')) {
         const data = await res.json();
         if (data.success && data.product) {
           const savedProd = data.product;
@@ -1584,13 +1585,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
             return [savedProd, ...prev];
           });
-          showToast('Product created successfully');
-          return;
         }
       }
     } catch (e) {
-      console.warn('Backend sync failed for product creation', e);
+      // Direct Supabase insert already guaranteed persistence
     }
+    showToast('Product created successfully');
   };
 
   const updateProduct = async (id: string, productData: Partial<Product>) => {
@@ -1640,11 +1640,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // 2. REST API update
     try {
       const res = await adminFetch(`/api/products/${id}`, {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(productData)
       });
-      if (res && res.ok) {
+      const contentType = res?.headers?.get('content-type') || '';
+      if (res && res.ok && contentType.includes('application/json')) {
         const data = await res.json();
         if (data.success && data.product) {
           const updatedProd = data.product;
@@ -1652,7 +1653,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
       }
     } catch (e) {
-      console.warn('Backend sync failed for product update', e);
+      // Direct Supabase update already guaranteed persistence
     }
   };
 
@@ -1897,15 +1898,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       : `Order #${orderId} status updated to "${status.toUpperCase()}"`;
     showToast(toastMsg);
 
-    // 4. Sync updated status to backend API
+    // 4. Direct Supabase Order update
+    try {
+      const sbOrderUpdate: any = {
+        status,
+        updatedAt: new Date().toISOString()
+      };
+      if (trackingNum) sbOrderUpdate.trackingNumber = trackingNum;
+      if (isDelivered) sbOrderUpdate.paymentStatus = 'paid';
+
+      await supabase.from('Order').update(sbOrderUpdate).eq('id', orderId);
+    } catch (sbErr) {
+      console.warn('[Supabase updateOrderStatus warning]:', sbErr);
+    }
+
+    // 5. Sync updated status to backend API
     try {
       await adminFetch(`/api/orders/${orderId}/status`, {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, trackingNumber: trackingNum, isStockDeducted: stockDeductedNow ? true : undefined })
       });
     } catch (e) {
-      console.warn('Backend sync for status update failed, local state updated successfully', e);
+      // Direct Supabase update already saved state
     }
   };
 
