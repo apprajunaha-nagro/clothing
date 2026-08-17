@@ -1,0 +1,11 @@
+{
+  "name": "pgmart-fashion-quality-store",
+  "version": "1.2.0",
+  "buildTime": "2026-08-17T21:10:00+05:30",
+  "features": [
+    "realtime_razorpay_webhook",
+    "instant_catalog_filtering",
+    "word_stemming_search",
+    "universal_free_size_matching"
+  ]
+}
