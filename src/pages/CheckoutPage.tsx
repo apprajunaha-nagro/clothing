@@ -288,6 +288,10 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
           const newOrder = await createOrder({
             ...baseOrderData,
             paymentStatus: 'paid',
+            paymentMethod: 'razorpay',
+            razorpayOrderId: response.razorpay_order_id || null,
+            razorpayPaymentId: response.razorpay_payment_id || null,
+            razorpaySignature: response.razorpay_signature || null,
             trackingNumber: response.razorpay_payment_id || `pay_${Date.now()}`
           });
           setLoading(false);

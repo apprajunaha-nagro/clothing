@@ -190,6 +190,9 @@ export interface Order {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
   trackingNumber?: string;
   courierPartner?: string;
   couponCode?: string;
@@ -294,6 +297,7 @@ export interface SiteSettings {
   stripeEnabled: boolean;
   razorpayEnabled: boolean;
   razorpayKeyId: string;
+  razorpayKeySecret?: string;
   stripePublicKey: string;
   gstNumber: string;
   dealsEnabled?: boolean;

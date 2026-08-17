@@ -36,6 +36,7 @@ model SiteSettings {
   stripeEnabled         Boolean @default(false)
   razorpayEnabled       Boolean @default(true)
   razorpayKeyId         String  @default("rzp_test_1234567890")
+  razorpayKeySecret     String?
   stripePublicKey       String  @default("pk_test_1234567890")
   gstNumber             String  @default("19AAAAA0000A1Z5")
   dealsEnabled          Boolean @default(true)
@@ -238,6 +239,9 @@ model Order {
   status          String   @default("pending")
   paymentStatus   String   @default("pending")
   paymentMethod   String   @default("upi")
+  razorpayOrderId String?
+  razorpayPaymentId String?
+  razorpaySignature String?
   trackingNumber  String?
   courierPartner  String?
   couponCode      String?

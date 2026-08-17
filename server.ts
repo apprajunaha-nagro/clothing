@@ -465,6 +465,9 @@ app.post('/api/orders', async (req, res) => {
         status: orderData.status || 'pending',
         paymentStatus: orderData.paymentStatus || 'pending',
         paymentMethod: orderData.paymentMethod || 'cod',
+        razorpayOrderId: orderData.razorpayOrderId || null,
+        razorpayPaymentId: orderData.razorpayPaymentId || null,
+        razorpaySignature: orderData.razorpaySignature || null,
         trackingNumber: orderData.trackingNumber || null,
         courierPartner: orderData.courierPartner || null,
         couponCode: orderData.couponCode || null
@@ -1787,9 +1790,12 @@ app.post('/api/razorpay/create-order', async (req, res) => {
     let keySecret = process.env.RAZORPAY_KEY_SECRET || 'test_secret_123';
 
     try {
-      const dbSetting = await prisma.setting.findFirst();
+      const dbSetting = await prisma.siteSettings.findFirst({ where: { id: 'default' } });
       if (dbSetting?.razorpayKeyId && dbSetting.razorpayKeyId.trim() !== '') {
         keyId = dbSetting.razorpayKeyId.trim();
+      }
+      if (dbSetting?.razorpayKeySecret && dbSetting.razorpayKeySecret.trim() !== '') {
+        keySecret = dbSetting.razorpayKeySecret.trim();
       }
     } catch (e) {}
 
@@ -1842,6 +1848,13 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     let keySecret = process.env.RAZORPAY_KEY_SECRET || 'test_secret_123';
+
+    try {
+      const dbSetting = await prisma.siteSettings.findFirst({ where: { id: 'default' } });
+      if (dbSetting?.razorpayKeySecret && dbSetting.razorpayKeySecret.trim() !== '') {
+        keySecret = dbSetting.razorpayKeySecret.trim();
+      }
+    } catch (e) {}
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ error: 'Missing signature verification parameters' });

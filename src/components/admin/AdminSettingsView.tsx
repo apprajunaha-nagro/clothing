@@ -84,6 +84,7 @@ export const AdminSettingsView: React.FC = () => {
     updateSettings({
       razorpayEnabled,
       razorpayKeyId,
+      razorpayKeySecret: razorpayKeySecret || undefined,
       codEnabled,
       codFee
     });
