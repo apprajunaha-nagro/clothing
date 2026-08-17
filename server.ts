@@ -2759,29 +2759,6 @@ app.delete(['/api/admin/users/:id', '/api/users/:id'], adminAuth, async (req, re
   }
 });
 
-// ---------------- API ROUTES: BLOG POSTS ----------------
-
-function formatBlogPost(post: any) {
-  let parsedContent: string[] = [];
-  try {
-    parsedContent = typeof post.content === 'string' ? JSON.parse(post.content) : post.content;
-  } catch {
-    parsedContent = [post.content];
-  }
-
-  let parsedTags: string[] = [];
-  try {
-    parsedTags = typeof post.tags === 'string' ? JSON.parse(post.tags) : post.tags;
-  } catch {
-    parsedTags = [];
-  }
-
-  return {
-    ...post,
-    content: parsedContent,
-    tags: parsedTags
-  };
-}
 
 // GET /api/blog-posts
 app.get('/api/blog-posts', async (req, res) => {
