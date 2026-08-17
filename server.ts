@@ -1886,6 +1886,63 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
   }
 });
 
+// Optional automated Razorpay Webhook listener (captures async UPI & refund events)
+app.post('/api/razorpay/webhook', async (req, res) => {
+  try {
+    const payload = req.body;
+    const event = payload?.event;
+    console.log(`[Razorpay Webhook]: Received event "${event}"`);
+
+    if (event === 'payment.captured' || event === 'order.paid') {
+      const paymentEntity = payload?.payload?.payment?.entity;
+      const orderId = paymentEntity?.order_id;
+      const paymentId = paymentEntity?.id;
+
+      if (orderId || paymentId) {
+        await prisma.order.updateMany({
+          where: {
+            OR: [
+              { razorpayOrderId: orderId },
+              { trackingNumber: paymentId },
+              { razorpayPaymentId: paymentId }
+            ]
+          },
+          data: {
+            paymentStatus: 'paid',
+            status: 'confirmed',
+            razorpayPaymentId: paymentId || undefined
+          }
+        });
+        console.log(`[Razorpay Webhook]: Successfully marked order for payment "${paymentId}" as PAID`);
+      }
+    } else if (event === 'refund.processed') {
+      const refundEntity = payload?.payload?.refund?.entity;
+      const paymentId = refundEntity?.payment_id;
+
+      if (paymentId) {
+        await prisma.order.updateMany({
+          where: {
+            OR: [
+              { razorpayPaymentId: paymentId },
+              { trackingNumber: paymentId }
+            ]
+          },
+          data: {
+            paymentStatus: 'refunded',
+            status: 'returned'
+          }
+        });
+        console.log(`[Razorpay Webhook]: Successfully marked order for refund "${paymentId}" as REFUNDED`);
+      }
+    }
+
+    return res.json({ status: 'ok', received: true });
+  } catch (err: any) {
+    console.error('[Razorpay Webhook Error]:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // Admin test endpoint to verify Razorpay keys live with Razorpay API
 app.post('/api/razorpay/test-keys', adminAuth, async (req, res) => {
   try {
