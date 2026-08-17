@@ -137,18 +137,32 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   }
 
   // Colors available across all products
+  // Comprehensive curated color swatches matching Indian ethnic & western fashion
   const availableColors = [
+    { name: 'Red', hex: '#DC2626' },
+    { name: 'Maroon', hex: '#800000' },
+    { name: 'Pink', hex: '#EC4899' },
+    { name: 'Dusty Rose', hex: '#D8A0A6' },
     { name: 'Rose Clay', hex: '#C0654B' },
     { name: 'Navy Blue', hex: '#1B2A4A' },
+    { name: 'Royal Blue', hex: '#2563EB' },
+    { name: 'Teal', hex: '#0D9488' },
+    { name: 'Green', hex: '#16A34A' },
     { name: 'Golden Olive', hex: '#808000' },
-    { name: 'Dusty Rose', hex: '#D8A0A6' },
+    { name: 'Yellow', hex: '#EAB308' },
+    { name: 'Mustard', hex: '#CA8A04' },
+    { name: 'Orange', hex: '#EA580C' },
+    { name: 'Purple', hex: '#9333EA' },
+    { name: 'Black', hex: '#18181B' },
     { name: 'Charcoal', hex: '#2F4F4F' },
-    { name: 'Beige', hex: '#F5F5DC' }
+    { name: 'White', hex: '#FFFFFF' },
+    { name: 'Beige', hex: '#F5F5DC' },
+    { name: 'Grey', hex: '#6B7280' }
   ];
 
-  const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
-  const availableOccasions = ['Casual Wear', 'Festive Wear', 'Work Wear', 'Party Wear', 'Wedding Wear', 'Active & Loungewear'];
-  const availableFabrics = ['Pure Silk', 'Cotton Blend', 'Chiffon', 'Georgette', 'Velvet', 'Organza', 'Linen Blend', 'Art Silk'];
+  const availableSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'];
+  const availableOccasions = ['Casual Wear', 'Festive Wear', 'Work Wear', 'Party Wear', 'Wedding Wear', 'Active & Loungewear', 'Formal Wear'];
+  const availableFabrics = ['Pure Silk', 'Cotton Blend', 'Organic Cotton', 'Chiffon', 'Georgette', 'Velvet', 'Organza', 'Linen Blend', 'Art Silk', 'Rayon', 'Denim', 'Satin', 'Crepe'];
   const availableRatings = [
     { label: '4.5★ & Above', value: 4.5 },
     { label: '4.0★ & Above', value: 4.0 },
@@ -167,16 +181,14 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     searchQuery: searchParam || filters.searchQuery || '',
   };
 
-  // STAGED DRAFT FILTERS STATE (unapplied until user clicks 'Apply Filters')
+  // Live filter state
   const [draftFilters, setDraftFilters] = useState<FilterState>(initialFilterState);
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(initialFilterState);
 
-  // Sidebar-local selected subcategory (controls which types are shown, without navigating)
-  const [sidebarSubId, setSidebarSubId] = useState<string | null>(
-    initSubId || null
-  );
+  // Sidebar-local selected subcategory
+  const [sidebarSubId, setSidebarSubId] = useState<string | null>(initSubId || null);
 
-  // Sync draft and applied filters when route/query changes; reset page to 1
+  // Sync filters when route/query changes; reset page to 1
   useEffect(() => {
     setDraftFilters(initialFilterState);
     setAppliedFilters(initialFilterState);
@@ -184,7 +196,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     setSidebarSubId(initSubId || null);
   }, [categorySlug, queryString]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // UNIFIED PRODUCT FILTER FUNCTION (Guarantees draft preview count & applied result count are 100% identical)
+  // UNIFIED RESILIENT PRODUCT FILTER FUNCTION
   const evaluateProductFilter = (p: Product, filterState: FilterState) => {
     // 1. Wishlist
     if (tagParam === 'wishlist' || rawSlug === 'wishlist') return wishlist.includes(p.id);
@@ -196,32 +208,40 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
 
     // 3. Special Slugs & Tags
     if (rawSlug === 'sale' || tagParam === 'sale') {
-      if (!p.tags.includes('sale') && !p.discountPrice && (!p.discountPercent || p.discountPercent <= 0)) return false;
+      if (!p.tags?.includes('sale') && !p.discountPrice && (!p.discountPercent || p.discountPercent <= 0)) return false;
     }
     if (rawSlug === 'new-arrivals' || tagParam === 'new_arrival') {
-      if (!p.tags.includes('new_arrival')) return false;
+      if (!p.tags?.includes('new_arrival')) return false;
     }
     if (rawSlug === 'bestsellers' || tagParam === 'bestseller') {
-      if (!p.tags.includes('bestseller') && p.rating < 4.5) return false;
+      if (!p.tags?.includes('bestseller') && (p.rating || 0) < 4.0) return false;
     }
     if (rawSlug === 'curves' || tagParam === 'curves_plus_size' || filterState.plusSizeOnly) {
-      if (!p.tags.includes('curves_plus_size') && !p.availableSizes.some(s => ['XL', 'XXL', '3XL', 'Free Size'].includes(s))) return false;
+      const prodSizes = [
+        ...(Array.isArray(p.availableSizes) ? p.availableSizes : []),
+        ...(Array.isArray(p.variants) ? p.variants.map(v => v.size) : [])
+      ].map(s => String(s).toUpperCase());
+      const hasPlusSize = prodSizes.some(s => ['XL', 'XXL', '2XL', '3XL', '4XL', 'FREE SIZE'].includes(s));
+      if (!p.tags?.includes('curves_plus_size') && !hasPlusSize) return false;
     }
 
     // 4. Subcategory Filter
-    if (filterState.subcategoryId) {
-      const subId = filterState.subcategoryId.toLowerCase();
+    const activeSub = filterState.subcategoryId || (subParam ? subParam : undefined);
+    if (activeSub) {
+      const subId = activeSub.toLowerCase();
       const pSub = (p.subcategoryId || '').toLowerCase();
       if (pSub !== subId && !pSub.includes(subId) && !subId.includes(pSub)) return false;
     }
 
     // 5. Product Types / Styles Filter
-    if (filterState.types && filterState.types.length > 0) {
-      if (!p.typeId) return false;
-      const pType = p.typeId.toLowerCase();
-      const matchesType = filterState.types.some(tId => {
+    const activeTypes = filterState.types && filterState.types.length > 0 ? filterState.types : (typeParam ? [typeParam] : []);
+    if (activeTypes.length > 0) {
+      const pType = (p.typeId || '').toLowerCase();
+      const pName = (p.name || '').toLowerCase();
+      const pDesc = (p.description || '').toLowerCase();
+      const matchesType = activeTypes.some(tId => {
         const target = tId.toLowerCase();
-        return pType === target || pType.includes(target) || target.includes(pType);
+        return pType === target || pType.includes(target) || target.includes(pType) || pName.includes(target) || pDesc.includes(target);
       });
       if (!matchesType) return false;
     }
@@ -237,96 +257,182 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
 
     // 7. Occasion Filter
     if (filterState.occasions && filterState.occasions.length > 0) {
-      if (!filterState.occasions.some(o => p.occasion.toLowerCase().includes(o.toLowerCase()))) return false;
+      const prodOcc = (p.occasion || '').toLowerCase();
+      const prodDesc = (p.description || '').toLowerCase();
+      const prodName = (p.name || '').toLowerCase();
+      const prodTags = (p.tags || []).map(t => String(t).toLowerCase());
+      const matchesOcc = filterState.occasions.some(o => {
+        const target = o.toLowerCase().replace('&', '').replace('wear', '').trim();
+        return prodOcc.includes(target) || prodDesc.includes(target) || prodName.includes(target) || prodTags.some(t => t.includes(target));
+      });
+      if (!matchesOcc) return false;
     } else if (occasionParam) {
       const occLower = occasionParam.toLowerCase();
-      if (!p.occasion.toLowerCase().includes(occLower) && !p.name.toLowerCase().includes(occLower)) return false;
+      const prodOcc = (p.occasion || '').toLowerCase();
+      const prodName = (p.name || '').toLowerCase();
+      if (!prodOcc.includes(occLower) && !prodName.includes(occLower)) return false;
     }
 
     // 8. Age / Toddler Filter
     if (ageParam) {
       const ageLower = ageParam.toLowerCase();
-      if (!p.tags.some(t => t.toLowerCase().includes(ageLower)) && !p.name.toLowerCase().includes(ageLower) && !p.description.toLowerCase().includes(ageLower)) {
-        if (ageLower === 'toddler' && !p.availableSizes.some(s => ['1-2Y', '2-3Y', 'S'].includes(s))) return false;
+      if (!p.tags?.some(t => t.toLowerCase().includes(ageLower)) && !p.name.toLowerCase().includes(ageLower) && !p.description.toLowerCase().includes(ageLower)) {
+        if (ageLower === 'toddler' && !p.availableSizes?.some(s => ['1-2Y', '2-3Y', 'S'].includes(s))) return false;
       }
     }
 
     // 9. Search Query
     const activeSearch = filterState.searchQuery || searchParam;
     if (activeSearch) {
-      const q = activeSearch.toLowerCase();
+      const q = activeSearch.toLowerCase().trim();
       const matchesSearch = p.name.toLowerCase().includes(q) ||
                             p.description.toLowerCase().includes(q) ||
-                            p.fabric.toLowerCase().includes(q) ||
-                            p.occasion.toLowerCase().includes(q) ||
+                            (p.fabric && p.fabric.toLowerCase().includes(q)) ||
+                            (p.occasion && p.occasion.toLowerCase().includes(q)) ||
                             (p.brandName && p.brandName.toLowerCase().includes(q));
       if (!matchesSearch) return false;
     }
 
-    // 10. Sizes Filter
+    // 10. Sizes Filter (Case-insensitive across availableSizes & variants)
     if (filterState.sizes && filterState.sizes.length > 0) {
-      if (!p.availableSizes.some(s => filterState.sizes.includes(s))) return false;
+      const prodSizes: string[] = [];
+      if (Array.isArray(p.availableSizes)) {
+        p.availableSizes.forEach((s: any) => prodSizes.push(String(s).trim().toUpperCase()));
+      }
+      if (Array.isArray(p.variants)) {
+        p.variants.forEach((v: any) => {
+          if (v && v.size) prodSizes.push(String(v.size).trim().toUpperCase());
+        });
+      }
+      const matchesSize = filterState.sizes.some(fs => {
+        const target = fs.trim().toUpperCase();
+        return prodSizes.some(ps => ps === target || (target === 'FREE SIZE' && (ps.includes('FREE') || ps.includes('FS'))));
+      });
+      if (!matchesSize) return false;
     }
 
-    // 11. Colors Filter
+    // 11. Colors Filter (Case-insensitive across colors, variants & title)
     if (filterState.colors && filterState.colors.length > 0) {
-      if (!p.colors.some(c => filterState.colors.includes(c.name))) return false;
+      const prodColorStrings: string[] = [];
+      if (Array.isArray(p.colors)) {
+        p.colors.forEach((c: any) => {
+          if (typeof c === 'string') prodColorStrings.push(c.toLowerCase());
+          else if (c && typeof c.name === 'string') prodColorStrings.push(c.name.toLowerCase());
+        });
+      }
+      if (Array.isArray(p.variants)) {
+        p.variants.forEach((v: any) => {
+          if (v && v.color) prodColorStrings.push(String(v.color).toLowerCase());
+        });
+      }
+      const matchesColor = filterState.colors.some(fc => {
+        const target = fc.toLowerCase();
+        return prodColorStrings.some(pc => pc.includes(target) || target.includes(pc)) || p.name.toLowerCase().includes(target);
+      });
+      if (!matchesColor) return false;
     }
 
-    // 12. Fabrics Filter (OR-match)
+    // 12. Fabrics Filter
     if (filterState.fabrics && filterState.fabrics.length > 0) {
-      if (!filterState.fabrics.some(f => p.fabric.toLowerCase().includes(f.toLowerCase()))) return false;
+      const prodFabric = (p.fabric || '').toLowerCase();
+      const prodDesc = (p.description || '').toLowerCase();
+      const prodName = (p.name || '').toLowerCase();
+      const matchesFabric = filterState.fabrics.some(f => {
+        const target = f.toLowerCase().trim();
+        return prodFabric.includes(target) || prodDesc.includes(target) || prodName.includes(target);
+      });
+      if (!matchesFabric) return false;
     }
 
     // 13. Minimum Rating Filter
     if (filterState.rating && filterState.rating > 0) {
-      if (p.rating < filterState.rating) return false;
+      if ((p.rating || 0) < filterState.rating) return false;
     }
 
     // 14. Price Range Filter
-    const price = p.discountPrice || p.basePrice;
-    if (price < filterState.minPrice || price > filterState.maxPrice) return false;
+    const price = Number(p.discountPrice || p.basePrice || (p as any).price || 0);
+    if (filterState.minPrice > 0 && price < filterState.minPrice) return false;
+    if (filterState.maxPrice > 0 && price > filterState.maxPrice) return false;
 
     return true;
   };
 
-  // DRAFT FILTERED PRODUCTS (for preview count badge)
+  // DRAFT & APPLIED FILTERED PRODUCTS
   const draftFilteredProducts = products.filter(p => evaluateProductFilter(p, draftFilters));
-
-  // APPLIED FILTERED PRODUCTS (for actual displayed product grid)
   const filteredProducts = products.filter(p => evaluateProductFilter(p, appliedFilters));
 
   // SORT LOGIC
   const sortedProducts = [...filteredProducts].sort((a, b) => {
-    const pA = a.discountPrice || a.basePrice;
-    const pB = b.discountPrice || b.basePrice;
+    const pA = a.discountPrice || a.basePrice || (a as any).price || 0;
+    const pB = b.discountPrice || b.basePrice || (b as any).price || 0;
     if (appliedFilters.sortBy === 'price_asc') return pA - pB;
     if (appliedFilters.sortBy === 'price_desc') return pB - pA;
-    if (appliedFilters.sortBy === 'rating') return b.rating - a.rating;
-    if (appliedFilters.sortBy === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    return b.reviewCount - a.reviewCount;
+    if (appliedFilters.sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+    if (appliedFilters.sortBy === 'newest') return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+    return (b.reviewCount || 0) - (a.reviewCount || 0);
   });
 
-  // MULTIPLE FILTER TOGGLE HELPERS (Mutates local draft state)
-  const toggleDraftFilterItem = (key: 'occasions' | 'sizes' | 'colors' | 'fabrics', value: string) => {
-    setDraftFilters(prev => {
-      const list = prev[key] || [];
-      const exists = list.includes(value);
-      return {
-        ...prev,
-        [key]: exists ? list.filter(item => item !== value) : [...list, value]
-      };
-    });
+  // REAL-TIME LIVE FILTERING TOGGLE HELPERS
+  const toggleFilterItem = (key: 'occasions' | 'sizes' | 'colors' | 'fabrics', value: string) => {
+    const list = draftFilters[key] || [];
+    const exists = list.includes(value);
+    const updatedList = exists ? list.filter(item => item !== value) : [...list, value];
+    const nextState: FilterState = { ...draftFilters, [key]: updatedList };
+
+    setDraftFilters(nextState);
+    setAppliedFilters(nextState);
+    setFilters(nextState);
+    setCurrentPage(1);
   };
 
-  const toggleDraftType = (typeId: string) => {
-    setDraftFilters(prev => {
-      const exists = prev.types.includes(typeId);
-      return {
-        ...prev,
-        types: exists ? prev.types.filter(id => id !== typeId) : [...prev.types, typeId]
-      };
-    });
+  const toggleType = (typeId: string) => {
+    const exists = draftFilters.types.includes(typeId);
+    const updatedTypes = exists ? draftFilters.types.filter(id => id !== typeId) : [...draftFilters.types, typeId];
+    const nextState: FilterState = { ...draftFilters, types: updatedTypes };
+
+    setDraftFilters(nextState);
+    setAppliedFilters(nextState);
+    setFilters(nextState);
+    setCurrentPage(1);
+  };
+
+  const togglePlusSize = (checked: boolean) => {
+    const nextState = { ...draftFilters, plusSizeOnly: checked };
+    setDraftFilters(nextState);
+    setAppliedFilters(nextState);
+    setFilters(nextState);
+    setCurrentPage(1);
+  };
+
+  const selectSubcategory = (subId: string | null) => {
+    setSidebarSubId(subId);
+    const nextState: FilterState = {
+      ...draftFilters,
+      subcategoryId: subId || undefined,
+      types: []
+    };
+    setDraftFilters(nextState);
+    setAppliedFilters(nextState);
+    setFilters(nextState);
+    setCurrentPage(1);
+  };
+
+  const selectRating = (rating: number) => {
+    const newRating = draftFilters.rating === rating ? 0 : rating;
+    const nextState = { ...draftFilters, rating: newRating };
+    setDraftFilters(nextState);
+    setAppliedFilters(nextState);
+    setFilters(nextState);
+    setCurrentPage(1);
+  };
+
+  const changeMaxPrice = (val: number) => {
+    setLocalMaxPrice(val);
+    const nextState = { ...draftFilters, maxPrice: val };
+    setDraftFilters(nextState);
+    setAppliedFilters(nextState);
+    setFilters(nextState);
+    setCurrentPage(1);
   };
 
   // APPLY FILTERS ACTION
@@ -335,10 +441,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     setFilters({ ...draftFilters });
     setCurrentPage(1);
     setMobileFilterOpen(false);
-    // Scroll the independently-scrollable products panel back to the top
     const container = document.getElementById('products-grid-container');
     if (container) container.scrollTop = 0;
-    showToast(`Filters Applied (${draftFilteredProducts.length} items found)`);
+    showToast(`Filters Active (${filteredProducts.length} items found)`);
   };
 
   // RESET ALL FILTERS ACTION
@@ -365,10 +470,21 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     setLocalMaxPrice(10000);
     setSidebarSubId(null);
     resetFilters();
-    showToast("Filters Reset");
+    showToast("All Filters Reset");
   };
 
-  const hasUnappliedChanges = JSON.stringify(draftFilters) !== JSON.stringify(appliedFilters);
+  const hasActiveFilters = 
+    appliedFilters.sizes.length > 0 ||
+    appliedFilters.colors.length > 0 ||
+    appliedFilters.fabrics.length > 0 ||
+    appliedFilters.occasions.length > 0 ||
+    appliedFilters.types.length > 0 ||
+    appliedFilters.plusSizeOnly ||
+    appliedFilters.rating > 0 ||
+    appliedFilters.maxPrice < 10000 ||
+    appliedFilters.minPrice > 0 ||
+    appliedFilters.subcategoryId ||
+    subParam || typeParam || occasionParam || tagParam || brandParam;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 text-left">
@@ -431,13 +547,22 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       </div>
 
       {/* ACTIVE SECTION FILTER PILLS */}
-      {(subParam || typeParam || brandParam || occasionParam || tagParam || ageParam || searchParam) && (
-        <div className="flex flex-wrap items-center gap-2 bg-stone-100/80 p-3 rounded-xl border border-stone-200 text-xs">
-          <span className="font-bold text-stone-600">Active Section Filter:</span>
+      {/* ACTIVE SECTION & DYNAMIC FILTER PILLS */}
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 bg-stone-100/90 p-3 rounded-xl border border-stone-200 text-xs">
+          <span className="font-bold text-stone-700">Active Filters:</span>
           {currentSubcategory && (
             <span className="inline-flex items-center gap-1.5 bg-white text-[#C0654B] font-bold px-2.5 py-1 rounded-full border border-[#C0654B]/30 shadow-2xs">
               <span>Subcategory: {currentSubcategory.name}</span>
-              <button onClick={() => onNavigate(categoryBaseUrl)} className="hover:text-stone-900 cursor-pointer">
+              <button onClick={() => { selectSubcategory(null); onNavigate(categoryBaseUrl); }} className="hover:text-stone-900 cursor-pointer" title="Remove subcategory">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          )}
+          {appliedFilters.subcategoryId && !currentSubcategory && (
+            <span className="inline-flex items-center gap-1.5 bg-white text-[#C0654B] font-bold px-2.5 py-1 rounded-full border border-[#C0654B]/30 shadow-2xs">
+              <span>Subcategory Filter</span>
+              <button onClick={() => selectSubcategory(null)} className="hover:text-stone-900 cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
             </span>
@@ -450,10 +575,70 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
               </button>
             </span>
           )}
-          {occasionParam && (
-            <span className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 font-bold px-2.5 py-1 rounded-full border border-amber-300 shadow-2xs">
-              <span>Occasion: {occasionParam}</span>
-              <button onClick={() => onNavigate(categoryBaseUrl)} className="hover:text-stone-900 cursor-pointer">
+          {appliedFilters.types.map(tId => {
+            const tObj = allTypes.find(t => t.id === tId || t.slug === tId);
+            return (
+              <span key={tId} className="inline-flex items-center gap-1.5 bg-white text-[#C0654B] font-bold px-2.5 py-1 rounded-full border border-[#C0654B]/30 shadow-2xs">
+                <span>Style: {tObj?.name || tId}</span>
+                <button onClick={() => toggleType(tId)} className="hover:text-stone-900 cursor-pointer">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </span>
+            );
+          })}
+          {appliedFilters.sizes.map(sz => (
+            <span key={sz} className="inline-flex items-center gap-1.5 bg-white text-stone-900 font-bold px-2.5 py-1 rounded-full border border-stone-300 shadow-2xs">
+              <span>Size: {sz}</span>
+              <button onClick={() => toggleFilterItem('sizes', sz)} className="hover:text-stone-900 cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          ))}
+          {appliedFilters.colors.map(col => (
+            <span key={col} className="inline-flex items-center gap-1.5 bg-white text-stone-900 font-bold px-2.5 py-1 rounded-full border border-stone-300 shadow-2xs">
+              <span className="w-2.5 h-2.5 rounded-full inline-block border border-stone-400" style={{ backgroundColor: availableColors.find(c => c.name === col)?.hex || '#888' }} />
+              <span>Color: {col}</span>
+              <button onClick={() => toggleFilterItem('colors', col)} className="hover:text-stone-900 cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          ))}
+          {appliedFilters.fabrics.map(fab => (
+            <span key={fab} className="inline-flex items-center gap-1.5 bg-white text-stone-900 font-bold px-2.5 py-1 rounded-full border border-stone-300 shadow-2xs">
+              <span>Fabric: {fab}</span>
+              <button onClick={() => toggleFilterItem('fabrics', fab)} className="hover:text-stone-900 cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          ))}
+          {appliedFilters.occasions.map(occ => (
+            <span key={occ} className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 font-bold px-2.5 py-1 rounded-full border border-amber-300 shadow-2xs">
+              <span>Occasion: {occ}</span>
+              <button onClick={() => toggleFilterItem('occasions', occ)} className="hover:text-stone-900 cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          ))}
+          {appliedFilters.plusSizeOnly && (
+            <span className="inline-flex items-center gap-1.5 bg-[#F3E9E4] text-[#C0654B] font-bold px-2.5 py-1 rounded-full border border-[#C0654B]/40 shadow-2xs">
+              <span>CURVES / Plus Size</span>
+              <button onClick={() => togglePlusSize(false)} className="hover:text-stone-900 cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          )}
+          {appliedFilters.rating > 0 && (
+            <span className="inline-flex items-center gap-1.5 bg-white text-stone-900 font-bold px-2.5 py-1 rounded-full border border-stone-300 shadow-2xs">
+              <span>Rating: {appliedFilters.rating}★ & above</span>
+              <button onClick={() => selectRating(0)} className="hover:text-stone-900 cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          )}
+          {appliedFilters.maxPrice < 10000 && (
+            <span className="inline-flex items-center gap-1.5 bg-white text-[#C0654B] font-bold px-2.5 py-1 rounded-full border border-[#C0654B]/30 shadow-2xs">
+              <span>Under ₹{appliedFilters.maxPrice}</span>
+              <button onClick={() => changeMaxPrice(10000)} className="hover:text-stone-900 cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
             </span>
@@ -475,10 +660,10 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             </span>
           )}
           <button
-            onClick={() => onNavigate(categoryBaseUrl)}
-            className="text-xs font-bold text-[#C0654B] hover:underline cursor-pointer ml-auto"
+            onClick={handleResetFilters}
+            className="text-xs font-bold text-[#C0654B] hover:underline cursor-pointer ml-auto bg-white px-3 py-1 rounded-full border border-stone-300 shadow-2xs"
           >
-            Clear Section Filter
+            Clear All Filters
           </button>
         </div>
       )}
@@ -536,7 +721,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       <div className="flex gap-8 items-start">
         {/* DESKTOP FILTER SIDEBAR — sticky top position, stays visible as you scroll products */}
         <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-white rounded-2xl border border-stone-200 shadow-xs text-xs overflow-hidden sticky top-24 max-h-[calc(100vh-7rem)]">
-          {/* HEADER — pinned at top of sidebar, never scrolls away */}
+          {/* HEADER — pinned at top of sidebar */}
           <div className="shrink-0 space-y-2.5 p-5 pb-3 border-b border-stone-200 bg-white z-10">
             <div className="flex items-center justify-between">
               <span className="font-bold text-stone-900 text-sm flex items-center gap-2 font-serif">
@@ -551,26 +736,13 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
               </button>
             </div>
 
-            {/* APPLY FILTERS BUTTON (TOP POSITION — APPLIES DRAFT SELECTIONS) */}
-            <button
-              onClick={handleApplyFilters}
-              className={`w-full text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                hasUnappliedChanges
-                  ? 'bg-[#C0654B] hover:bg-[#8B4A38] ring-2 ring-[#C0654B]/40 scale-[1.01]'
-                  : 'bg-[#C0654B] hover:bg-[#8B4A38]'
-              }`}
-            >
-              <Check className="w-4 h-4" />
-              <span>Apply Filters ({draftFilteredProducts.length} Items)</span>
-              {hasUnappliedChanges && (
-                <span className="bg-white text-[#C0654B] text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase ml-1 animate-pulse">
-                  Unapplied
-                </span>
-              )}
-            </button>
+            {/* LIVE PRODUCT COUNT BADGE */}
+            <div className="w-full bg-[#F3E9E4] text-[#C0654B] font-bold py-2 px-3 rounded-xl text-xs text-center border border-[#C0654B]/20">
+              {filteredProducts.length} Matching Products
+            </div>
           </div>
 
-          {/* INDEPENDENTLY SCROLLABLE FILTER LIST BODY — scrolls within the sidebar without moving the page */}
+          {/* INDEPENDENTLY SCROLLABLE FILTER LIST BODY */}
           <div className="flex-1 overflow-y-auto overscroll-contain pr-1.5 p-5 pt-3 space-y-5">
             {/* CURVES / PLUS-SIZE TOGGLE */}
             <div className="bg-[#F3E9E4] p-3 rounded-xl border border-[#C0654B]/30 flex items-center justify-between">
@@ -580,23 +752,20 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
               </div>
               <input
                 type="checkbox"
-                checked={draftFilters.plusSizeOnly}
-                onChange={(e) => setDraftFilters(prev => ({ ...prev, plusSizeOnly: e.target.checked }))}
+                checked={appliedFilters.plusSizeOnly}
+                onChange={(e) => togglePlusSize(e.target.checked)}
                 className="w-4 h-4 accent-[#C0654B] cursor-pointer"
               />
             </div>
 
-            {/* Subcategories Filter — clicking one auto-expands its product types */}
+            {/* Subcategories Filter */}
             {(currentCategory?.subcategories || allSubcategories).length > 0 && (
               <div className="space-y-1.5 border-b border-stone-100 pb-4">
                 <div className="flex items-center justify-between mb-1">
                   <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Subcategory</p>
                   {sidebarSubId && (
                     <button
-                      onClick={() => {
-                        setSidebarSubId(null);
-                        setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
-                      }}
+                      onClick={() => selectSubcategory(null)}
                       className="text-[10px] text-[#C0654B] font-bold hover:underline cursor-pointer"
                     >
                       Clear
@@ -606,10 +775,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
 
                 {/* All button */}
                 <button
-                  onClick={() => {
-                    setSidebarSubId(null);
-                    setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
-                  }}
+                  onClick={() => selectSubcategory(null)}
                   className={`block w-full text-left py-1.5 px-2 rounded-md transition-colors cursor-pointer text-xs ${
                     !sidebarSubId ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
                   }`}
@@ -618,7 +784,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                 </button>
 
                 {(currentCategory?.subcategories || allSubcategories).map(sub => {
-                  const isActive = sidebarSubId === sub.id;
+                  const isActive = sidebarSubId === sub.id || appliedFilters.subcategoryId === sub.id;
                   const subTypes = sub.types || [];
                   return (
                     <div key={sub.id}>
@@ -626,13 +792,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                       <button
                         onClick={() => {
                           if (isActive) {
-                            // Collapse: deselect
-                            setSidebarSubId(null);
-                            setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
+                            selectSubcategory(null);
                           } else {
-                            // Expand: select this subcategory, clear types
-                            setSidebarSubId(sub.id);
-                            setDraftFilters(prev => ({ ...prev, subcategoryId: sub.id, types: [] }));
+                            selectSubcategory(sub.id);
                           }
                         }}
                         className={`block w-full text-left py-1.5 px-2 rounded-md transition-colors cursor-pointer text-xs flex items-center justify-between ${
@@ -652,11 +814,11 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                         <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-[#C0654B]/30 pl-2">
                           <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-1 pb-0.5">Styles</p>
                           {subTypes.map(t => {
-                            const isTypeSelected = draftFilters.types.includes(t.id);
+                            const isTypeSelected = appliedFilters.types.includes(t.id);
                             return (
                               <button
                                 key={t.id}
-                                onClick={() => toggleDraftType(t.id)}
+                                onClick={() => toggleType(t.id)}
                                 className={`w-full text-left py-1 px-2 rounded-md text-xs flex items-center justify-between gap-1 cursor-pointer transition-colors ${
                                   isTypeSelected
                                     ? 'bg-[#C0654B] text-white font-bold'
@@ -676,7 +838,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
               </div>
             )}
 
-            {/* Product Type / Style Section Filter — only shown when NO subcategory is expanded in sidebar (to avoid duplication) */}
+            {/* Product Type / Style Section Filter */}
             {!sidebarSubId && (() => {
               const displayTypes = currentSubcategory
                 ? (currentSubcategory.types || [])
@@ -690,10 +852,13 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                     <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">
                       Product Type / Section
                     </p>
-                    {(typeParam || draftFilters.types.length > 0) && (
+                    {(typeParam || appliedFilters.types.length > 0) && (
                       <button
                         onClick={() => {
-                          setDraftFilters(prev => ({ ...prev, types: [] }));
+                          const next = { ...appliedFilters, types: [] };
+                          setDraftFilters(next);
+                          setAppliedFilters(next);
+                          setFilters(next);
                         }}
                         className="text-[10px] text-[#C0654B] font-bold hover:underline cursor-pointer"
                       >
@@ -703,11 +868,11 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                   </div>
                   <div className="space-y-1 max-h-56 overflow-y-auto filter-scroll-container pr-1">
                     {displayTypes.map(t => {
-                      const isTypeActive = typeParam === t.id || typeParam === t.slug || draftFilters.types.includes(t.id);
+                      const isTypeActive = typeParam === t.id || typeParam === t.slug || appliedFilters.types.includes(t.id);
                       return (
                         <button
                           key={t.id}
-                          onClick={() => toggleDraftType(t.id)}
+                          onClick={() => toggleType(t.id)}
                           className={`w-full text-left py-1.5 px-2 rounded-md transition-colors cursor-pointer text-xs flex items-center justify-between ${
                             isTypeActive
                               ? 'bg-[#F3E9E4] text-[#C0654B] font-bold border border-[#C0654B]/30'
@@ -728,9 +893,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             <div className="space-y-2 border-b border-stone-100 pb-4">
               <div className="flex items-center justify-between">
                 <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Occasion</p>
-                {draftFilters.occasions.length > 0 && (
+                {appliedFilters.occasions.length > 0 && (
                   <span className="text-[10px] text-[#C0654B] font-bold">
-                    {draftFilters.occasions.length} selected
+                    {appliedFilters.occasions.length} selected
                   </span>
                 )}
               </div>
@@ -739,8 +904,8 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                   <label key={occ} className="flex items-center gap-2 cursor-pointer text-stone-700 hover:text-stone-900 transition-colors">
                     <input
                       type="checkbox"
-                      checked={draftFilters.occasions.includes(occ) || occasionParam === occ}
-                      onChange={() => toggleDraftFilterItem('occasions', occ)}
+                      checked={appliedFilters.occasions.includes(occ) || occasionParam === occ}
+                      onChange={() => toggleFilterItem('occasions', occ)}
                       className="w-3.5 h-3.5 accent-[#C0654B] cursor-pointer"
                     />
                     <span>{occ}</span>
@@ -753,9 +918,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             <div className="space-y-2 border-b border-stone-100 pb-4">
               <div className="flex items-center justify-between">
                 <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Size Pick</p>
-                {draftFilters.sizes.length > 0 && (
+                {appliedFilters.sizes.length > 0 && (
                   <span className="text-[10px] text-[#C0654B] font-bold">
-                    {draftFilters.sizes.length} selected
+                    {appliedFilters.sizes.length} selected
                   </span>
                 )}
               </div>
@@ -763,9 +928,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                 {availableSizes.map(size => (
                   <button
                     key={size}
-                    onClick={() => toggleDraftFilterItem('sizes', size)}
+                    onClick={() => toggleFilterItem('sizes', size)}
                     className={`px-2.5 py-1 rounded-md border text-xs font-semibold cursor-pointer transition-colors ${
-                      draftFilters.sizes.includes(size)
+                      appliedFilters.sizes.includes(size)
                         ? 'border-[#C0654B] bg-[#F3E9E4] text-[#C0654B] shadow-2xs font-bold'
                         : 'border-stone-200 text-stone-700 hover:border-stone-400'
                     }`}
@@ -780,9 +945,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             <div className="space-y-2 border-b border-stone-100 pb-4">
               <div className="flex items-center justify-between">
                 <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Color Swatches</p>
-                {draftFilters.colors.length > 0 && (
+                {appliedFilters.colors.length > 0 && (
                   <span className="text-[10px] text-[#C0654B] font-bold">
-                    {draftFilters.colors.length} selected
+                    {appliedFilters.colors.length} selected
                   </span>
                 )}
               </div>
@@ -790,10 +955,10 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                 {availableColors.map(col => (
                   <button
                     key={col.name}
-                    onClick={() => toggleDraftFilterItem('colors', col.name)}
+                    onClick={() => toggleFilterItem('colors', col.name)}
                     style={{ backgroundColor: col.hex }}
                     className={`w-6 h-6 rounded-full border border-stone-300 cursor-pointer transition-transform ${
-                      draftFilters.colors.includes(col.name) ? 'ring-2 ring-[#C0654B] ring-offset-2 scale-110' : 'hover:scale-105'
+                      appliedFilters.colors.includes(col.name) ? 'ring-2 ring-[#C0654B] ring-offset-2 scale-110' : 'hover:scale-105'
                     }`}
                     title={col.name}
                   />
@@ -805,9 +970,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             <div className="space-y-2 border-b border-stone-100 pb-4">
               <div className="flex items-center justify-between">
                 <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Fabric Material</p>
-                {draftFilters.fabrics.length > 0 && (
+                {appliedFilters.fabrics.length > 0 && (
                   <span className="text-[10px] text-[#C0654B] font-bold">
-                    {draftFilters.fabrics.length} selected
+                    {appliedFilters.fabrics.length} selected
                   </span>
                 )}
               </div>
@@ -816,8 +981,8 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                   <label key={fab} className="flex items-center gap-2 cursor-pointer text-stone-700 hover:text-stone-900 transition-colors text-xs">
                     <input
                       type="checkbox"
-                      checked={draftFilters.fabrics.includes(fab)}
-                      onChange={() => toggleDraftFilterItem('fabrics', fab)}
+                      checked={appliedFilters.fabrics.includes(fab)}
+                      onChange={() => toggleFilterItem('fabrics', fab)}
                       className="w-3.5 h-3.5 accent-[#C0654B] cursor-pointer"
                     />
                     <span>{fab}</span>
@@ -830,9 +995,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
             <div className="space-y-2 border-b border-stone-100 pb-4">
               <div className="flex items-center justify-between">
                 <p className="font-bold text-stone-900 text-xs uppercase tracking-wider">Minimum Rating</p>
-                {draftFilters.rating > 0 && (
+                {appliedFilters.rating > 0 && (
                   <button
-                    onClick={() => setDraftFilters(prev => ({ ...prev, rating: 0 }))}
+                    onClick={() => selectRating(0)}
                     className="text-[10px] text-[#C0654B] font-bold hover:underline cursor-pointer"
                   >
                     Clear
@@ -841,11 +1006,11 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
               </div>
               <div className="space-y-1">
                 {availableRatings.map(r => {
-                  const isSelected = draftFilters.rating === r.value;
+                  const isSelected = appliedFilters.rating === r.value;
                   return (
                     <button
                       key={r.value}
-                      onClick={() => setDraftFilters(prev => ({ ...prev, rating: isSelected ? 0 : r.value }))}
+                      onClick={() => selectRating(r.value)}
                       className={`w-full text-left py-1.5 px-2 rounded-md text-xs font-semibold cursor-pointer transition-colors flex items-center justify-between ${
                         isSelected
                           ? 'bg-[#F3E9E4] text-[#C0654B] border border-[#C0654B]/30 font-bold'
@@ -875,11 +1040,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                 max="10000"
                 step="500"
                 value={localMaxPrice}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setLocalMaxPrice(val);
-                  setDraftFilters(prev => ({ ...prev, maxPrice: val }));
-                }}
+                onChange={(e) => changeMaxPrice(Number(e.target.value))}
                 className="w-full accent-[#C0654B] cursor-pointer"
               />
             </div>
@@ -1067,31 +1228,40 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                 </div>
               </div>
 
-              {/* APPLY FILTERS BUTTON (TOP POSITION IN MOBILE FILTER DRAWER) */}
+              {/* LIVE RESULTS ACTION BUTTON (CLOSES MOBILE DRAWER) */}
               <button
-                onClick={handleApplyFilters}
-                className={`w-full text-white font-bold py-3 rounded-xl text-xs shadow-md cursor-pointer flex items-center justify-center gap-2 min-h-[44px] ${
-                  hasUnappliedChanges ? 'bg-[#C0654B] hover:bg-[#8B4A38] ring-2 ring-[#C0654B]/40' : 'bg-[#C0654B] hover:bg-[#8B4A38]'
-                }`}
+                onClick={() => setMobileFilterOpen(false)}
+                className="w-full bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold py-3 rounded-xl text-xs shadow-md cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
               >
                 <Check className="w-4 h-4" />
-                <span>Apply Filters ({draftFilteredProducts.length} Items)</span>
+                <span>Show {filteredProducts.length} Results</span>
               </button>
             </div>
 
             {/* INDEPENDENT SCROLL CONTAINER FOR MOBILE FILTERS BODY */}
-            <div className="flex-1 overflow-y-auto filter-scroll-container overscroll-contain py-4 space-y-5 pr-1">
-              {/* Mobile Subcategory — draft-only, same as desktop sidebar */}
+            <div className="flex-1 overflow-y-auto filter-scroll-container overscroll-contain py-4 space-y-5 pr-1 text-xs">
+              {/* CURVES / PLUS-SIZE TOGGLE */}
+              <div className="bg-[#F3E9E4] p-3 rounded-xl border border-[#C0654B]/30 flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <p className="font-bold text-[#C0654B] text-xs">CURVES (Plus-Size)</p>
+                  <p className="text-[10px] text-stone-600">Show size XL, XXL & 3XL items</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={appliedFilters.plusSizeOnly}
+                  onChange={(e) => togglePlusSize(e.target.checked)}
+                  className="w-4 h-4 accent-[#C0654B] cursor-pointer"
+                />
+              </div>
+
+              {/* Mobile Subcategory */}
               {(currentCategory?.subcategories || allSubcategories).length > 0 && (
                 <div className="space-y-1.5 border-b border-stone-100 pb-4">
                   <div className="flex items-center justify-between">
                     <p className="font-bold text-xs uppercase text-stone-900">Subcategory</p>
                     {sidebarSubId && (
                       <button
-                        onClick={() => {
-                          setSidebarSubId(null);
-                          setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
-                        }}
+                        onClick={() => selectSubcategory(null)}
                         className="text-[10px] text-[#C0654B] font-bold hover:underline cursor-pointer"
                       >
                         Clear
@@ -1099,10 +1269,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                     )}
                   </div>
                   <button
-                    onClick={() => {
-                      setSidebarSubId(null);
-                      setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
-                    }}
+                    onClick={() => selectSubcategory(null)}
                     className={`block w-full text-left py-1.5 px-2 rounded-md text-xs ${
                       !sidebarSubId ? 'bg-[#F3E9E4] text-[#C0654B] font-bold' : 'text-stone-700 hover:bg-stone-50'
                     }`}
@@ -1110,18 +1277,16 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                     All {currentCategory ? currentCategory.name : 'Categories'}
                   </button>
                   {(currentCategory?.subcategories || allSubcategories).map(sub => {
-                    const isActive = sidebarSubId === sub.id;
+                    const isActive = sidebarSubId === sub.id || appliedFilters.subcategoryId === sub.id;
                     const subTypes = sub.types || [];
                     return (
                       <div key={sub.id}>
                         <button
                           onClick={() => {
                             if (isActive) {
-                              setSidebarSubId(null);
-                              setDraftFilters(prev => ({ ...prev, subcategoryId: undefined, types: [] }));
+                              selectSubcategory(null);
                             } else {
-                              setSidebarSubId(sub.id);
-                              setDraftFilters(prev => ({ ...prev, subcategoryId: sub.id, types: [] }));
+                              selectSubcategory(sub.id);
                             }
                           }}
                           className={`block w-full text-left py-1.5 px-2 rounded-md text-xs flex items-center justify-between ${
@@ -1139,11 +1304,11 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                           <div className="ml-3 mt-1 space-y-0.5 border-l-2 border-[#C0654B]/30 pl-2">
                             <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-1 pb-0.5">Styles</p>
                             {subTypes.map(t => {
-                              const isTypeSelected = draftFilters.types.includes(t.id);
+                              const isTypeSelected = appliedFilters.types.includes(t.id);
                               return (
                                 <button
                                   key={t.id}
-                                  onClick={() => toggleDraftType(t.id)}
+                                  onClick={() => toggleType(t.id)}
                                   className={`w-full text-left py-1 px-2 rounded-md text-xs flex items-center justify-between gap-1 cursor-pointer transition-colors min-h-[36px] ${
                                     isTypeSelected
                                       ? 'bg-[#C0654B] text-white font-bold'
@@ -1163,7 +1328,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                 </div>
               )}
 
-              {/* Mobile Product Type — only shown when no subcategory expanded (types shown inline above) */}
+              {/* Mobile Product Type */}
               {!sidebarSubId && (() => {
                 const displayTypes = currentSubcategory
                   ? (currentSubcategory.types || [])
@@ -1176,11 +1341,11 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                     <p className="font-bold text-xs uppercase text-stone-900">Product Type / Section</p>
                     <div className="space-y-1 max-h-48 overflow-y-auto filter-scroll-container pr-1">
                       {displayTypes.map(t => {
-                        const isTypeActive = typeParam === t.id || typeParam === t.slug || draftFilters.types.includes(t.id);
+                        const isTypeActive = typeParam === t.id || typeParam === t.slug || appliedFilters.types.includes(t.id);
                         return (
                           <button
                             key={t.id}
-                            onClick={() => toggleDraftType(t.id)}
+                            onClick={() => toggleType(t.id)}
                             className={`w-full text-left py-1.5 px-2 rounded-md text-xs flex items-center justify-between ${
                               isTypeActive ? 'bg-[#F3E9E4] text-[#C0654B] font-bold border border-[#C0654B]/30' : 'text-stone-700 hover:bg-stone-50'
                             }`}
@@ -1203,8 +1368,8 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                     <label key={occ} className="flex items-center gap-2 text-xs text-stone-700 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={draftFilters.occasions.includes(occ) || occasionParam === occ}
-                        onChange={() => toggleDraftFilterItem('occasions', occ)}
+                        checked={appliedFilters.occasions.includes(occ) || occasionParam === occ}
+                        onChange={() => toggleFilterItem('occasions', occ)}
                         className="w-3.5 h-3.5 accent-[#C0654B] cursor-pointer"
                       />
                       <span>{occ}</span>
@@ -1220,9 +1385,9 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                   {availableSizes.map(size => (
                     <button
                       key={size}
-                      onClick={() => toggleDraftFilterItem('sizes', size)}
+                      onClick={() => toggleFilterItem('sizes', size)}
                       className={`px-3 py-1 rounded-md border text-xs font-semibold cursor-pointer ${
-                        draftFilters.sizes.includes(size) ? 'bg-[#C0654B] text-white border-[#C0654B]' : 'border-stone-300'
+                        appliedFilters.sizes.includes(size) ? 'bg-[#C0654B] text-white border-[#C0654B]' : 'border-stone-300'
                       }`}
                     >
                       {size}
@@ -1238,14 +1403,59 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                   {availableColors.map(col => (
                     <button
                       key={col.name}
-                      onClick={() => toggleDraftFilterItem('colors', col.name)}
+                      onClick={() => toggleFilterItem('colors', col.name)}
                       style={{ backgroundColor: col.hex }}
                       className={`w-6 h-6 rounded-full border border-stone-300 transition-transform cursor-pointer ${
-                        draftFilters.colors.includes(col.name) ? 'ring-2 ring-[#C0654B] ring-offset-2 scale-110' : ''
+                        appliedFilters.colors.includes(col.name) ? 'ring-2 ring-[#C0654B] ring-offset-2 scale-110' : ''
                       }`}
                       title={col.name}
                     />
                   ))}
+                </div>
+              </div>
+
+              {/* Mobile Fabrics */}
+              <div className="space-y-2 border-b border-stone-100 pb-4">
+                <p className="font-bold text-xs uppercase text-stone-900">Fabric Material</p>
+                <div className="space-y-1.5 max-h-36 overflow-y-auto filter-scroll-container pr-1">
+                  {availableFabrics.map(fab => (
+                    <label key={fab} className="flex items-center gap-2 cursor-pointer text-stone-700 hover:text-stone-900 transition-colors text-xs">
+                      <input
+                        type="checkbox"
+                        checked={appliedFilters.fabrics.includes(fab)}
+                        onChange={() => toggleFilterItem('fabrics', fab)}
+                        className="w-3.5 h-3.5 accent-[#C0654B] cursor-pointer"
+                      />
+                      <span>{fab}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mobile Ratings */}
+              <div className="space-y-2 border-b border-stone-100 pb-4">
+                <p className="font-bold text-xs uppercase text-stone-900">Minimum Rating</p>
+                <div className="space-y-1">
+                  {availableRatings.map(r => {
+                    const isSelected = appliedFilters.rating === r.value;
+                    return (
+                      <button
+                        key={r.value}
+                        onClick={() => selectRating(r.value)}
+                        className={`w-full text-left py-1.5 px-2 rounded-md text-xs font-semibold cursor-pointer transition-colors flex items-center justify-between ${
+                          isSelected
+                            ? 'bg-[#F3E9E4] text-[#C0654B] border border-[#C0654B]/30 font-bold'
+                            : 'text-stone-700 hover:bg-stone-50'
+                        }`}
+                      >
+                        <span className="flex items-center gap-1">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          {r.label}
+                        </span>
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#C0654B]" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1261,11 +1471,7 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
                   max="10000"
                   step="500"
                   value={localMaxPrice}
-                  onChange={(e) => {
-                    const val = Number(e.target.value);
-                    setLocalMaxPrice(val);
-                    setDraftFilters(prev => ({ ...prev, maxPrice: val }));
-                  }}
+                  onChange={(e) => changeMaxPrice(Number(e.target.value))}
                   className="w-full accent-[#C0654B] cursor-pointer"
                 />
               </div>
