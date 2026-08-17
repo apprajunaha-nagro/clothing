@@ -2785,6 +2785,36 @@ app.delete('/api/reviews/:id', adminAuth, async (req, res) => {
 // GET /api/admin/users & /api/users (Fetch all registered users from database)
 app.get(['/api/admin/users', '/api/users'], async (_req, res) => {
   try {
+    // 1. Sync any newly registered Supabase auth.users directly into public."User" table
+    try {
+      await prisma.$executeRawUnsafe(`
+        INSERT INTO public."User" (
+          id, name, email, phone, "emailVerified", status, role, addresses, "totalSpent", "ordersCount", "createdAt", "updatedAt"
+        )
+        SELECT 
+          au.id::text,
+          COALESCE(au.raw_user_meta_data->>'name', au.raw_user_meta_data->>'full_name', split_part(au.email, '@', 1)),
+          LOWER(TRIM(au.email)),
+          COALESCE(au.phone, au.raw_user_meta_data->>'phone'),
+          (au.email_confirmed_at IS NOT NULL OR au.confirmed_at IS NOT NULL),
+          'active',
+          'customer',
+          '[]',
+          0,
+          0,
+          au.created_at,
+          NOW()
+        FROM auth.users au
+        WHERE au.email IS NOT NULL
+        ON CONFLICT (email) DO UPDATE SET
+          phone = COALESCE(public."User".phone, EXCLUDED.phone),
+          "emailVerified" = EXCLUDED."emailVerified",
+          "updatedAt" = NOW();
+      `);
+    } catch (syncErr) {
+      console.warn('[Admin Users auth.users sync note]:', syncErr);
+    }
+
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' }
     });
