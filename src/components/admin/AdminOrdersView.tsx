@@ -370,17 +370,39 @@ export const AdminOrdersView: React.FC = () => {
     setMSelectedItems([]);
   };
 
-  // Trigger simulated customer tracking alerts with double confirmation on cancellation
+  // Trigger automated customer tracking alerts with optimistic instant UI update
   const handleSimulateStatusAlert = (order: Order, nextStatus: OrderStatus) => {
     if (nextStatus === 'cancelled') {
       const confirmed = window.confirm(`CONFIRM CANCELLATION:\n\nAre you sure you want to CANCEL Order #${order.orderNumber}? This will mark the order as cancelled.`);
       if (!confirmed) return;
     }
+
+    const nowIso = new Date().toISOString();
+    const isDelivered = nextStatus === 'delivered';
+
+    // 1. Instant Optimistic State Update for zero latency across all views
+    setAllDbOrders(prev => prev.map(o => o.id === order.id ? {
+      ...o,
+      status: nextStatus,
+      trackingNumber: trackingNo || o.trackingNumber,
+      paymentStatus: isDelivered ? 'paid' : o.paymentStatus,
+      updatedAt: nowIso
+    } : o));
+
+    // 2. Instant update for active detail modal sheet
+    setActiveOrder(prev => prev && prev.id === order.id ? {
+      ...prev,
+      status: nextStatus,
+      trackingNumber: trackingNo || prev.trackingNumber,
+      paymentStatus: isDelivered ? 'paid' : prev.paymentStatus,
+      updatedAt: nowIso
+    } : prev);
+
+    // 3. Trigger StoreContext update (syncs to Supabase DB & REST API asynchronously)
     updateOrderStatus(order.id, nextStatus, trackingNo);
-    setActiveOrder(prev => prev ? { ...prev, status: nextStatus, trackingNumber: trackingNo || prev.trackingNumber } : null);
-    
-    // Simulate SMTP/SMS Blast
-    showToast(`✉️ Triggered Automated Email & SMS notification to ${order.customerName} (${order.customerPhone}): "Order status changed to ${nextStatus.toUpperCase()}"`);
+
+    // 4. Smooth Toast Notification
+    showToast(`⚡ Order #${order.orderNumber} dispatch status updated to "${nextStatus.toUpperCase()}"`);
   };
 
   return (
@@ -576,7 +598,7 @@ export const AdminOrdersView: React.FC = () => {
                       <select
                         value={order.status}
                         onChange={(e) => handleSimulateStatusAlert(order, e.target.value as any)}
-                        className={`px-2.5 py-1 rounded-lg border text-[11px] font-extrabold cursor-pointer outline-none transition-colors ${getStatusColorStyle(order.status).select}`}
+                        className={`px-3 py-1.5 rounded-xl border text-[11px] font-extrabold cursor-pointer outline-none transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-95 ${getStatusColorStyle(order.status).select}`}
                       >
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
