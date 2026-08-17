@@ -146,6 +146,19 @@ export const BlogPostPage: React.FC<BlogPostPageProps> = ({ onNavigate, slug }) 
               </h2>
             );
           }
+          const imgMatch = paragraph.match(/^!\[(.*?)\]\((.*?)\)$/);
+          if (imgMatch) {
+            return (
+              <figure key={index} className="my-6 rounded-2xl overflow-hidden shadow-md border border-stone-200/80 bg-stone-100">
+                <img src={imgMatch[2]} alt={imgMatch[1]} className="w-full h-auto max-h-[550px] object-cover" />
+                {imgMatch[1] && imgMatch[1] !== 'Blog Photo' && (
+                  <figcaption className="p-2.5 text-center text-xs text-stone-500 italic bg-white/80 border-t border-stone-100">
+                    {imgMatch[1]}
+                  </figcaption>
+                )}
+              </figure>
+            );
+          }
           return (
             <p key={index} className="text-stone-700 leading-relaxed font-normal">
               {paragraph}

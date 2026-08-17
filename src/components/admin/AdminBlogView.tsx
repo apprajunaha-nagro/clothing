@@ -3,7 +3,8 @@ import { useStore } from '../../context/StoreContext';
 import {
   BookOpen, Plus, Pencil, Trash2, Eye, EyeOff, Search,
   X, Check, ChevronDown, Calendar, Clock, User, Tag,
-  Save, ArrowLeft, ExternalLink, Image as ImageIcon, FileText
+  Save, ArrowLeft, ExternalLink, Image as ImageIcon, FileText,
+  Upload, Camera
 } from 'lucide-react';
 import { BlogPost } from '../../types';
 
@@ -76,12 +77,85 @@ export const AdminBlogView: React.FC = () => {
   const [contentLines, setContentLines] = useState<string[]>(['']);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const tagInputRef = useRef<HTMLInputElement>(null);
+  const featuredImageFileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = (msg: string) => {
     setToast(msg);
     if (globalToast) globalToast(msg);
     setTimeout(() => setToast(null), 3000);
+  };
+
+  // ── Device Photo Upload Handlers ─────────────────────────────────────────────
+  const handleFeaturedImageDeviceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WebP).');
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      showToast('Image file size must be under 12MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === 'string') {
+        setDraft(prev => ({ ...prev, featuredImage: event.target!.result as string }));
+        showToast(`Photo "${file.name}" uploaded from device!`);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleBodyImageDeviceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file (PNG, JPG, WebP).');
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      showToast('Image file size must be under 12MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === 'string') {
+        const altName = file.name.replace(/\.[^/.]+$/, '');
+        const imgMarkdown = `![${altName}](${event.target.result})`;
+        setContentLines(prev => [...prev, imgMarkdown]);
+        showToast(`Photo "${file.name}" inserted into article!`);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleQuickTableImageUpload = (postId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select a valid image file.');
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      showToast('Image file size must be under 12MB.');
+      return;
+    }
+    const targetPost = blogPosts.find(p => p.id === postId);
+    if (!targetPost) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (typeof event.target?.result === 'string') {
+        const updatedPost = { ...targetPost, featuredImage: event.target.result as string };
+        saveBlogPost(updatedPost);
+        showToast(`Updated blog photo for "${targetPost.title}" from device!`);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   // ── Filtering ────────────────────────────────────────────────────────────────
@@ -207,11 +281,25 @@ export const AdminBlogView: React.FC = () => {
               {editingPost.excerpt}
             </p>
             <div className="space-y-3">
-              {editingPost.content.map((para, i) => para.startsWith('### ') ? (
-                <h2 key={i} className="text-lg font-bold font-serif text-stone-900 pt-4">{para.replace('### ', '')}</h2>
-              ) : (
-                <p key={i} className="text-stone-700 text-sm leading-relaxed">{para}</p>
-              ))}
+              {editingPost.content.map((para, i) => {
+                if (para.startsWith('### ')) {
+                  return <h2 key={i} className="text-lg font-bold font-serif text-stone-900 pt-4">{para.replace('### ', '')}</h2>;
+                }
+                const imgMatch = para.match(/^!\[(.*?)\]\((.*?)\)$/);
+                if (imgMatch) {
+                  return (
+                    <figure key={i} className="my-4 rounded-xl overflow-hidden border border-stone-200 bg-stone-100">
+                      <img src={imgMatch[2]} alt={imgMatch[1]} className="w-full h-auto max-h-[400px] object-cover" />
+                      {imgMatch[1] && imgMatch[1] !== 'Blog Photo' && (
+                        <figcaption className="p-2 text-center text-xs text-stone-500 italic bg-white/80 border-t border-stone-100">
+                          {imgMatch[1]}
+                        </figcaption>
+                      )}
+                    </figure>
+                  );
+                }
+                return <p key={i} className="text-stone-700 text-sm leading-relaxed">{para}</p>;
+              })}
             </div>
             <div className="pt-4 border-t border-stone-100 flex flex-wrap gap-2">
               {editingPost.tags.map(tag => (
@@ -349,19 +437,31 @@ export const AdminBlogView: React.FC = () => {
                 ))}
               </div>
 
-              <div className="flex gap-2 pt-2 border-t border-stone-100">
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-stone-100">
                 <button
+                  type="button"
                   onClick={addContentLine}
                   className="flex items-center gap-1.5 text-xs font-bold text-[#C0654B] hover:bg-[#F3E9E4] px-3 py-2 rounded-xl transition-colors cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Paragraph
                 </button>
                 <button
+                  type="button"
                   onClick={() => setContentLines(prev => [...prev, '### '])}
                   className="flex items-center gap-1.5 text-xs font-bold text-stone-600 hover:bg-stone-100 px-3 py-2 rounded-xl transition-colors cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" /> Add Heading
                 </button>
+                <label className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-2 rounded-xl transition-colors cursor-pointer">
+                  <Camera className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Insert Photo from Device</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBodyImageDeviceUpload}
+                    className="hidden"
+                  />
+                </label>
               </div>
             </div>
           </div>
@@ -370,19 +470,55 @@ export const AdminBlogView: React.FC = () => {
           <div className="space-y-5">
             {/* Featured Image */}
             <div className="bg-white rounded-2xl border border-stone-200 p-5 space-y-3">
-              <h3 className="text-xs font-black text-stone-500 uppercase tracking-wider flex items-center gap-2">
-                <ImageIcon className="w-3.5 h-3.5 text-[#C0654B]" /> Featured Image
-              </h3>
-              <div className="rounded-xl overflow-hidden aspect-video bg-stone-100 border border-stone-200">
-                <img src={draft.featuredImage} alt="Featured" className="w-full h-full object-cover" />
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-stone-500 uppercase tracking-wider flex items-center gap-2">
+                  <ImageIcon className="w-3.5 h-3.5 text-[#C0654B]" /> Featured Cover Photo
+                </h3>
+                <span className="text-[10px] text-stone-400 font-mono">16:9 ratio</span>
               </div>
-              <input
-                type="text"
-                value={draft.featuredImage}
-                onChange={e => setDraft(prev => ({ ...prev, featuredImage: e.target.value }))}
-                placeholder="Paste image URL..."
-                className="w-full px-3 py-2 border border-stone-200 rounded-xl text-xs font-mono text-stone-600 focus:border-[#C0654B] outline-none bg-stone-50"
-              />
+
+              {/* Preview with Hover / Tap Upload overlay */}
+              <div className="relative rounded-xl overflow-hidden aspect-video bg-stone-100 border border-stone-200 group">
+                <img src={draft.featuredImage} alt="Featured" className="w-full h-full object-cover" />
+                <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white cursor-pointer gap-1.5 p-3 z-10">
+                  <Upload className="w-5 h-5 text-amber-300" />
+                  <span className="text-xs font-bold bg-[#C0654B] px-3 py-1 rounded-full shadow">Upload from Device</span>
+                  <span className="text-[10px] text-stone-300">Supports PNG, JPG, WebP</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFeaturedImageDeviceUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* Direct Device Upload Button */}
+              <div>
+                <label className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-[#F3E9E4] hover:bg-[#ebdcd5] text-[#C0654B] font-bold rounded-xl text-xs cursor-pointer transition-colors border border-[#C0654B]/30 shadow-xs">
+                  <Upload className="w-4 h-4" />
+                  <span>Choose Photo from Device</span>
+                  <input
+                    ref={featuredImageFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFeaturedImageDeviceUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* Or paste URL */}
+              <div className="space-y-1 pt-1">
+                <label className="text-[11px] font-bold text-stone-500">Or Paste Image URL</label>
+                <input
+                  type="text"
+                  value={draft.featuredImage}
+                  onChange={e => setDraft(prev => ({ ...prev, featuredImage: e.target.value }))}
+                  placeholder="Paste image URL (https://...)"
+                  className="w-full px-3 py-2 border border-stone-200 rounded-xl text-xs font-mono text-stone-600 focus:border-[#C0654B] outline-none bg-stone-50"
+                />
+              </div>
             </div>
 
             {/* Category & Meta */}
@@ -633,8 +769,17 @@ export const AdminBlogView: React.FC = () => {
                     {/* Article */}
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-14 h-10 rounded-lg overflow-hidden bg-stone-100 shrink-0 hidden sm:block">
+                        <div className="relative w-14 h-10 rounded-lg overflow-hidden bg-stone-100 shrink-0 hidden sm:block group border border-stone-200">
                           <img src={post.featuredImage} alt={post.title} className="w-full h-full object-cover" />
+                          <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white cursor-pointer z-10" title="Upload new photo from device">
+                            <Upload className="w-3.5 h-3.5 text-amber-300" />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleQuickTableImageUpload(post.id, e)}
+                              className="hidden"
+                            />
+                          </label>
                         </div>
                         <div className="min-w-0">
                           <p className="font-bold text-stone-900 line-clamp-1 leading-snug">{post.title}</p>
