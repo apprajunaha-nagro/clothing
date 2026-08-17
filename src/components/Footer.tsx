@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { initialBlogPosts } from '../data/blogPosts';
-import { Truck, RotateCcw, ShieldCheck, CreditCard, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, ArrowRight } from 'lucide-react';
+import { Truck, RotateCcw, ShieldCheck, CreditCard, Phone, MapPin, Instagram, Facebook, Twitter, Youtube, ArrowRight, Sparkles, BookOpen, Calendar, Clock, User } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (path: string) => void;
@@ -14,7 +14,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
 
   // Dynamically resolve "Our Story" blog post from live store/database
   const allPosts = (blogPosts && blogPosts.length > 0) ? blogPosts : initialBlogPosts;
-  const ourStoryPost = allPosts.find(p => p.slug === 'our-story' || p.id === 'post-our-story' || p.category === 'Our Story' || p.tags?.includes('Our Story') || p.title?.toLowerCase().includes('our story'))
+  const ourStoryPost = allPosts.find(p => p.id === 'post-our-story' || p.category === 'Our Story' || p.slug === 'our-story' || p.slug?.toLowerCase().includes('our-story') || p.title?.toLowerCase().includes('our story'))
     || allPosts.find(p => p.category === 'Our Story')
     || allPosts[0];
 
@@ -27,66 +27,127 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, currentPath = '/' })
 
       {/* ── OUR STORY GLIMPSE (HOMEPAGE ONLY) ── */}
       {isHomePage && (
-        <div className="relative overflow-hidden bg-[#1A120C]">
-        {/* Background texture overlay */}
-        <div className="absolute inset-0 opacity-15 pointer-events-none transition-all duration-700"
-          style={{ backgroundImage: `url(${ourStoryBg})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#1A120C]/85 via-[#1A120C]/70 to-[#1A120C]/95 pointer-events-none" />
+        <section className="relative overflow-hidden bg-[#18130E] border-b border-stone-800/80">
+          {/* Ambient blurred backdrop of the featured image */}
+          <div
+            className="absolute inset-0 opacity-20 pointer-events-none scale-105 transition-all duration-1000 blur-xs"
+            style={{
+              backgroundImage: `url(${ourStoryBg})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#18130E]/90 via-[#18130E]/80 to-[#18130E]/95 pointer-events-none" />
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 text-center space-y-4">
+          <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              
+              {/* Left Column: Post Featured Image Card with Badges */}
+              <div 
+                className="lg:col-span-5 relative group cursor-pointer" 
+                onClick={() => onNavigate(`/blog/${ourStorySlug}`)}
+              >
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-stone-700/60 aspect-16/10 sm:aspect-16/9 lg:aspect-4/3 bg-stone-900">
+                  <img
+                    src={ourStoryBg}
+                    alt={ourStoryPost.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                  
+                  {/* Category Pill */}
+                  <div className="absolute top-3 left-3 bg-[#C0654B] text-white text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-md flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3" />
+                    <span>{ourStoryPost.category || 'Our Story'}</span>
+                  </div>
 
-          {/* Compact Logo + Name */}
-          <div className="flex items-center justify-center gap-3">
-            <img
-              src="/src/assets/images/pgmart_logo_new.png"
-              alt="PGmart Logo"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl object-contain bg-white p-1 border-2 border-[#C0654B]/50 shadow-md shrink-0"
-            />
-            <div className="text-left space-y-0.5">
-              <h2 className="text-xl sm:text-2xl font-bold font-serif text-white tracking-wide leading-tight">
-                {settings.storeName ? `${settings.storeName} ( Pratap Garments )` : 'PGmart ( Pratap Garments )'}
-              </h2>
-              <p className="text-[#C0654B] font-bold text-[10px] sm:text-xs uppercase tracking-wider">
-                {settings.tagline || ourStoryPost?.title || 'Heritage Handloom & Modern Fashion'}
-              </p>
+                  {/* Author Banner */}
+                  <div className="absolute bottom-3 inset-x-3 text-left flex items-center gap-2.5 bg-stone-950/60 backdrop-blur-md p-2 rounded-xl border border-stone-700/50">
+                    <img
+                      src={ourStoryPost.authorAvatar || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80'}
+                      alt={ourStoryPost.author}
+                      className="w-7 h-7 rounded-full object-cover border border-[#C0654B]"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white text-xs font-bold truncate">{ourStoryPost.author}</p>
+                      <p className="text-[10px] text-stone-400 truncate">{ourStoryPost.authorRole}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Title, Excerpt, Stats, Tags & CTA */}
+              <div className="lg:col-span-7 text-left space-y-4">
+                
+                {/* Brand Tag / Category header */}
+                <div className="flex items-center gap-2 flex-wrap text-xs">
+                  <span className="text-[#C0654B] font-extrabold text-[11px] sm:text-xs uppercase tracking-widest flex items-center gap-1.5 bg-[#C0654B]/15 px-2.5 py-1 rounded-full border border-[#C0654B]/30">
+                    <BookOpen className="w-3 h-3 text-[#C0654B]" /> {ourStoryPost.category ? `${ourStoryPost.category.toUpperCase()} • BEHIND PGMART` : 'OUR STORY • BEHIND PGMART'}
+                  </span>
+                  <span className="text-stone-600 hidden sm:inline">•</span>
+                  <span className="text-stone-400 font-mono flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-stone-500" /> {ourStoryPost.readTime || '5 min read'}
+                  </span>
+                </div>
+
+                {/* Main Dynamic Story Title */}
+                <h2 
+                  onClick={() => onNavigate(`/blog/${ourStorySlug}`)}
+                  className="text-xl sm:text-2xl lg:text-3xl font-bold font-serif text-white tracking-tight leading-snug hover:text-[#C0654B] transition-colors cursor-pointer"
+                >
+                  {ourStoryPost.title}
+                </h2>
+
+                {/* Excerpt / Summary */}
+                <p className="text-stone-300 text-xs sm:text-sm leading-relaxed font-light line-clamp-3 sm:line-clamp-4">
+                  {ourStoryExcerpt}
+                </p>
+
+                {/* Tags */}
+                {Array.isArray(ourStoryPost.tags) && ourStoryPost.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {ourStoryPost.tags.slice(0, 4).map((tag, idx) => (
+                      <span key={idx} className="bg-stone-800/80 text-stone-300 border border-stone-700/60 text-[10px] sm:text-[11px] font-medium px-2.5 py-0.5 rounded-full">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Stats row */}
+                <div className="grid grid-cols-4 gap-2 sm:gap-4 py-2.5 border-y border-stone-800/80 text-center">
+                  {[
+                    { value: '1,200+', label: 'Artisans' },
+                    { value: '400+', label: 'Products' },
+                    { value: '50K+', label: 'Customers' },
+                    { value: '2019', label: 'Founded' },
+                  ].map(stat => (
+                    <div key={stat.label}>
+                      <p className="text-sm sm:text-base font-extrabold text-white font-serif">{stat.value}</p>
+                      <p className="text-[9px] font-bold text-stone-400 uppercase tracking-wider">{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA Button & Date */}
+                <div className="pt-2 flex flex-wrap items-center gap-4">
+                  <button
+                    onClick={() => onNavigate(`/blog/${ourStorySlug}`)}
+                    className="inline-flex items-center gap-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-full transition-all shadow-lg hover:shadow-[#C0654B]/40 group cursor-pointer"
+                  >
+                    <span>Read Full Story</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                  <span className="text-xs text-stone-400 font-medium flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-stone-500" /> Published {ourStoryPost.publishedDate}
+                  </span>
+                </div>
+
+              </div>
+
             </div>
           </div>
-
-          {/* Story Excerpt */}
-          <div className="max-w-xl mx-auto space-y-2">
-            <p className="text-stone-300 text-xs sm:text-sm leading-snug font-light line-clamp-3">
-              {ourStoryExcerpt}
-            </p>
-          </div>
-
-          {/* Stats Row */}
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 py-2 border-y border-stone-800/60">
-            {[
-              { value: '1,200+', label: 'Artisan Partners' },
-              { value: '400+', label: 'Curated Products' },
-              { value: '50K+', label: 'Happy Customers' },
-              { value: '2019', label: 'Founded' },
-            ].map(stat => (
-              <div key={stat.label} className="text-center">
-                <p className="text-sm sm:text-base font-extrabold text-white font-serif">{stat.value}</p>
-                <p className="text-[9px] font-bold text-stone-400 uppercase tracking-wider">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA Button */}
-          <div>
-            <button
-              onClick={() => onNavigate(`/blog/${ourStorySlug}`)}
-              className="inline-flex items-center gap-2 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold text-xs px-5 py-2 rounded-full transition-all shadow-md hover:shadow-[#C0654B]/30 group cursor-pointer"
-            >
-              <span>Read Our Story</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-
-        </div>
-      </div>
+        </section>
       )}
 
       {/* 1. BENEFIT ICONS STRIP (Pantaloons / Max Fashion Style) */}

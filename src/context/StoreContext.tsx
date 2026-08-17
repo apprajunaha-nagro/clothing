@@ -482,13 +482,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       updatedAt: nowIso
     };
 
-    // 1. Update state immediately
+    // 1. Update state and localStorage immediately
     setBlogPosts(prev => {
       const exists = prev.some(p => p.id === postId);
-      if (exists) {
-        return prev.map(p => p.id === postId ? formattedPost : p);
-      }
-      return [formattedPost, ...prev];
+      const nextList = exists
+        ? prev.map(p => p.id === postId ? formattedPost : p)
+        : [formattedPost, ...prev];
+      try { localStorage.setItem('pgmart_blog_posts', JSON.stringify(nextList)); } catch {}
+      return nextList;
     });
 
     // 2. Direct Supabase Upsert
@@ -536,8 +537,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const deleteBlogPost = async (id: string): Promise<boolean> => {
-    // 1. Update state immediately
-    setBlogPosts(prev => prev.filter(p => p.id !== id));
+    // 1. Update state and localStorage immediately
+    setBlogPosts(prev => {
+      const nextList = prev.filter(p => p.id !== id);
+      try { localStorage.setItem('pgmart_blog_posts', JSON.stringify(nextList)); } catch {}
+      return nextList;
+    });
 
     // 2. Supabase direct delete
     try {
@@ -561,7 +566,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const nextStatus = nextPublished ? 'published' : 'draft';
     const nowIso = new Date().toISOString();
 
-    setBlogPosts(prev => prev.map(p => p.id === id ? { ...p, isPublished: nextPublished, status: nextStatus, updatedAt: nowIso } : p));
+    setBlogPosts(prev => {
+      const nextList = prev.map(p => p.id === id ? { ...p, isPublished: nextPublished, status: nextStatus, updatedAt: nowIso } : p);
+      try { localStorage.setItem('pgmart_blog_posts', JSON.stringify(nextList)); } catch {}
+      return nextList;
+    });
 
     try {
       await supabase.from('BlogPost').update({ isPublished: nextPublished, updatedAt: nowIso }).eq('id', id);
