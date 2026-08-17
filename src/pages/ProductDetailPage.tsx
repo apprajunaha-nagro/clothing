@@ -31,6 +31,16 @@ interface ProductDetailPageProps {
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate, productId }) => {
   const { products, reviews, addReview, addToCart, wishlist, toggleWishlist, setSizeChartCategory, showToast, setChatOpen } = useStore();
 
+  // Allow pinch-to-zoom on product page only; restore global restriction on leave
+  useEffect(() => {
+    const metaViewport = document.querySelector('meta[name="viewport"]');
+    const original = metaViewport?.getAttribute('content') ?? '';
+    metaViewport?.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+    return () => {
+      metaViewport?.setAttribute('content', original || 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+    };
+  }, []);
+
   const cleanId = React.useMemo(() => {
     if (!productId) return '';
     return productId.split('?')[0].split('#')[0].trim();
