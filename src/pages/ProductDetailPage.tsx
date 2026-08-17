@@ -185,16 +185,48 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
     return `${ks.ageLabel} (${val} ${targetUnit})`;
   };
 
+  const renderedSizesList = React.useMemo(() => {
+    if (safeKidsSizes && safeKidsSizes.length > 0) {
+      // 1. Standard sizes that are not part of kidsSizes
+      const standardSizes = safeAvailableSizes.filter(
+        sz => !safeKidsSizes.some(ks => sz.includes(ks.ageLabel) || sz === `${ks.ageLabel} (${ks.measurement} ${ks.unit})`)
+      ).map(sz => ({
+        id: sz,
+        displayLabel: sz,
+        rawLabel: sz,
+        isMeasurement: false
+      }));
+
+      // 2. Formatted measurement sizes
+      const measurementSizes = safeKidsSizes.map(ks => ({
+        id: ks.ageLabel,
+        displayLabel: formatKidsSize(ks, displayUnit),
+        rawLabel: `${ks.ageLabel} (${ks.measurement} ${ks.unit})`,
+        isMeasurement: true
+      }));
+
+      return [...standardSizes, ...measurementSizes];
+    }
+
+    return safeAvailableSizes.map(sz => ({
+      id: sz,
+      displayLabel: sz,
+      rawLabel: sz,
+      isMeasurement: false
+    }));
+  }, [safeAvailableSizes, safeKidsSizes, displayUnit]);
+
   useEffect(() => {
     setColorIndex(0);
     setActiveImageIndex(0);
-    if (isKidsProduct && safeKidsSizes.length > 0) {
-      setSelectedSize(formatKidsSize(safeKidsSizes[0], displayUnit));
-    } else if (safeAvailableSizes[0]) {
-      setSelectedSize(safeAvailableSizes[0]);
+    if (renderedSizesList.length > 0) {
+      setSelectedSize(prev => {
+        const match = renderedSizesList.find(s => s.displayLabel === prev || s.rawLabel === prev || (s.isMeasurement && prev.startsWith(s.id)));
+        return match ? match.displayLabel : renderedSizesList[0].displayLabel;
+      });
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [productId, product?.id, displayUnit]);
+  }, [productId, product?.id, displayUnit, renderedSizesList]);
 
   // Accordion Toggles
   const [specsOpen, setSpecsOpen] = useState(true);
@@ -480,43 +512,24 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {isKidsProduct && safeKidsSizes && safeKidsSizes.length > 0 ? (
-                safeKidsSizes.map((ks) => {
-                  const displayLabel = formatKidsSize(ks, displayUnit);
-                  const rawLabel = `${ks.ageLabel} (${ks.measurement} ${ks.unit})`;
-                  const isSelected = selectedSize === displayLabel || selectedSize === rawLabel || selectedSize.startsWith(ks.ageLabel);
+              {renderedSizesList.map((item) => {
+                const isSelected = selectedSize === item.displayLabel || selectedSize === item.rawLabel || (item.isMeasurement && selectedSize.startsWith(item.id));
 
-                  return (
-                    <button
-                      key={ks.ageLabel}
-                      type="button"
-                      onClick={() => setSelectedSize(displayLabel)}
-                      className={`min-h-[44px] text-xs px-3.5 py-2 rounded-xl border font-bold cursor-pointer flex items-center justify-center transition-all ${
-                        isSelected
-                          ? 'border-[#C0654B] bg-[#C0654B]/10 text-[#C0654B] shadow-2xs ring-1 ring-[#C0654B]'
-                          : 'border-stone-300 text-stone-700 hover:border-stone-500 bg-white'
-                      }`}
-                    >
-                      {displayLabel}
-                    </button>
-                  );
-                })
-              ) : (
-                safeAvailableSizes.map((size) => (
+                return (
                   <button
-                    key={size}
+                    key={item.id}
                     type="button"
-                    onClick={() => setSelectedSize(size)}
-                    className={`min-w-[44px] min-h-[44px] text-xs px-3.5 py-2 rounded border font-bold cursor-pointer flex items-center justify-center transition-all ${
-                      selectedSize === size
-                        ? 'border-[#C0654B] bg-[#C0654B]/10 text-[#C0654B]'
-                        : 'border-stone-300 text-stone-700 hover:border-stone-500'
+                    onClick={() => setSelectedSize(item.displayLabel)}
+                    className={`min-h-[44px] min-w-[44px] text-xs px-3.5 py-2 rounded-xl border font-bold cursor-pointer flex items-center justify-center transition-all ${
+                      isSelected
+                        ? 'border-[#C0654B] bg-[#C0654B]/10 text-[#C0654B] shadow-2xs ring-1 ring-[#C0654B]'
+                        : 'border-stone-300 text-stone-700 hover:border-stone-500 bg-white'
                     }`}
                   >
-                    {size}
+                    {item.displayLabel}
                   </button>
-                ))
-              )}
+                );
+              })}
             </div>
           </div>
 
