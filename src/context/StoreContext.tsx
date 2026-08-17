@@ -130,6 +130,27 @@ function parseDbBlogPost(p: any): BlogPost {
   };
 }
 
+// Safe localStorage helper with automatic QuotaExceededError recovery & cache trimming
+const safeStorageSet = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e: any) {
+    if (e?.name === 'QuotaExceededError' || e?.code === 22 || e?.code === 1014 || (typeof e?.message === 'string' && e.message.includes('quota'))) {
+      try {
+        const legacyKeys = [
+          'terra_banners_v1', 'terra_banners_v2', 'terra_banners_v3', 'terra_banners_v4', 'terra_banners_v5',
+          'terra_banners_v6', 'terra_banners_v7', 'terra_banners_v8', 'terra_products', 'terra_settings',
+          'terra_orders', 'terra_wishlist_v1', 'pgmart_analytics_v1', 'pgmart_marketing_data'
+        ];
+        legacyKeys.forEach(k => { try { localStorage.removeItem(k); } catch {} });
+        localStorage.setItem(key, value);
+      } catch {
+        // Degrade safely without throwing unhandled exceptions
+      }
+    }
+  }
+};
+
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -386,7 +407,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // 2. Fetch from Express / Prisma REST API
       try {
         const res = await fetch('/api/blog-posts');
-        if (res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
           const data = await res.json();
           if (Array.isArray(data)) {
             data.forEach(p => {
@@ -395,7 +417,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
         }
       } catch (e) {
-        console.warn('REST API /api/blog-posts fetch fallback:', e);
+        // Ignore fallback
       }
 
       if (postMap.size > 0) {
@@ -831,11 +853,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Sync Banners to localStorage permanently across reloads
   useEffect(() => {
-    try {
-      localStorage.setItem('terra_banners_v5', JSON.stringify(banners));
-    } catch (e) {
-      console.error('Failed to save banners to localStorage:', e);
-    }
+    safeStorageSet('terra_banners_v9', JSON.stringify(banners));
   }, [banners]);
 
   // Helper to safely fetch JSON from backend routes
