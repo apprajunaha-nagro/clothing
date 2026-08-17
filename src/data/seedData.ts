@@ -94,7 +94,7 @@ export const initialSiteSettings: SiteSettings = {
   codEnabled: true,
   stripeEnabled: true,
   razorpayEnabled: true,
-  razorpayKeyId: "rzp_test_TC123456789",
+  razorpayKeyId: "rzp_test_TQkv6JASi8SQUP",
   stripePublicKey: "pk_test_TC987654321",
   gstNumber: "19AAAAA0000A1Z5",
   dealsEnabled: true,

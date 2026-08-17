@@ -23,7 +23,7 @@ export const AdminSettingsView: React.FC = () => {
 
   // Payment Gateway Settings (Razorpay & COD)
   const [razorpayEnabled, setRazorpayEnabled] = useState<boolean>(settings.razorpayEnabled !== false);
-  const [razorpayKeyId, setRazorpayKeyId] = useState<string>(settings.razorpayKeyId || 'rzp_test_TC123456789');
+  const [razorpayKeyId, setRazorpayKeyId] = useState<string>(settings.razorpayKeyId || 'rzp_test_TQkv6JASi8SQUP');
   const [razorpayKeySecret, setRazorpayKeySecret] = useState<string>('');
   const [showSecret, setShowSecret] = useState<boolean>(false);
   const [testingConnection, setTestingConnection] = useState<boolean>(false);

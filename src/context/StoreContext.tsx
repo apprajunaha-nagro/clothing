@@ -157,7 +157,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [settings, setSettings] = useState<SiteSettings>(() => {
     try {
       const saved = localStorage.getItem('pgmart_site_settings');
-      if (saved) return { ...initialSiteSettings, ...JSON.parse(saved) };
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed.razorpayKeyId || parsed.razorpayKeyId.includes('123456789')) {
+          parsed.razorpayKeyId = 'rzp_test_TQkv6JASi8SQUP';
+          try { localStorage.setItem('pgmart_site_settings', JSON.stringify({ ...initialSiteSettings, ...parsed })); } catch {}
+        }
+        return { ...initialSiteSettings, ...parsed };
+      }
     } catch {}
     return initialSiteSettings;
   });
