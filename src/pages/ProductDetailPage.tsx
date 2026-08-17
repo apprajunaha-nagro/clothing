@@ -419,27 +419,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             <p className="text-[10px] text-stone-500 mt-1">Inclusive of all taxes</p>
           </div>
 
-          {/* AVAILABLE OFFERS (Flipkart Green Bullet Tags) */}
-          <div className="bg-emerald-50/60 p-3 rounded border border-emerald-200/80 space-y-1.5 text-xs">
-            <p className="font-bold text-stone-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Available Offers</span>
-            </p>
-            <ul className="space-y-1 text-stone-700 text-[11px]">
-              <li className="flex items-start gap-1.5">
-                <span className="bg-emerald-700 text-white text-[9px] font-bold px-1 rounded shrink-0 mt-0.5">Bank Offer</span>
-                <span>5% Cashback on PGmart Axis Bank Card. <strong className="text-emerald-800">T&C</strong></span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="bg-emerald-700 text-white text-[9px] font-bold px-1 rounded shrink-0 mt-0.5">Special Price</span>
-                <span>Get extra 15% off on festive wear orders above ₹1,499. <strong className="text-emerald-800">T&C</strong></span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <span className="bg-emerald-700 text-white text-[9px] font-bold px-1 rounded shrink-0 mt-0.5">Partner Offer</span>
-                <span>Buy 2 get additional 10% instant checkout discount with code <strong className="text-stone-900 font-mono bg-white px-1 border border-stone-200">WELCOME100</strong></span>
-              </li>
-            </ul>
-          </div>
+
 
           {/* COLOR SELECTOR */}
           <div className="space-y-1.5">
