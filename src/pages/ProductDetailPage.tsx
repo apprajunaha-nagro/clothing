@@ -171,7 +171,9 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
     return ['Free Size'];
   }, [product]);
 
-  const isKidsProduct = (product?.categoryId?.toLowerCase() === 'kids' || product?.subcategoryId?.toLowerCase().includes('kids')) || (safeKidsSizes.length > 0);
+  const isKidsCategoryOnly = Boolean(product?.categoryId?.toLowerCase() === 'kids' || product?.subcategoryId?.toLowerCase().includes('kids'));
+  const hasMeasurementSizes = Boolean(safeKidsSizes && safeKidsSizes.length > 0);
+  const isKidsProduct = isKidsCategoryOnly || hasMeasurementSizes;
 
   const formatKidsSize = (ks: { ageLabel: string; measurement: number; unit: 'cm' | 'inch' }, targetUnit: 'cm' | 'inch') => {
     let val = ks.measurement;
@@ -453,7 +455,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <label className="text-xs font-bold text-stone-800">
-                  {isKidsProduct ? 'Select Age & Fit' : 'Select Size'}
+                  {isKidsCategoryOnly ? 'Select Age & Fit' : (hasMeasurementSizes ? 'Select Size & Measurement' : 'Select Size')}
                 </label>
                 {isKidsProduct && (
                   <div className="flex items-center bg-stone-100 p-0.5 rounded-lg text-[10px] font-bold border border-stone-200">

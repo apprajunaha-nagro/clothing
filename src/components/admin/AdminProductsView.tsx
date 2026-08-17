@@ -63,8 +63,9 @@ export const AdminProductsView: React.FC = () => {
 
   // Multi-variant selection state
   const [selectedSizes, setSelectedSizes] = useState<string[]>(['S', 'M', 'L', 'XL']);
+  const [sizeMode, setSizeMode] = useState<'standard' | 'measurements'>('standard');
   
-  // Kids Category Sizing state
+  // Custom / Manual Sizing Matrix state (with cm & inches option)
   const [kidsSizeRows, setKidsSizeRows] = useState<KidsSizeVariant[]>([
     { ageLabel: '2-3 Years', measurement: 54, unit: 'cm', stock: 15 },
     { ageLabel: '4-5 Years', measurement: 60, unit: 'cm', stock: 20 }
@@ -143,8 +144,9 @@ export const AdminProductsView: React.FC = () => {
     if (!isFormOpen) return;
     if (formStep === 3 && variantsMatrix.length === 0) {
       const rows: ProductVariant[] = [];
+      const isMeasurementMode = sizeMode === 'measurements' || isKidsCategory;
       selectedColors.forEach(color => {
-        if (isKidsCategory) {
+        if (isMeasurementMode) {
           kidsSizeRows.forEach(ks => {
             const sizeLabel = `${ks.ageLabel} (${ks.measurement} ${ks.unit})`;
             rows.push({
@@ -153,7 +155,7 @@ export const AdminProductsView: React.FC = () => {
               size: sizeLabel,
               color: color.name,
               colorHex: color.hex,
-              sku: `${(pName || 'KID').slice(0, 3).toUpperCase()}-${color.name.slice(0, 2).toUpperCase()}-${ks.ageLabel.replace(/[^a-zA-Z0-9]/g, '')}`,
+              sku: `${(pName || (isKidsCategory ? 'KID' : 'PROD')).slice(0, 3).toUpperCase()}-${color.name.slice(0, 2).toUpperCase()}-${ks.ageLabel.replace(/[^a-zA-Z0-9]/g, '')}`,
               price: pBasePrice,
               discountPrice: pDiscPrice || undefined,
               stock: ks.stock || 15,
@@ -188,7 +190,7 @@ export const AdminProductsView: React.FC = () => {
       });
       setVariantsMatrix(rows);
     }
-  }, [formStep, selectedSizes, selectedColors, isKidsCategory, kidsSizeRows]);
+  }, [formStep, selectedSizes, selectedColors, isKidsCategory, kidsSizeRows, sizeMode]);
 
   // Synchronize available colors if editing a product with custom variants
   useEffect(() => {
@@ -441,9 +443,10 @@ export const AdminProductsView: React.FC = () => {
     setPTags(['new_arrival']);
     setPStatus('published');
     setSelectedSizes(['S', 'M', 'L', 'XL']);
+    setSizeMode('standard');
     setKidsSizeRows([
-      { ageLabel: '2-3 Years', measurement: 54, unit: 'cm', stock: 15 },
-      { ageLabel: '4-5 Years', measurement: 60, unit: 'cm', stock: 20 }
+      { ageLabel: 'Size 38 (M)', measurement: 96, unit: 'cm', stock: 15 },
+      { ageLabel: 'Size 40 (L)', measurement: 102, unit: 'cm', stock: 20 }
     ]);
     setSelectedColors([
       { name: 'Teal Green', hex: '#005F54' },
@@ -477,10 +480,12 @@ export const AdminProductsView: React.FC = () => {
     setSelectedSizes(prod.availableSizes || ['S', 'M', 'L', 'XL']);
     if (prod.kidsSizes && prod.kidsSizes.length > 0) {
       setKidsSizeRows(prod.kidsSizes);
+      setSizeMode('measurements');
     } else {
+      setSizeMode('standard');
       setKidsSizeRows([
-        { ageLabel: '2-3 Years', measurement: 54, unit: 'cm', stock: 15 },
-        { ageLabel: '4-5 Years', measurement: 60, unit: 'cm', stock: 20 }
+        { ageLabel: 'Size 38 (M)', measurement: 96, unit: 'cm', stock: 15 },
+        { ageLabel: 'Size 40 (L)', measurement: 102, unit: 'cm', stock: 20 }
       ]);
     }
     setSelectedColors(prod.colors || [
@@ -514,24 +519,31 @@ export const AdminProductsView: React.FC = () => {
       return;
     }
 
-    if (isKidsCategory) {
+    const isMeasurementMode = sizeMode === 'measurements' || isKidsCategory;
+    if (isMeasurementMode) {
       if (!kidsSizeRows || kidsSizeRows.length === 0) {
-        showToast('At least one Kids size row is required for Kids category.');
+        showToast('At least one Custom Size measurement row is required.');
         setFormStep(3);
         return;
       }
       for (let i = 0; i < kidsSizeRows.length; i++) {
         const row = kidsSizeRows[i];
         if (!row.ageLabel || !row.ageLabel.trim()) {
-          showToast(`Kids Size Row ${i + 1}: Please enter an Age Range label (e.g. 2-3 Years).`);
+          showToast(`Size Row ${i + 1}: Please enter a Size/Fit Label (e.g. Size 38, Chest 40, 2-3 Years).`);
           setFormStep(3);
           return;
         }
         if (!row.measurement || Number(row.measurement) <= 0) {
-          showToast(`Kids Size Row ${i + 1}: Measurement value must be a positive number.`);
+          showToast(`Size Row ${i + 1}: Measurement value must be a positive number.`);
           setFormStep(3);
           return;
         }
+      }
+    } else {
+      if (!selectedSizes || selectedSizes.length === 0) {
+        showToast('Please select at least one standard size.');
+        setFormStep(3);
+        return;
       }
     }
 
@@ -543,9 +555,11 @@ export const AdminProductsView: React.FC = () => {
       ]
     }));
 
-    const finalAvailableSizes = isKidsCategory
+    const finalAvailableSizes = isMeasurementMode
       ? kidsSizeRows.map(k => `${k.ageLabel} (${k.measurement} ${k.unit})`)
       : selectedSizes;
+
+    const finalKidsSizes = isMeasurementMode ? kidsSizeRows : undefined;
 
     if (editProduct) {
       // Edit save
@@ -569,7 +583,7 @@ export const AdminProductsView: React.FC = () => {
         variants: variantsMatrix,
         colors: savedColors,
         availableSizes: finalAvailableSizes,
-        kidsSizes: isKidsCategory ? kidsSizeRows : undefined
+        kidsSizes: finalKidsSizes
       };
 
       setProducts(prev => prev.map(p => p.id === editProduct.id ? updated : p));
@@ -598,7 +612,7 @@ export const AdminProductsView: React.FC = () => {
         variants: variantsMatrix,
         colors: savedColors,
         availableSizes: finalAvailableSizes,
-        kidsSizes: isKidsCategory ? kidsSizeRows : undefined,
+        kidsSizes: finalKidsSizes,
         rating: 5,
         reviewCount: 0,
         created_at: new Date().toISOString()
@@ -1774,153 +1788,254 @@ export const AdminProductsView: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   {/* Sizes Selection */}
-                  {isKidsCategory ? (
-                    <div className="space-y-3 p-3.5 sm:p-4 bg-amber-50/70 rounded-xl border border-amber-200/80">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="font-bold text-amber-900 block text-xs">Kids Custom Sizing Matrix</span>
-                          <p className="text-[10px] text-amber-700">Enter age range, measurement, unit, and stock.</p>
-                        </div>
+                  <div className="space-y-3 p-3.5 sm:p-4 bg-stone-50/70 rounded-xl border border-stone-200">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200 pb-2.5">
+                      <div>
+                        <span className="font-bold text-stone-800 block text-xs">Product Sizing Options</span>
+                        <p className="text-[10px] text-stone-500">Choose standard size tags or manual measurements with cm & inch options.</p>
+                      </div>
+                      
+                      {/* Sizing Method Switcher */}
+                      <div className="flex bg-white p-0.5 rounded-lg text-xs font-bold border border-stone-300 shadow-2xs self-start sm:self-auto">
                         <button
                           type="button"
                           onClick={() => {
-                            setKidsSizeRows(prev => [...prev, { ageLabel: '', measurement: 50, unit: 'cm', stock: 10 }]);
+                            setSizeMode('standard');
                             setVariantsMatrix([]);
                           }}
-                          className="px-3 py-1.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shadow-xs shrink-0"
+                          className={`px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] ${
+                            sizeMode === 'standard' && !isKidsCategory
+                              ? 'bg-[#C0654B] text-white shadow-xs'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
                         >
-                          + Add Size
+                          Standard Sizes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSizeMode('measurements');
+                            setVariantsMatrix([]);
+                          }}
+                          className={`px-2.5 py-1 rounded-md transition-all cursor-pointer text-[11px] flex items-center gap-1 ${
+                            sizeMode === 'measurements' || isKidsCategory
+                              ? 'bg-[#C0654B] text-white shadow-xs'
+                              : 'text-stone-600 hover:text-stone-900'
+                          }`}
+                        >
+                          <span>Manual (cm / in)</span>
                         </button>
                       </div>
+                    </div>
 
-                      <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
-                        {kidsSizeRows.map((row, idx) => (
-                          <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 bg-white rounded-xl border border-stone-200 shadow-2xs">
-                            <div className="flex-1 min-w-0">
-                              <label className="text-[9px] font-bold text-stone-500 block uppercase">Age Range</label>
-                              <input
-                                type="text"
-                                placeholder="e.g. 2-3 Years"
-                                value={row.ageLabel}
-                                onChange={(e) => {
-                                  const updated = [...kidsSizeRows];
-                                  updated[idx].ageLabel = e.target.value;
-                                  setKidsSizeRows(updated);
+                    {(sizeMode === 'measurements' || isKidsCategory) ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-stone-700">Manual Measurement Sizing Matrix (cm & inches):</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setKidsSizeRows(prev => [...prev, { ageLabel: '', measurement: 96, unit: 'cm', stock: 15 }]);
+                              setVariantsMatrix([]);
+                            }}
+                            className="px-3 py-1 bg-[#C0654B] hover:bg-[#8B4A38] text-white rounded-lg text-[11px] font-bold transition-colors cursor-pointer shadow-xs shrink-0"
+                          >
+                            + Add Size Row
+                          </button>
+                        </div>
+
+                        {/* Presets */}
+                        <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                          <span className="text-stone-500 font-bold">Quick Presets:</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setKidsSizeRows([
+                                { ageLabel: 'Size 36 (S)', measurement: 91, unit: 'cm', stock: 15 },
+                                { ageLabel: 'Size 38 (M)', measurement: 96, unit: 'cm', stock: 20 },
+                                { ageLabel: 'Size 40 (L)', measurement: 102, unit: 'cm', stock: 20 },
+                                { ageLabel: 'Size 42 (XL)', measurement: 107, unit: 'cm', stock: 15 },
+                                { ageLabel: 'Size 44 (XXL)', measurement: 112, unit: 'cm', stock: 10 }
+                              ]);
+                              setVariantsMatrix([]);
+                            }}
+                            className="px-2 py-0.5 bg-white hover:bg-stone-100 border border-stone-200 rounded text-stone-700 font-semibold cursor-pointer"
+                          >
+                            Kurtis / Tops (36-44)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setKidsSizeRows([
+                                { ageLabel: 'Size 38 (M)', measurement: 96, unit: 'cm', stock: 15 },
+                                { ageLabel: 'Size 40 (L)', measurement: 102, unit: 'cm', stock: 20 },
+                                { ageLabel: 'Size 42 (XL)', measurement: 107, unit: 'cm', stock: 15 },
+                                { ageLabel: 'Size 44 (XXL)', measurement: 112, unit: 'cm', stock: 10 }
+                              ]);
+                              setVariantsMatrix([]);
+                            }}
+                            className="px-2 py-0.5 bg-white hover:bg-stone-100 border border-stone-200 rounded text-stone-700 font-semibold cursor-pointer"
+                          >
+                            Mens Chest (38-44)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setKidsSizeRows([
+                                { ageLabel: '2-3 Years', measurement: 54, unit: 'cm', stock: 15 },
+                                { ageLabel: '4-5 Years', measurement: 60, unit: 'cm', stock: 20 },
+                                { ageLabel: '6-7 Years', measurement: 66, unit: 'cm', stock: 15 },
+                                { ageLabel: '8-9 Years', measurement: 72, unit: 'cm', stock: 10 }
+                              ]);
+                              setVariantsMatrix([]);
+                            }}
+                            className="px-2 py-0.5 bg-white hover:bg-stone-100 border border-stone-200 rounded text-stone-700 font-semibold cursor-pointer"
+                          >
+                            Kids Age (2-9Y)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setKidsSizeRows([
+                                { ageLabel: 'Free Size (5.5m + Blouse)', measurement: 550, unit: 'cm', stock: 25 }
+                              ]);
+                              setVariantsMatrix([]);
+                            }}
+                            className="px-2 py-0.5 bg-white hover:bg-stone-100 border border-stone-200 rounded text-stone-700 font-semibold cursor-pointer"
+                          >
+                            Saree / Free Size
+                          </button>
+                        </div>
+
+                        <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                          {kidsSizeRows.map((row, idx) => (
+                            <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 bg-white rounded-xl border border-stone-200 shadow-2xs">
+                              <div className="flex-1 min-w-0">
+                                <label className="text-[9px] font-bold text-stone-500 block uppercase">Size / Fit Label</label>
+                                <input
+                                  type="text"
+                                  placeholder="e.g. Size 38 (M), Chest 40, 2-3 Years"
+                                  value={row.ageLabel}
+                                  onChange={(e) => {
+                                    const updated = [...kidsSizeRows];
+                                    updated[idx].ageLabel = e.target.value;
+                                    setKidsSizeRows(updated);
+                                    setVariantsMatrix([]);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 border border-stone-300 rounded-lg text-xs font-bold text-stone-800 outline-none focus:border-[#C0654B]"
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <div className="w-20">
+                                  <label className="text-[9px] font-bold text-stone-500 block uppercase">Measure</label>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    placeholder="96"
+                                    value={row.measurement || ''}
+                                    onChange={(e) => {
+                                      const updated = [...kidsSizeRows];
+                                      updated[idx].measurement = Math.max(1, Number(e.target.value));
+                                      setKidsSizeRows(updated);
+                                      setVariantsMatrix([]);
+                                    }}
+                                    className="w-full px-2 py-1.5 border border-stone-300 rounded-lg text-xs font-mono font-bold text-stone-800 text-center outline-none focus:border-[#C0654B]"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-[9px] font-bold text-stone-500 block uppercase">Unit</label>
+                                  <div className="flex border border-stone-300 rounded-lg overflow-hidden font-bold text-[10px]">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = [...kidsSizeRows];
+                                        updated[idx].unit = 'cm';
+                                        setKidsSizeRows(updated);
+                                        setVariantsMatrix([]);
+                                      }}
+                                      className={`px-2 py-1.5 cursor-pointer ${row.unit === 'cm' ? 'bg-[#C0654B] text-white' : 'bg-stone-100 text-stone-600'}`}
+                                    >
+                                      cm
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const updated = [...kidsSizeRows];
+                                        updated[idx].unit = 'inch';
+                                        setKidsSizeRows(updated);
+                                        setVariantsMatrix([]);
+                                      }}
+                                      className={`px-2 py-1.5 cursor-pointer ${row.unit === 'inch' ? 'bg-[#C0654B] text-white' : 'bg-stone-100 text-stone-600'}`}
+                                    >
+                                      in
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="w-16">
+                                  <label className="text-[9px] font-bold text-stone-500 block uppercase">Stock</label>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={row.stock}
+                                    onChange={(e) => {
+                                      const updated = [...kidsSizeRows];
+                                      updated[idx].stock = Math.max(0, Number(e.target.value));
+                                      setKidsSizeRows(updated);
+                                      setVariantsMatrix([]);
+                                    }}
+                                    className="w-full px-1.5 py-1.5 border border-stone-300 rounded-lg text-xs font-mono text-center font-bold text-stone-800 outline-none"
+                                  />
+                                </div>
+
+                                {kidsSizeRows.length > 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setKidsSizeRows(prev => prev.filter((_, i) => i !== idx));
+                                      setVariantsMatrix([]);
+                                    }}
+                                    className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg cursor-pointer mt-3 shrink-0"
+                                    title="Remove Size Row"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <span className="font-bold text-stone-700 block text-xs">Select Available Sizes:</span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'].map(sz => {
+                            const hasSz = selectedSizes.includes(sz);
+                            return (
+                              <button
+                                key={sz}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSizes(prev => hasSz ? prev.filter(s => s !== sz) : [...prev, sz]);
                                   setVariantsMatrix([]);
                                 }}
-                                className="w-full px-2.5 py-1.5 border border-stone-300 rounded-lg text-xs font-bold text-stone-800 outline-none focus:border-[#C0654B]"
-                              />
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <div className="w-20">
-                                <label className="text-[9px] font-bold text-stone-500 block uppercase">Measure</label>
-                                <input
-                                  type="number"
-                                  min={1}
-                                  placeholder="54"
-                                  value={row.measurement || ''}
-                                  onChange={(e) => {
-                                    const updated = [...kidsSizeRows];
-                                    updated[idx].measurement = Math.max(1, Number(e.target.value));
-                                    setKidsSizeRows(updated);
-                                    setVariantsMatrix([]);
-                                  }}
-                                  className="w-full px-2 py-1.5 border border-stone-300 rounded-lg text-xs font-mono font-bold text-stone-800 text-center outline-none focus:border-[#C0654B]"
-                                />
-                              </div>
-
-                              <div>
-                                <label className="text-[9px] font-bold text-stone-500 block uppercase">Unit</label>
-                                <div className="flex border border-stone-300 rounded-lg overflow-hidden font-bold text-[10px]">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const updated = [...kidsSizeRows];
-                                      updated[idx].unit = 'cm';
-                                      setKidsSizeRows(updated);
-                                      setVariantsMatrix([]);
-                                    }}
-                                    className={`px-2 py-1.5 cursor-pointer ${row.unit === 'cm' ? 'bg-[#C0654B] text-white' : 'bg-stone-100 text-stone-600'}`}
-                                  >
-                                    cm
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const updated = [...kidsSizeRows];
-                                      updated[idx].unit = 'inch';
-                                      setKidsSizeRows(updated);
-                                      setVariantsMatrix([]);
-                                    }}
-                                    className={`px-2 py-1.5 cursor-pointer ${row.unit === 'inch' ? 'bg-[#C0654B] text-white' : 'bg-stone-100 text-stone-600'}`}
-                                  >
-                                    in
-                                  </button>
-                                </div>
-                              </div>
-
-                              <div className="w-16">
-                                <label className="text-[9px] font-bold text-stone-500 block uppercase">Stock</label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={row.stock}
-                                  onChange={(e) => {
-                                    const updated = [...kidsSizeRows];
-                                    updated[idx].stock = Math.max(0, Number(e.target.value));
-                                    setKidsSizeRows(updated);
-                                    setVariantsMatrix([]);
-                                  }}
-                                  className="w-full px-1.5 py-1.5 border border-stone-300 rounded-lg text-xs font-mono text-center font-bold text-stone-800 outline-none"
-                                />
-                              </div>
-
-                              {kidsSizeRows.length > 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setKidsSizeRows(prev => prev.filter((_, i) => i !== idx));
-                                    setVariantsMatrix([]);
-                                  }}
-                                  className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg cursor-pointer mt-3 shrink-0"
-                                  title="Remove Size Row"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
+                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                  hasSz 
+                                    ? 'bg-[#C0654B] text-white shadow-sm' 
+                                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                                }`}
+                              >
+                                {sz}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <span className="font-bold text-stone-700 block">Select Available Sizes:</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size'].map(sz => {
-                          const hasSz = selectedSizes.includes(sz);
-                          return (
-                            <button
-                              key={sz}
-                              type="button"
-                              onClick={() => {
-                                setSelectedSizes(prev => hasSz ? prev.filter(s => s !== sz) : [...prev, sz]);
-                                setVariantsMatrix([]);
-                              }}
-                              className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                                hasSz 
-                                  ? 'bg-[#C0654B] text-white shadow-sm' 
-                                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                              }`}
-                            >
-                              {sz}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
                   {/* Colors selection */}
                   <div className="space-y-3">
@@ -2251,28 +2366,6 @@ export const AdminProductsView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* SEO fields */}
-                <div className="p-3 sm:p-3.5 bg-stone-50 border border-stone-200 rounded-2xl space-y-2">
-                  <span className="font-bold text-stone-800 text-[11px] block uppercase tracking-wider">SEO Google Headers Preview</span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Meta Title override</label>
-                      <input
-                        type="text"
-                        placeholder="Royal Handloom Cotton Sarees | PGmart"
-                        className="w-full p-2 bg-white border border-stone-300 rounded-lg outline-none text-[11px]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-stone-500 mb-0.5">Meta Description override</label>
-                      <input
-                        type="text"
-                        placeholder="Get premium quality Handloom Cotton Sarees with 5% GST billing..."
-                        className="w-full p-2 bg-white border border-stone-300 rounded-lg outline-none text-[11px]"
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
