@@ -48,15 +48,25 @@ export const AdminUserAccountsView: React.FC = () => {
   const fetchDbUsers = async () => {
     setIsLoadingUsers(true);
     try {
+      const token = localStorage.getItem('pgmart_admin_token') || sessionStorage.getItem('pgmart_admin_token') || 'pgmart123';
       const res = await fetch('/api/admin/users', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('pgmart_admin_token') || 'pgmart123'}`
+          'Authorization': `Bearer ${token}`
         }
       });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
           setDbUsers(data);
+          return;
+        }
+      }
+      // Fallback endpoint if /api/admin/users returns non-200
+      const fallbackRes = await fetch('/api/users');
+      if (fallbackRes.ok) {
+        const fallbackData = await fallbackRes.json();
+        if (Array.isArray(fallbackData)) {
+          setDbUsers(fallbackData);
         }
       }
     } catch (e) {
@@ -87,6 +97,10 @@ export const AdminUserAccountsView: React.FC = () => {
       addresses: any[];
       orders: Order[];
       totalSpent: number;
+      ordersCount: number;
+      status: 'active' | 'vip' | 'flagged' | 'inactive';
+      role: string;
+      adminNotes: string;
       lastOrderDate: string;
       firstOrderDate: string;
     }>();
@@ -97,11 +111,14 @@ export const AdminUserAccountsView: React.FC = () => {
       if (u.addresses) {
         try { addrs = typeof u.addresses === 'string' ? JSON.parse(u.addresses) : u.addresses; } catch {}
       }
-      userMap.set(u.email.toLowerCase(), {
-        id: u.id,
-        name: u.name,
+      const emailKey = (u.email || '').toLowerCase().trim();
+      if (!emailKey) return;
+
+      userMap.set(emailKey, {
+        id: u.id || `u-${emailKey}`,
+        name: u.name || 'Valued Customer',
         email: u.email,
-        phone: u.phone || '+91 94711 55434',
+        phone: u.phone || '',
         addresses: Array.isArray(addrs) ? addrs : [],
         orders: [],
         totalSpent: Number(u.totalSpent) || 0,
@@ -115,31 +132,55 @@ export const AdminUserAccountsView: React.FC = () => {
     });
 
     // 2. Seed default current storefront user if present
-    if (currentUser && currentUser.email && !userMap.has(currentUser.email.toLowerCase())) {
-      userMap.set(currentUser.email.toLowerCase(), {
-        id: currentUser.id || `u-${currentUser.email}`,
-        name: currentUser.name || 'Storefront Customer',
-        email: currentUser.email,
-        phone: currentUser.phone || '+91 98765 43210',
-        addresses: currentUser.addresses || [],
-        orders: [],
-        totalSpent: 0,
-        lastOrderDate: currentUser.createdAt || new Date().toISOString(),
-        firstOrderDate: currentUser.createdAt || new Date().toISOString(),
-      });
+    if (currentUser && currentUser.email) {
+      const currentEmail = currentUser.email.toLowerCase().trim();
+      const existing = userMap.get(currentEmail);
+      if (existing) {
+        if (currentUser.name && (!existing.name || existing.name === 'Valued Customer' || existing.name === currentEmail.split('@')[0])) {
+          existing.name = currentUser.name;
+        }
+        if (currentUser.phone && !existing.phone) {
+          existing.phone = currentUser.phone;
+        }
+        if (currentUser.addresses && currentUser.addresses.length > 0) {
+          currentUser.addresses.forEach((a: any) => {
+            if (!existing.addresses.some(ea => ea.street === a.street)) {
+              existing.addresses.push(a);
+            }
+          });
+        }
+      } else {
+        userMap.set(currentEmail, {
+          id: currentUser.id || `u-${currentEmail}`,
+          name: currentUser.name || 'Storefront Customer',
+          email: currentUser.email,
+          phone: currentUser.phone || '',
+          addresses: currentUser.addresses || [],
+          orders: [],
+          totalSpent: 0,
+          ordersCount: 0,
+          status: 'active',
+          role: 'customer',
+          adminNotes: '',
+          lastOrderDate: currentUser.createdAt || new Date().toISOString(),
+          firstOrderDate: currentUser.createdAt || new Date().toISOString(),
+        });
+      }
     }
 
-    // 3. Process all orders to aggregate user accounts & activities
+    // 3. Process all orders to aggregate user accounts & link orders
     orders.forEach(order => {
-      const key = (order.customerEmail || order.customerPhone || order.id).toLowerCase();
+      if (!order.customerEmail && !order.customerPhone && !order.id) return;
+      const key = (order.customerEmail || order.customerPhone || order.id).toLowerCase().trim();
       const existing = userMap.get(key);
 
-      const orderTotal = order.total || 0;
+      const orderTotal = Number(order.total) || 0;
       const orderDate = order.createdAt || new Date().toISOString();
 
       if (existing) {
-        existing.orders.push(order);
-        existing.totalSpent += orderTotal;
+        if (!existing.orders.some(o => o.id === order.id || o.orderNumber === order.orderNumber)) {
+          existing.orders.push(order);
+        }
         if (new Date(orderDate) > new Date(existing.lastOrderDate)) {
           existing.lastOrderDate = orderDate;
         }
@@ -154,10 +195,14 @@ export const AdminUserAccountsView: React.FC = () => {
           id: order.customerId && order.customerId !== 'guest' ? order.customerId : `user-${Math.abs(hashCode(key))}`,
           name: order.customerName || 'Customer',
           email: order.customerEmail || 'no-email@pgmart.in',
-          phone: order.customerPhone || '+91 94711 55434',
+          phone: order.customerPhone || '',
           addresses: order.shippingAddress ? [order.shippingAddress] : [],
           orders: [order],
           totalSpent: orderTotal,
+          ordersCount: 1,
+          status: orderTotal >= 5000 ? 'vip' : 'active',
+          role: 'customer',
+          adminNotes: '',
           lastOrderDate: orderDate,
           firstOrderDate: orderDate,
         });
@@ -166,8 +211,9 @@ export const AdminUserAccountsView: React.FC = () => {
 
     // Transform into UserAccount objects
     return Array.from(userMap.values()).map(item => {
-      const ordersCount = item.orders.length;
-      const totalSpent = Math.round(item.totalSpent);
+      const ordersCount = Math.max(item.orders.length, item.ordersCount || 0);
+      const ordersTotal = item.orders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+      const totalSpent = Math.max(Math.round(item.totalSpent || 0), Math.round(ordersTotal));
       
       // Calculate Loyalty Tier
       let loyaltyTier: 'Silver' | 'Gold' | 'Platinum' | 'Diamond' = 'Silver';
@@ -177,12 +223,11 @@ export const AdminUserAccountsView: React.FC = () => {
 
       // Default status
       const savedStatus = userStatusMap[item.id];
-      const computedStatus: 'active' | 'vip' | 'flagged' | 'inactive' = savedStatus || (totalSpent >= 5000 ? 'vip' : 'active');
+      const computedStatus: 'active' | 'vip' | 'flagged' | 'inactive' = savedStatus || item.status || (totalSpent >= 5000 ? 'vip' : 'active');
 
       // Generate activity history
       const activities: UserActivity[] = [];
       
-      // Account created activity
       activities.push({
         id: `act-create-${item.id}`,
         timestamp: item.firstOrderDate,
@@ -190,7 +235,6 @@ export const AdminUserAccountsView: React.FC = () => {
         description: `Customer account registered on PGmart`
       });
 
-      // Order activities
       item.orders.forEach(ord => {
         activities.push({
           id: `act-ord-${ord.id}`,
@@ -208,18 +252,8 @@ export const AdminUserAccountsView: React.FC = () => {
             description: `Order #${ord.orderNumber} delivered successfully`
           });
         }
-
-        if (ord.returnStatus && ord.returnStatus !== 'none') {
-          activities.push({
-            id: `act-ret-${ord.id}`,
-            timestamp: ord.updatedAt || ord.createdAt,
-            type: 'return',
-            description: `Requested ${ord.returnType === 'exchange' ? 'Exchange' : 'Return'} for Order #${ord.orderNumber}`
-          });
-        }
       });
 
-      // Sort activities newest first
       activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       return {
@@ -234,7 +268,7 @@ export const AdminUserAccountsView: React.FC = () => {
         lastOrderDate: item.lastOrderDate,
         status: computedStatus,
         notes: userNotesMap[item.id] || item.adminNotes || '',
-        loyaltyPoints: Math.round(totalSpent * 0.05), // 5% cashback points
+        loyaltyPoints: Math.round(totalSpent * 0.05),
         loyaltyTier,
         activities
       };
