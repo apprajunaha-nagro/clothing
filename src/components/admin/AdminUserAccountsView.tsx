@@ -4,7 +4,7 @@ import {
   Users, Search, UserCheck, ShieldCheck, ShoppingBag, 
   DollarSign, Calendar, MapPin, Phone, Mail, Clock, 
   FileText, ExternalLink, Plus, Download, Edit3, CheckCircle2, 
-  AlertTriangle, Filter, ChevronRight, Package, ArrowUpRight, Award
+  AlertTriangle, Filter, ChevronRight, Package, ArrowUpRight, Award, RefreshCw
 } from 'lucide-react';
 import { Order, UserAccount, UserActivity } from '../../types';
 
@@ -431,6 +431,16 @@ export const AdminUserAccountsView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={fetchDbUsers}
+            disabled={isLoadingUsers}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-stone-300 hover:bg-stone-50 text-stone-700 font-bold text-xs shadow-2xs transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`w-4 h-4 text-[#C0654B] ${isLoadingUsers ? 'animate-spin' : ''}`} />
+            <span>Refresh Database</span>
+          </button>
+
           <button
             onClick={handleExportCSV}
             className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-stone-300 hover:bg-stone-50 text-stone-700 font-bold text-xs shadow-2xs transition-colors cursor-pointer"
