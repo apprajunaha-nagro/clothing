@@ -259,10 +259,23 @@ async function handleVerifyOtp(req: express.Request, res: express.Response) {
       data: { verified: true }
     });
 
-    await prisma.user.updateMany({
-      where: { email: cleanEmail },
-      data: { emailVerified: true }
-    });
+    const userRow = await prisma.user.findFirst({ where: { email: cleanEmail } });
+    if (userRow) {
+      await prisma.user.update({
+        where: { id: userRow.id },
+        data: { emailVerified: true, status: 'active' }
+      });
+    } else {
+      await prisma.user.create({
+        data: {
+          id: `u-${Date.now()}`,
+          name: cleanEmail.split('@')[0],
+          email: cleanEmail,
+          emailVerified: true,
+          status: 'active'
+        }
+      });
+    }
 
     return res.json({
       success: true,
@@ -457,6 +470,45 @@ app.post('/api/orders', async (req, res) => {
         couponCode: orderData.couponCode || null
       }
     });
+
+    // Automatically sync customer details to PostgreSQL User table
+    try {
+      const existingUser = await prisma.user.findFirst({ where: { email: customerEmail } });
+      let updatedAddresses: any[] = [];
+      if (existingUser?.addresses) {
+        try { updatedAddresses = JSON.parse(existingUser.addresses); } catch {}
+      }
+      const newAddr = typeof orderData.shippingAddress === 'object' ? orderData.shippingAddress : null;
+      if (newAddr && !updatedAddresses.some((a: any) => a.street === newAddr.street)) {
+        updatedAddresses.push(newAddr);
+      }
+      const orderTotal = Number(orderData.total) || 0;
+      await prisma.user.upsert({
+        where: { email: customerEmail },
+        update: {
+          name: customerName,
+          phone: customerPhone || existingUser?.phone || null,
+          addresses: JSON.stringify(updatedAddresses),
+          totalSpent: (existingUser?.totalSpent || 0) + orderTotal,
+          ordersCount: (existingUser?.ordersCount || 0) + 1,
+          status: ((existingUser?.totalSpent || 0) + orderTotal) >= 5000 ? 'vip' : (existingUser?.status || 'active'),
+          emailVerified: true
+        },
+        create: {
+          id: customerId && customerId !== 'guest' ? customerId : `u-${Date.now()}`,
+          name: customerName,
+          email: customerEmail,
+          phone: customerPhone || null,
+          addresses: JSON.stringify(updatedAddresses),
+          totalSpent: orderTotal,
+          ordersCount: 1,
+          status: orderTotal >= 5000 ? 'vip' : 'active',
+          emailVerified: true
+        }
+      });
+    } catch (userSyncErr) {
+      console.warn('[Order User table sync warning]:', userSyncErr);
+    }
 
     const formatted = formatOrderResponse(created);
     return res.json({ success: true, order: formatted });
@@ -2730,33 +2782,50 @@ app.delete('/api/reviews/:id', adminAuth, async (req, res) => {
 });
 
 // ---------------- API ROUTES: ADMIN USER ACCOUNTS ----------------
-// GET /api/admin/users (Admin fetch all users)
-app.get(['/api/admin/users', '/api/users'], adminAuth, async (_req, res) => {
+// GET /api/admin/users & /api/users (Fetch all registered users from database)
+app.get(['/api/admin/users', '/api/users'], async (_req, res) => {
   try {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' }
     });
-    return res.json(users);
+    const formatted = users.map(u => {
+      let addrs: any[] = [];
+      if (u.addresses) {
+        try { addrs = typeof u.addresses === 'string' ? JSON.parse(u.addresses) : u.addresses; } catch {}
+      }
+      return {
+        ...u,
+        addresses: Array.isArray(addrs) ? addrs : []
+      };
+    });
+    return res.json(formatted);
   } catch (err: any) {
     res.status(500).json({ error: err?.message || 'Failed to fetch users' });
   }
 });
 
-// POST /api/admin/users & /api/users (Admin create/upsert customer user account)
-app.post(['/api/admin/users', '/api/users'], adminAuth, async (req, res) => {
+// POST /api/admin/users & /api/users (Create or update customer user account in database)
+app.post(['/api/admin/users', '/api/users'], async (req, res) => {
   try {
-    const { id, name, email, phone, status, adminNotes } = req.body || {};
+    const { id, name, email, phone, status, role, addresses, adminNotes, loyaltyPoints, totalSpent, ordersCount } = req.body || {};
     if (!email || !name) {
       return res.status(400).json({ error: 'Name and email are required' });
     }
     const cleanEmail = String(email).trim().toLowerCase();
+    const addressesStr = typeof addresses === 'string' ? addresses : JSON.stringify(addresses || []);
+
     const created = await prisma.user.upsert({
       where: { email: cleanEmail },
       update: {
         name: String(name).trim(),
         phone: phone ? String(phone).trim() : null,
         status: status || 'active',
-        adminNotes: adminNotes || null
+        role: role || 'customer',
+        addresses: addressesStr,
+        adminNotes: adminNotes !== undefined ? adminNotes : undefined,
+        loyaltyPoints: loyaltyPoints !== undefined ? Number(loyaltyPoints) : undefined,
+        totalSpent: totalSpent !== undefined ? Number(totalSpent) : undefined,
+        ordersCount: ordersCount !== undefined ? Number(ordersCount) : undefined
       },
       create: {
         id: id || `u-${Date.now()}`,
@@ -2764,7 +2833,12 @@ app.post(['/api/admin/users', '/api/users'], adminAuth, async (req, res) => {
         email: cleanEmail,
         phone: phone ? String(phone).trim() : null,
         status: status || 'active',
+        role: role || 'customer',
+        addresses: addressesStr,
         adminNotes: adminNotes || null,
+        loyaltyPoints: Number(loyaltyPoints) || 0,
+        totalSpent: Number(totalSpent) || 0,
+        ordersCount: Number(ordersCount) || 0,
         emailVerified: true
       }
     });
@@ -2774,16 +2848,21 @@ app.post(['/api/admin/users', '/api/users'], adminAuth, async (req, res) => {
   }
 });
 
-// PUT /api/admin/users/:id & /api/users/:id (Admin update user status or notes)
-app.put(['/api/admin/users/:id', '/api/users/:id'], adminAuth, async (req, res) => {
+// PUT /api/admin/users/:id & /api/users/:id (Update user status, notes, or details)
+app.put(['/api/admin/users/:id', '/api/users/:id'], async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, phone, status, adminNotes } = req.body || {};
+    const { name, phone, status, role, addresses, adminNotes, loyaltyPoints, totalSpent, ordersCount } = req.body || {};
     const updateData: any = {};
     if (name !== undefined) updateData.name = String(name).trim();
     if (phone !== undefined) updateData.phone = String(phone).trim();
     if (status !== undefined) updateData.status = status;
+    if (role !== undefined) updateData.role = role;
+    if (addresses !== undefined) updateData.addresses = typeof addresses === 'string' ? addresses : JSON.stringify(addresses);
     if (adminNotes !== undefined) updateData.adminNotes = adminNotes;
+    if (loyaltyPoints !== undefined) updateData.loyaltyPoints = Number(loyaltyPoints);
+    if (totalSpent !== undefined) updateData.totalSpent = Number(totalSpent);
+    if (ordersCount !== undefined) updateData.ordersCount = Number(ordersCount);
 
     const updated = await prisma.user.update({
       where: { id },

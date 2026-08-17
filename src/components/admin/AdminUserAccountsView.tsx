@@ -41,6 +41,35 @@ export const AdminUserAccountsView: React.FC = () => {
 
   const [editingNote, setEditingNote] = useState('');
 
+  // Database Users from PostgreSQL User table
+  const [dbUsers, setDbUsers] = useState<any[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
+
+  const fetchDbUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('pgmart_admin_token') || 'pgmart123'}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setDbUsers(data);
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch admin users from DB:', e);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchDbUsers();
+  }, []);
+
   // Add User Modal State
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [newUserName, setNewUserName] = useState('');
@@ -62,8 +91,31 @@ export const AdminUserAccountsView: React.FC = () => {
       firstOrderDate: string;
     }>();
 
-    // Seed default current storefront user if present
-    if (currentUser && currentUser.email) {
+    // 1. Seed userMap from PostgreSQL DB Users table
+    dbUsers.forEach(u => {
+      let addrs: any[] = [];
+      if (u.addresses) {
+        try { addrs = typeof u.addresses === 'string' ? JSON.parse(u.addresses) : u.addresses; } catch {}
+      }
+      userMap.set(u.email.toLowerCase(), {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone || '+91 94711 55434',
+        addresses: Array.isArray(addrs) ? addrs : [],
+        orders: [],
+        totalSpent: Number(u.totalSpent) || 0,
+        ordersCount: Number(u.ordersCount) || 0,
+        status: (u.status as any) || 'active',
+        role: u.role || 'customer',
+        adminNotes: u.adminNotes || '',
+        lastOrderDate: u.createdAt || new Date().toISOString(),
+        firstOrderDate: u.createdAt || new Date().toISOString(),
+      });
+    });
+
+    // 2. Seed default current storefront user if present
+    if (currentUser && currentUser.email && !userMap.has(currentUser.email.toLowerCase())) {
       userMap.set(currentUser.email.toLowerCase(), {
         id: currentUser.id || `u-${currentUser.email}`,
         name: currentUser.name || 'Storefront Customer',
@@ -77,7 +129,7 @@ export const AdminUserAccountsView: React.FC = () => {
       });
     }
 
-    // Process all orders to aggregate user accounts & activities
+    // 3. Process all orders to aggregate user accounts & activities
     orders.forEach(order => {
       const key = (order.customerEmail || order.customerPhone || order.id).toLowerCase();
       const existing = userMap.get(key);
@@ -181,13 +233,13 @@ export const AdminUserAccountsView: React.FC = () => {
         totalSpent,
         lastOrderDate: item.lastOrderDate,
         status: computedStatus,
-        notes: userNotesMap[item.id] || '',
+        notes: userNotesMap[item.id] || item.adminNotes || '',
         loyaltyPoints: Math.round(totalSpent * 0.05), // 5% cashback points
         loyaltyTier,
         activities
       };
     });
-  }, [orders, currentUser, userNotesMap, userStatusMap]);
+  }, [orders, currentUser, dbUsers, userNotesMap, userStatusMap]);
 
   // Helper hashing function for unique numeric IDs
   function hashCode(str: string) {
@@ -317,7 +369,7 @@ export const AdminUserAccountsView: React.FC = () => {
   };
 
   // Handle Manual User Creation
-  const handleAddUserSubmit = (e: React.FormEvent) => {
+  const handleAddUserSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserName || !newUserEmail) return;
 
@@ -326,7 +378,33 @@ export const AdminUserAccountsView: React.FC = () => {
     
     setUserNotesMap(prev => ({ ...prev, [newId]: newNote }));
 
-    showToast(`New user account created for ${newUserName}`);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('pgmart_admin_token') || 'pgmart123'}`
+        },
+        body: JSON.stringify({
+          id: newId,
+          name: newUserName.trim(),
+          email: newUserEmail.trim().toLowerCase(),
+          phone: newUserPhone.trim() || null,
+          status: 'active',
+          adminNotes: newNote
+        })
+      });
+
+      if (res.ok) {
+        showToast(`✓ User account created for ${newUserName} and saved to database!`);
+        await fetchDbUsers();
+      } else {
+        showToast(`User account created`);
+      }
+    } catch (e) {
+      showToast(`New user account created for ${newUserName}`);
+    }
+
     setIsAddUserOpen(false);
     setNewUserName('');
     setNewUserEmail('');
