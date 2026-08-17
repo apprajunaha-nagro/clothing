@@ -29,7 +29,7 @@ export const AdminMarketingView: React.FC = () => {
       title: 'Banarasi Silk Sarees',
       subtitle: 'Flat 40% OFF Festive Discount | Code: FESTIVE40',
       image: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1400&q=85',
-      link: '/category/women?sub=sub-women-sarees',
+      link: '/category/women?sub=w-ethnic&type=wt-saree',
       buttonText: 'EXPLORE OFFER',
       position: 'ad_banner' as const,
       sortOrder: 1,

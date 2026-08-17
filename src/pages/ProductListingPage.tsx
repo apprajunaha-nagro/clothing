@@ -56,8 +56,8 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   }
 
   const queryParams = new URLSearchParams(rawQuery);
-  const subParam = queryParams.get('sub') || queryParams.get('subcategoryId');
-  const typeParam = queryParams.get('type') || queryParams.get('typeId');
+  const rawSubParam = queryParams.get('sub') || queryParams.get('subcategoryId') || '';
+  const rawTypeParam = queryParams.get('type') || queryParams.get('typeId') || '';
   const brandParam = queryParams.get('brand') || queryParams.get('brandId');
   const occasionParam = queryParams.get('occasion');
   const tagParam = queryParams.get('tag');
@@ -68,8 +68,26 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
   const allSubcategories = categories.flatMap(c => c.subcategories || []);
   const allTypes = allSubcategories.flatMap(s => s.types || []);
 
+  // Smart alias resolver for legacy or marketing banner links (e.g. sub-women-sarees -> wt-saree / w-ethnic)
+  let subParam = rawSubParam;
+  let typeParam = rawTypeParam;
+
+  if (rawSubParam.toLowerCase().includes('saree')) {
+    typeParam = typeParam || 'wt-saree';
+    subParam = 'w-ethnic';
+  } else if (rawSubParam.toLowerCase().includes('kurti') || rawSubParam.toLowerCase().includes('kurta')) {
+    typeParam = typeParam || 'wt-kurti';
+    subParam = 'w-ethnic';
+  } else if (rawSubParam.toLowerCase().includes('lehenga')) {
+    typeParam = typeParam || 'wt-lehenga';
+    subParam = 'w-ethnic';
+  } else if (rawSubParam.toLowerCase().includes('dress')) {
+    typeParam = typeParam || 'wt-dresses';
+    subParam = 'w-western';
+  }
+
   const currentType = typeParam
-    ? allTypes.find(t => t.id === typeParam || t.slug === typeParam || t.id.toLowerCase().includes(typeParam.toLowerCase()) || t.name.toLowerCase().includes(typeParam.toLowerCase()))
+    ? allTypes.find(t => t.id === typeParam || t.slug === typeParam || t.id.toLowerCase().includes(typeParam.toLowerCase()) || t.name.toLowerCase().includes(typeParam.toLowerCase()) || (typeParam.toLowerCase().includes('saree') && t.id === 'wt-saree'))
     : allTypes.find(t => t.slug === rawSlug || t.id === rawSlug);
 
   const currentSubcategory = subParam
@@ -135,6 +153,29 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
     sectionSubtitle = currentBrand.description || `Official catalog of ${currentBrand.name} apparel.`;
     sectionBadge = 'BRAND SPOTLIGHT';
   }
+
+  // Helper function to generate singular/plural stem variations
+  const getStemVariations = (word: string): string[] => {
+    const clean = word.toLowerCase().trim();
+    const list = new Set<string>([clean]);
+    if (clean.endsWith('sarees')) list.add(clean.replace(/sarees$/, 'saree'));
+    if (clean.endsWith('saree')) list.add(clean + 's');
+    if (clean.endsWith('kurtas')) list.add(clean.replace(/kurtas$/, 'kurta'));
+    if (clean.endsWith('kurtis')) list.add(clean.replace(/kurtis$/, 'kurti'));
+    if (clean.endsWith('dresses')) list.add(clean.replace(/dresses$/, 'dress'));
+    if (clean.endsWith('lehengas')) list.add(clean.replace(/lehengas$/, 'lehenga'));
+    if (clean.endsWith('shirts')) list.add(clean.replace(/shirts$/, 'shirt'));
+    if (clean.endsWith('t-shirts') || clean.endsWith('tshirts')) {
+      list.add('t-shirt');
+      list.add('tshirt');
+      list.add('tee');
+    }
+    if (clean.endsWith('suits')) list.add(clean.replace(/suits$/, 'suit'));
+    if (clean.endsWith('blazers')) list.add(clean.replace(/blazers$/, 'blazer'));
+    if (clean.endsWith('fabrics')) list.add(clean.replace(/fabrics$/, 'fabric'));
+    if (clean.endsWith('s') && clean.length > 3) list.add(clean.slice(0, -1));
+    return Array.from(list);
+  };
 
   // Colors available across all products
   // Comprehensive curated color swatches matching Indian ethnic & western fashion
@@ -225,25 +266,30 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       if (!p.tags?.includes('curves_plus_size') && !hasPlusSize) return false;
     }
 
-    // 4. Subcategory Filter
-    const activeSub = filterState.subcategoryId || (subParam ? subParam : undefined);
-    if (activeSub) {
-      const subId = activeSub.toLowerCase();
-      const pSub = (p.subcategoryId || '').toLowerCase();
-      if (pSub !== subId && !pSub.includes(subId) && !subId.includes(pSub)) return false;
-    }
-
-    // 5. Product Types / Styles Filter
+    // 4. Product Types / Styles Filter (Evaluated before subcategory so style picks have priority)
     const activeTypes = filterState.types && filterState.types.length > 0 ? filterState.types : (typeParam ? [typeParam] : []);
     if (activeTypes.length > 0) {
       const pType = (p.typeId || '').toLowerCase();
       const pName = (p.name || '').toLowerCase();
       const pDesc = (p.description || '').toLowerCase();
+      const pTags = (p.tags || []).map(t => String(t).toLowerCase());
       const matchesType = activeTypes.some(tId => {
         const target = tId.toLowerCase();
-        return pType === target || pType.includes(target) || target.includes(pType) || pName.includes(target) || pDesc.includes(target);
+        // Check exact or partial type ID match
+        if (pType === target || pType.includes(target) || target.includes(pType)) return true;
+        // Check word variations (e.g. saree / sarees / banarasi)
+        const variations = getStemVariations(target.replace(/^wt-|^mt-|^kt-|^ut-/, ''));
+        return variations.some(v => pType.includes(v) || pName.includes(v) || pDesc.includes(v) || pTags.some(t => t.includes(v)));
       });
       if (!matchesType) return false;
+    }
+
+    // 5. Subcategory Filter
+    const activeSub = filterState.subcategoryId || (subParam ? subParam : undefined);
+    if (activeSub && activeTypes.length === 0) {
+      const subId = activeSub.toLowerCase();
+      const pSub = (p.subcategoryId || '').toLowerCase();
+      if (pSub !== subId && !pSub.includes(subId) && !subId.includes(pSub)) return false;
     }
 
     // 6. Brand Filter
@@ -281,19 +327,32 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
       }
     }
 
-    // 9. Search Query
+    // 9. Search Query (with Natural Language Word Stemming)
     const activeSearch = filterState.searchQuery || searchParam;
     if (activeSearch) {
-      const q = activeSearch.toLowerCase().trim();
-      const matchesSearch = p.name.toLowerCase().includes(q) ||
-                            p.description.toLowerCase().includes(q) ||
-                            (p.fabric && p.fabric.toLowerCase().includes(q)) ||
-                            (p.occasion && p.occasion.toLowerCase().includes(q)) ||
-                            (p.brandName && p.brandName.toLowerCase().includes(q));
-      if (!matchesSearch) return false;
+      const searchTokens = activeSearch.toLowerCase().trim().split(/\s+/).filter(Boolean);
+      const searchableBlob = [
+        p.name,
+        p.description,
+        p.fabric,
+        p.fit,
+        p.occasion,
+        p.brandName,
+        p.typeId,
+        p.subcategoryId,
+        p.categoryId,
+        ...(p.tags || []),
+        ...(p.colors || []).map((c: any) => typeof c === 'string' ? c : c.name)
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      const allTokensMatch = searchTokens.every(token => {
+        const variants = getStemVariations(token);
+        return variants.some(v => searchableBlob.includes(v));
+      });
+      if (!allTokensMatch) return false;
     }
 
-    // 10. Sizes Filter (Case-insensitive across availableSizes & variants)
+    // 10. Sizes Filter (Supports Free Size universally for unstitched ethnic items & specific sizes)
     if (filterState.sizes && filterState.sizes.length > 0) {
       const prodSizes: string[] = [];
       if (Array.isArray(p.availableSizes)) {
@@ -304,14 +363,16 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           if (v && v.size) prodSizes.push(String(v.size).trim().toUpperCase());
         });
       }
+      const isFreeSizeProduct = prodSizes.some(ps => ps.includes('FREE') || ps.includes('FS'));
       const matchesSize = filterState.sizes.some(fs => {
         const target = fs.trim().toUpperCase();
-        return prodSizes.some(ps => ps === target || (target === 'FREE SIZE' && (ps.includes('FREE') || ps.includes('FS'))));
+        if (target === 'FREE SIZE') return isFreeSizeProduct;
+        return prodSizes.some(ps => ps === target) || isFreeSizeProduct;
       });
       if (!matchesSize) return false;
     }
 
-    // 11. Colors Filter (Case-insensitive across colors, variants & title)
+    // 11. Colors Filter (Case-insensitive across colors, variants, name & description)
     if (filterState.colors && filterState.colors.length > 0) {
       const prodColorStrings: string[] = [];
       if (Array.isArray(p.colors)) {
@@ -325,21 +386,35 @@ export const ProductListingPage: React.FC<ProductListingPageProps> = ({ onNaviga
           if (v && v.color) prodColorStrings.push(String(v.color).toLowerCase());
         });
       }
+      const pNameLower = p.name.toLowerCase();
+      const pDescLower = (p.description || '').toLowerCase();
+
       const matchesColor = filterState.colors.some(fc => {
         const target = fc.toLowerCase();
-        return prodColorStrings.some(pc => pc.includes(target) || target.includes(pc)) || p.name.toLowerCase().includes(target);
+        return prodColorStrings.some(pc => pc.includes(target) || target.includes(pc)) ||
+               pNameLower.includes(target) ||
+               pDescLower.includes(target);
       });
       if (!matchesColor) return false;
     }
 
-    // 12. Fabrics Filter
+    // 12. Fabrics Filter (Case-insensitive across fabric, name, description & tags)
     if (filterState.fabrics && filterState.fabrics.length > 0) {
       const prodFabric = (p.fabric || '').toLowerCase();
       const prodDesc = (p.description || '').toLowerCase();
       const prodName = (p.name || '').toLowerCase();
+      const prodTags = (p.tags || []).map(t => String(t).toLowerCase());
+
       const matchesFabric = filterState.fabrics.some(f => {
         const target = f.toLowerCase().trim();
-        return prodFabric.includes(target) || prodDesc.includes(target) || prodName.includes(target);
+        const root = target.replace('pure ', '').replace(' blend', '').trim();
+        return prodFabric.includes(target) ||
+               prodFabric.includes(root) ||
+               prodDesc.includes(target) ||
+               prodDesc.includes(root) ||
+               prodName.includes(target) ||
+               prodName.includes(root) ||
+               prodTags.some(t => t.includes(root));
       });
       if (!matchesFabric) return false;
     }

@@ -1515,16 +1515,34 @@ app.get('/api/products', async (req, res) => {
       where.rating = { gte: targetRating };
     }
 
-    // 4. Search Filter (Prisma DB query level)
+    // 4. Search Filter (Prisma DB query level with insensitive matching & word stemming)
     if (search) {
       const q = String(search).trim();
       if (q) {
-        where.OR = [
-          { name: { contains: q } },
-          { description: { contains: q } },
-          { fabric: { contains: q } },
-          { brandName: { contains: q } },
-        ];
+        const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+        const searchTerms = new Set<string>([q]);
+        tokens.forEach(t => {
+          searchTerms.add(t);
+          if (t.endsWith('sarees')) searchTerms.add(t.replace(/sarees$/, 'saree'));
+          if (t.endsWith('kurtas')) searchTerms.add(t.replace(/kurtas$/, 'kurta'));
+          if (t.endsWith('kurtis')) searchTerms.add(t.replace(/kurtis$/, 'kurti'));
+          if (t.endsWith('dresses')) searchTerms.add(t.replace(/dresses$/, 'dress'));
+          if (t.endsWith('lehengas')) searchTerms.add(t.replace(/lehengas$/, 'lehenga'));
+          if (t.endsWith('shirts')) searchTerms.add(t.replace(/shirts$/, 'shirt'));
+          if (t.endsWith('suits')) searchTerms.add(t.replace(/suits$/, 'suit'));
+          if (t.endsWith('s') && t.length > 3) searchTerms.add(t.slice(0, -1));
+        });
+
+        const orConditions: any[] = [];
+        searchTerms.forEach(term => {
+          orConditions.push(
+            { name: { contains: term, mode: 'insensitive' } },
+            { description: { contains: term, mode: 'insensitive' } },
+            { fabric: { contains: term, mode: 'insensitive' } },
+            { brandName: { contains: term, mode: 'insensitive' } }
+          );
+        });
+        where.OR = orConditions;
       }
     }
 
