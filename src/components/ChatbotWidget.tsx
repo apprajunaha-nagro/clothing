@@ -58,7 +58,6 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
 
   const quickPills = [
     { label: '📦 Track My Order', query: 'How do I track my order?' },
-    { label: '👗 Size & Fit Guide', query: 'What is your size guide?' },
     { label: '🏷️ Active Coupon Codes', query: 'Are there any active discount coupons?' },
     { label: '🔁 Returns & Refunds', query: 'What is your return policy?' },
     { label: '💳 Payment Options', query: 'What payment options do you support?' },
@@ -113,12 +112,7 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({ onNavigate }) => {
       };
     }
 
-    if (q.includes('size') || q.includes('fit') || q.includes('measurement') || q.includes('chart')) {
-      return {
-        text: '👗 All PGmart apparel is crafted to standard Indian size specifications. For ethnic sarees, kurtis, and men\'s formals, choose your regular standard size.',
-        actionButton: { label: 'View Size Guide', path: '/size-guide' }
-      };
-    }
+
 
     if (q.includes('coupon') || q.includes('discount') || q.includes('offer') || q.includes('promo') || q.includes('code')) {
       return {

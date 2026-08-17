@@ -8,7 +8,7 @@ interface QuickViewModalProps {
 }
 
 export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onNavigate }) => {
-  const { quickViewProduct, setQuickViewProduct, addToCart, wishlist, toggleWishlist, setSizeChartCategory } = useStore();
+  const { quickViewProduct, setQuickViewProduct, addToCart, wishlist, toggleWishlist } = useStore();
 
   const [colorIndex, setColorIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string>('');
@@ -122,12 +122,6 @@ export const QuickViewModal: React.FC<QuickViewModalProps> = ({ onNavigate }) =>
             <div className="mt-4">
               <div className="flex justify-between items-center text-xs mb-1.5">
                 <span className="font-bold text-stone-700">Size</span>
-                <button
-                  onClick={() => setSizeChartCategory(quickViewProduct.categoryId)}
-                  className="text-[#C0654B] font-semibold underline cursor-pointer text-[11px]"
-                >
-                  Size Chart Guide
-                </button>
               </div>
               <div className="flex flex-wrap gap-2">
                 {(quickViewProduct.availableSizes || []).map((size) => (

@@ -10,7 +10,6 @@ import {
   Truck,
   ShieldCheck,
   RotateCcw,
-  Ruler,
   Check,
   Share2,
   ChevronDown,
@@ -29,7 +28,7 @@ interface ProductDetailPageProps {
 }
 
 export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate, productId }) => {
-  const { products, reviews, addReview, addToCart, wishlist, toggleWishlist, setSizeChartCategory, showToast, setChatOpen } = useStore();
+  const { products, reviews, addReview, addToCart, wishlist, toggleWishlist, showToast, setChatOpen } = useStore();
 
   // Allow pinch-to-zoom on product page only; restore global restriction on leave
   useEffect(() => {
@@ -496,13 +495,6 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ onNavigate
                 )}
               </div>
 
-              <button
-                onClick={() => setSizeChartCategory(product.categoryId)}
-                className="text-xs font-bold text-[#C0654B] hover:underline flex items-center gap-1 cursor-pointer min-h-[44px] px-2"
-              >
-                <Ruler className="w-3.5 h-3.5" />
-                <span>Size Chart</span>
-              </button>
             </div>
 
             <div className="flex flex-wrap gap-2">

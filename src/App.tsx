@@ -6,7 +6,6 @@ import { Toast } from './components/Toast';
 import { CartDrawer } from './components/CartDrawer';
 import { SearchModal } from './components/SearchModal';
 import { QuickViewModal } from './components/QuickViewModal';
-import { SizeChartModal } from './components/SizeChartModal';
 import { ChatbotWidget } from './components/ChatbotWidget';
 import { TawkToWidget } from './components/TawkToWidget';
 import { PromoPopupModal } from './components/PromoPopupModal';
@@ -45,7 +44,7 @@ const pageTransition = {
 function AppContent() {
   const [currentPath, setCurrentPath] = useState<string>(window.location.pathname || '/');
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
-  const { setSearchModalOpen, setCartDrawerOpen, setQuickViewProduct, setSizeChartCategory } = useStore();
+  const { setSearchModalOpen, setCartDrawerOpen, setQuickViewProduct } = useStore();
   const reducedMotion = useReducedMotion();
 
   useEffect(() => {
@@ -64,7 +63,6 @@ function AppContent() {
         setSearchModalOpen(false);
         setCartDrawerOpen(false);
         setQuickViewProduct(null);
-        setSizeChartCategory(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -73,7 +71,7 @@ function AppContent() {
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [setSearchModalOpen, setCartDrawerOpen, setQuickViewProduct, setSizeChartCategory]);
+  }, [setSearchModalOpen, setCartDrawerOpen, setQuickViewProduct]);
 
   const navigateTo = (path: string) => {
     window.history.pushState({}, '', path);
@@ -184,7 +182,6 @@ function AppContent() {
       <CartDrawer onNavigate={navigateTo} />
       <SearchModal onNavigate={navigateTo} />
       <QuickViewModal onNavigate={navigateTo} />
-      <SizeChartModal />
       {!isAdminRoute && <PromoPopupModal onNavigate={navigateTo} />}
 
       {/* FLOATING CUSTOMER SUPPORT CHATBOT WIDGET */}
