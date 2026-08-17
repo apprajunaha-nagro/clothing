@@ -264,7 +264,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate, onOrderP
         currency: rzpData.currency || 'INR',
         name: settings.storeName || 'PGmart',
         description: 'Clothing Purchase Payment',
-        image: '/src/assets/images/pgmart_logo_new.png',
+        image: window.location.origin + '/pgmart-logo.png',
         order_id: rzpData.orderId,
         prefill: {
           name: fullName || user?.name || '',

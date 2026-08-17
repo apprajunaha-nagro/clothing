@@ -1731,8 +1731,15 @@ app.post('/api/coupons/validate', async (req, res) => {
 app.post('/api/razorpay/create-order', async (req, res) => {
   try {
     const { amount, receipt } = req.body;
-    const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_TC123456789';
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'test_secret_123';
+    let keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_TC123456789';
+    let keySecret = process.env.RAZORPAY_KEY_SECRET || 'test_secret_123';
+
+    try {
+      const dbSetting = await prisma.setting.findFirst();
+      if (dbSetting?.razorpayKeyId && dbSetting.razorpayKeyId.trim() !== '') {
+        keyId = dbSetting.razorpayKeyId.trim();
+      }
+    } catch (e) {}
 
     if (!amount || amount <= 0) {
       return res.status(400).json({ error: 'Valid amount is required' });
@@ -1755,7 +1762,7 @@ app.post('/api/razorpay/create-order', async (req, res) => {
 
     const data = await response.json();
     if (!response.ok) {
-      console.warn('Razorpay API notice:', data?.error?.description || 'Using client fallback order');
+      console.warn('Razorpay API notice:', data?.error?.description || 'Using fallback order');
       return res.json({
         success: true,
         orderId: `order_mock_${Date.now()}`,
@@ -1782,7 +1789,7 @@ app.post('/api/razorpay/create-order', async (req, res) => {
 app.post('/api/razorpay/verify-payment', async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET || 'test_secret_123';
+    let keySecret = process.env.RAZORPAY_KEY_SECRET || 'test_secret_123';
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ error: 'Missing signature verification parameters' });
@@ -1805,6 +1812,46 @@ app.post('/api/razorpay/verify-payment', async (req, res) => {
     }
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin test endpoint to verify Razorpay keys live with Razorpay API
+app.post('/api/razorpay/test-keys', adminAuth, async (req, res) => {
+  try {
+    const { keyId, keySecret } = req.body;
+    const testKeyId = (keyId || process.env.RAZORPAY_KEY_ID || '').trim();
+    const testSecret = (keySecret || process.env.RAZORPAY_KEY_SECRET || '').trim();
+
+    if (!testKeyId || !testSecret) {
+      return res.status(400).json({ success: false, error: 'Both Key ID and Key Secret are required to test the connection.' });
+    }
+
+    const response = await fetch('https://api.razorpay.com/v1/payments?count=1', {
+      method: 'GET',
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${testKeyId}:${testSecret}`).toString('base64')
+      }
+    });
+
+    if (response.ok) {
+      const isTest = testKeyId.startsWith('rzp_test_');
+      const isLive = testKeyId.startsWith('rzp_live_');
+      const modeLabel = isTest ? 'Test Mode (Sandbox)' : (isLive ? 'Live Production Mode' : 'Custom Mode');
+      return res.json({
+        success: true,
+        mode: isTest ? 'test' : (isLive ? 'live' : 'custom'),
+        message: `Connection Verified! Successfully authenticated with Razorpay in ${modeLabel}.`
+      });
+    } else {
+      const data = await response.json();
+      return res.status(400).json({
+        success: false,
+        error: data?.error?.description || 'Authentication failed. Please verify your Razorpay Key ID and Key Secret.'
+      });
+    }
+  } catch (err: any) {
+    console.error('Razorpay test-keys error:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Failed to communicate with Razorpay API' });
   }
 });
 

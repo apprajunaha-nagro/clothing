@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { 
-  Settings, Palette, Shield, ShieldCheck, Truck, Download, Save, RefreshCw, Eye, 
+  Settings, Palette, Shield, ShieldCheck, Truck, Download, Save, RefreshCw, Eye, EyeOff,
   MapPin, CheckCircle, Database, History, UserCheck, AlertCircle, Plus, Trash2, 
-  ArrowUp, ArrowDown, RotateCcw, FileText, Layers
+  ArrowUp, ArrowDown, RotateCcw, FileText, Layers, CreditCard, Lock, Key, ExternalLink, Check, CheckCircle2
 } from 'lucide-react';
 import { SiteSettings, PolicySection } from '../../types';
 import { parsePrivacySections, DEFAULT_PRIVACY_SECTIONS } from '../../data/seedData';
@@ -11,7 +11,7 @@ import { parsePrivacySections, DEFAULT_PRIVACY_SECTIONS } from '../../data/seedD
 export const AdminSettingsView: React.FC = () => {
   const { settings, updateSettings, showToast, products, orders } = useStore();
 
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'store' | 'theme' | 'policies' | 'shipping' | 'backup'>('store');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'store' | 'payments' | 'theme' | 'policies' | 'shipping' | 'backup'>('store');
 
   // Form states initialized from settings context
   const [sName, setSName] = useState(settings.storeName || 'PGmart');
@@ -20,6 +20,14 @@ export const AdminSettingsView: React.FC = () => {
   const [sAddress, setSAddress] = useState(settings.address || '');
   const [sGst, setSGst] = useState(settings.gstNumber || '');
   const [sCurrency, setSCurrency] = useState('INR (₹)');
+
+  // Payment Gateway Settings (Razorpay & COD)
+  const [razorpayEnabled, setRazorpayEnabled] = useState<boolean>(settings.razorpayEnabled !== false);
+  const [razorpayKeyId, setRazorpayKeyId] = useState<string>(settings.razorpayKeyId || 'rzp_test_TC123456789');
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState<string>('');
+  const [showSecret, setShowSecret] = useState<boolean>(false);
+  const [testingConnection, setTestingConnection] = useState<boolean>(false);
+  const [connectionStatus, setConnectionStatus] = useState<{ success?: boolean; message?: string } | null>(null);
 
   // Policy & Privacy sections state
   const [privacySections, setPrivacySections] = useState<PolicySection[]>(() => parsePrivacySections(settings.privacyPolicy));
@@ -42,6 +50,45 @@ export const AdminSettingsView: React.FC = () => {
     { id: 'z1', name: 'Jharkhand (Local State Delivery)', charge: 49, minOrder: 999, active: true },
     { id: 'z2', name: 'Rest of India', charge: 99, minOrder: 1499, active: true },
   ]);
+
+  const handleTestRazorpayConnection = async () => {
+    setTestingConnection(true);
+    setConnectionStatus(null);
+    try {
+      const res = await fetch('/api/razorpay/test-keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('terra_admin_token') || 'pgmart123'}`
+        },
+        body: JSON.stringify({ keyId: razorpayKeyId, keySecret: razorpayKeySecret })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setConnectionStatus({ success: true, message: data.message || 'Razorpay Connected Successfully!' });
+        showToast('✅ Razorpay API connection verified.');
+      } else {
+        setConnectionStatus({ success: false, message: data.error || 'Connection Failed' });
+        showToast('❌ Razorpay error: ' + (data.error || 'Failed'));
+      }
+    } catch (err: any) {
+      setConnectionStatus({ success: false, message: err.message || 'Network error' });
+      showToast('❌ Razorpay connection error');
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
+  const handleSavePaymentSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateSettings({
+      razorpayEnabled,
+      razorpayKeyId,
+      codEnabled,
+      codFee
+    });
+    showToast('💳 Payment Gateways & Razorpay configuration saved.');
+  };
 
   const handleSaveStoreSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,6 +215,13 @@ export const AdminSettingsView: React.FC = () => {
             Store Specs
           </button>
           <button
+            onClick={() => setActiveSettingsTab('payments')}
+            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${activeSettingsTab === 'payments' ? 'bg-[#C0654B] text-white' : 'text-stone-400 hover:text-stone-200'}`}
+          >
+            <CreditCard className="w-3.5 h-3.5" />
+            <span>Payments & Razorpay</span>
+          </button>
+          <button
             onClick={() => setActiveSettingsTab('theme')}
             className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${activeSettingsTab === 'theme' ? 'bg-[#C0654B] text-white' : 'text-stone-400 hover:text-stone-200'}`}
           >
@@ -272,6 +326,205 @@ export const AdminSettingsView: React.FC = () => {
               className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
             >
               <Save className="w-4 h-4" /> Save Core Specs
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* 2. PAYMENTS & RAZORPAY GATEWAY SETTINGS */}
+      {activeSettingsTab === 'payments' && (
+        <form onSubmit={handleSavePaymentSettings} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm space-y-6 text-xs font-semibold text-stone-700 text-left">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-3">
+            <div>
+              <h3 className="text-base font-bold font-serif text-stone-900 flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-[#C0654B]" />
+                <span>Payment Gateways & Razorpay Configuration</span>
+              </h3>
+              <p className="text-xs text-stone-400">Configure Razorpay for UPI, Cards, Netbanking and Cash on Delivery (COD)</p>
+            </div>
+
+            {/* Mode badge indicator */}
+            <div className="flex items-center gap-2">
+              {razorpayKeyId.startsWith('rzp_test_') ? (
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1.5 shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  🧪 Test Mode (Sandbox API)
+                </span>
+              ) : razorpayKeyId.startsWith('rzp_live_') ? (
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1.5 shadow-2xs">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  🟢 Live Mode (Real Payments)
+                </span>
+              ) : (
+                <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-stone-100 text-stone-700 border border-stone-300">
+                  ⚙️ Standard Mode
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* RAZORPAY CONFIGURATION CARD */}
+          <div className="p-4 sm:p-5 rounded-xl border border-stone-200 bg-stone-50/50 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#0C2340] text-white flex items-center justify-center font-bold text-xs">
+                  Rzp
+                </div>
+                <div>
+                  <span className="font-bold text-stone-900 block text-xs">Razorpay Online Gateway</span>
+                  <span className="text-[10px] text-stone-500">Supports UPI (GPay, PhonePe, Paytm, BHIM), Debit/Credit Cards & Netbanking</span>
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={razorpayEnabled}
+                  onChange={(e) => setRazorpayEnabled(e.target.checked)}
+                  className="w-4 h-4 text-[#C0654B] rounded border-stone-300 focus:ring-[#C0654B] cursor-pointer"
+                />
+                <span className={`text-xs font-bold ${razorpayEnabled ? 'text-emerald-700' : 'text-stone-400'}`}>
+                  {razorpayEnabled ? 'Active' : 'Disabled'}
+                </span>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label className="block font-bold text-stone-600 mb-1 flex items-center gap-1">
+                  <Key className="w-3.5 h-3.5 text-stone-400" />
+                  <span>Razorpay Key ID</span>
+                </label>
+                <input
+                  type="text"
+                  required={razorpayEnabled}
+                  value={razorpayKeyId}
+                  onChange={(e) => setRazorpayKeyId(e.target.value.trim())}
+                  placeholder="rzp_test_... or rzp_live_..."
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B] font-mono text-xs font-bold text-stone-950 bg-white"
+                />
+                <p className="text-[10px] text-stone-400 mt-1">
+                  Starts with <code className="bg-stone-200 px-1 py-0.5 rounded text-stone-700">rzp_test_</code> for sandbox or <code className="bg-stone-200 px-1 py-0.5 rounded text-stone-700">rzp_live_</code> for live transactions.
+                </p>
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-600 mb-1 flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-stone-400" />
+                  <span>Razorpay Key Secret (Optional / Override)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type={showSecret ? "text" : "password"}
+                    value={razorpayKeySecret}
+                    onChange={(e) => setRazorpayKeySecret(e.target.value.trim())}
+                    placeholder="Leave empty to use .env secret"
+                    className="w-full pl-3 pr-10 py-2 border border-stone-300 rounded-lg outline-none focus:border-[#C0654B] font-mono text-xs text-stone-950 bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSecret(prev => !prev)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 cursor-pointer"
+                  >
+                    {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-stone-400 mt-1">
+                  Stored securely and used for server-side payment signature verification.
+                </p>
+              </div>
+            </div>
+
+            {/* Test Connection Button and Status */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-stone-200/80">
+              <button
+                type="button"
+                onClick={handleTestRazorpayConnection}
+                disabled={testingConnection}
+                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto border border-stone-300"
+              >
+                {testingConnection ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#C0654B]" />
+                    <span>Verifying with Razorpay API...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Test Razorpay API Connection</span>
+                  </>
+                )}
+              </button>
+
+              {connectionStatus && (
+                <div className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 ${connectionStatus.success ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+                  {connectionStatus.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-red-600" />}
+                  <span>{connectionStatus.message}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* CASH ON DELIVERY (COD) CARD */}
+          <div className="p-4 sm:p-5 rounded-xl border border-stone-200 bg-stone-50/50 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-bold text-stone-900 block text-xs">Cash on Delivery (COD)</span>
+                <span className="text-[10px] text-stone-500">Allow customers to pay in cash upon doorstep package delivery</span>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={codEnabled}
+                  onChange={(e) => setCodEnabled(e.target.checked)}
+                  className="w-4 h-4 text-[#C0654B] rounded border-stone-300 focus:ring-[#C0654B] cursor-pointer"
+                />
+                <span className={`text-xs font-bold ${codEnabled ? 'text-emerald-700' : 'text-stone-400'}`}>
+                  {codEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+              </label>
+            </div>
+
+            {codEnabled && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-stone-200/80">
+                <div>
+                  <label className="block font-bold text-stone-600 mb-1">COD Handling / Convenience Fee (₹)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={codFee}
+                    onChange={(e) => setCodFee(Math.max(0, Number(e.target.value)))}
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg outline-none font-mono text-xs font-bold text-stone-950 bg-white"
+                  />
+                  <p className="text-[10px] text-stone-400 mt-1">Enter 0 for free COD, or standard fee (e.g. ₹49).</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RAZORPAY QUICK REFERENCE GUIDE */}
+          <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200/70 text-amber-900 space-y-2 text-[11px]">
+            <span className="font-bold block text-xs flex items-center gap-1.5">
+              <span>💡 How to switch between Test and Live Keys</span>
+            </span>
+            <ul className="list-disc pl-4 space-y-1 text-[10.5px] leading-relaxed text-amber-800">
+              <li>
+                <strong>To Test:</strong> Go to <a href="https://dashboard.razorpay.com" target="_blank" rel="noreferrer" className="underline font-bold hover:text-amber-950">Razorpay Dashboard</a> → Select <strong>Test Mode</strong> (top right) → Settings → API Keys → Generate Test Key. Paste <code className="bg-amber-100 px-1 py-0.2 rounded font-bold">rzp_test_...</code> here.
+              </li>
+              <li>
+                <strong>To Go Live:</strong> Complete Razorpay KYC → Select <strong>Live Mode</strong> in Razorpay Dashboard → Generate Live Key. Paste <code className="bg-amber-100 px-1 py-0.2 rounded font-bold">rzp_live_...</code> here and save.
+              </li>
+            </ul>
+          </div>
+
+          {/* SAVE BUTTON */}
+          <div className="flex justify-end pt-2">
+            <button
+              type="submit"
+              className="px-6 py-2.5 bg-[#C0654B] hover:bg-[#8B4A38] text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-1.5 transition-colors"
+            >
+              <Save className="w-4 h-4" /> Save Payment Settings
             </button>
           </div>
         </form>
